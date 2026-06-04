@@ -1,0 +1,119 @@
+services:
+  php:
+    build: ./docker/php
+    container_name: toa_php
+    volumes:
+      - .:/var/www/toa-api
+    networks:
+      - toa_net
+    environment:
+      DATABASE_URL: postgresql://symfony:secret@postgres:5432/toa
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET_KEY: '%kernel.project_dir%/config/jwt/private.pem'
+      JWT_PUBLIC_KEY: '%kernel.project_dir%/config/jwt/public.pem'
+      JWT_PASSPHRASE: your_passphrase
+      MERCURE_URL: http://mercure:3001/.well-known/mercure
+      MERCURE_JWT_SECRET: mercure_secret
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_KEY: minioadmin
+      MINIO_SECRET: minioadmin
+
+  worker_notifications:
+    build: ./docker/php
+    container_name: toa_worker_notifications
+    command: php bin/console messenger:consume notifications --limit=500 -vv
+    volumes:
+      - .:/var/www/toa-api
+    networks:
+      - toa_net
+    depends_on: [php, redis]
+
+  worker_pdf:
+    build: ./docker/php
+    container_name: toa_worker_pdf
+    command: php bin/console messenger:consume pdf_generation --limit=100 -vv
+    volumes:
+      - .:/var/www/toa-api
+    networks:
+      - toa_net
+    depends_on: [php, redis]
+
+  scheduler:
+    build: ./docker/php
+    container_name: toa_scheduler
+    command: php bin/console scheduler:run
+    volumes:
+      - .:/var/www/toa-api
+    networks:
+      - toa_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: toa_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/toa-api
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on: [php]
+    networks:
+      - toa_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: toa_postgres
+    environment:
+      POSTGRES_DB: toa
+      POSTGRES_USER: symfony
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - toa_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: toa_redis
+    command: redis-server --appendonly yes
+    networks:
+      - toa_net
+
+  mercure:
+    image: dunglas/mercure
+    container_name: toa_mercure
+    environment:
+      SERVER_NAME: ':3001'
+      MERCURE_PUBLISHER_JWT_KEY: mercure_secret
+      MERCURE_SUBSCRIBER_JWT_KEY: mercure_secret
+    ports:
+      - "3001:3001"
+    networks:
+      - toa_net
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: toa_gotenberg
+    command: gotenberg --chromium-disable-javascript=false
+    ports:
+      - "3002:3000"
+    networks:
+      - toa_net
+
+  minio:
+    image: minio/minio
+    container_name: toa_minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    networks:
+      - toa_net
+
+networks:
+  toa_net:
+
+volumes:
+  pgdata:
+  miniodata:
