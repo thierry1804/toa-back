@@ -16,8 +16,7 @@ framework:
                 dsn: 'doctrine://default?queue_name=audit'
 
         routing:
-            # Route your messages to the transports
-            # 'App\Message\YourMessage': async
+            'App\Domain\ActivityPlanning\Message\ActivityPlanningUpdatedNotification': notifications
             'Symfony\Component\Mercure\Update': notifications
 
 # when@test:

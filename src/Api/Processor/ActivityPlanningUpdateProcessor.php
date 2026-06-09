@@ -1,0 +1,182 @@
+<?php
+
+namespace App\Api\Processor;
+
+use ApiPlatform\Metadata\Operation;
+use ApiPlatform\State\ProcessorInterface;
+use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
+use App\Domain\ActivityPlanning\Message\ActivityPlanningUpdatedNotification;
+use App\Domain\ActivityPlanning\Service\AuditLogger;
+use App\Domain\ActivityPlanning\Service\ConflictDetector;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+
+final class ActivityPlanningUpdateProcessor implements ProcessorInterface
+{
+    private const DATE_FIELDS = [
+        'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+    ];
+
+    public function __construct(
+        #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
+        private ProcessorInterface $persistProcessor,
+        private EntityManagerInterface $entityManager,
+        private ConflictDetector $conflictDetector,
+        private AuditLogger $auditLogger,
+        private TokenStorageInterface $tokenStorage,
+        private MessageBusInterface $messageBus,
+    ) {
+    }
+
+    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
+    {
+        if (!$data instanceof ActivityPlanning) {
+            return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+        }
+
+        $originalData = $this->entityManager->getUnitOfWork()->getOriginalEntityData($data);
+        if (empty($originalData)) {
+            return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+        }
+
+        $this->checkLockedFields($data, $originalData);
+        $this->checkDateConflicts($data, $originalData);
+
+        $result = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+
+        $this->logAudit($data, $originalData);
+
+        $this->dispatchNotification($data, $originalData);
+
+        return $result;
+    }
+
+    private function checkLockedFields(ActivityPlanning $planning, array $originalData): void
+    {
+        if (!$planning->isLocked() && !$planning->isPermitValidated()) {
+            return;
+        }
+
+        $lockedFields = $planning->getLockedFields();
+        $changedLocked = [];
+
+        foreach ($lockedFields as $field) {
+            $getter = 'get' . ucfirst($field);
+            if (!method_exists($planning, $getter)) {
+                continue;
+            }
+            $newValue = $planning->$getter();
+            $oldValue = $originalData[$field] ?? null;
+
+            $newStr = $newValue instanceof \DateTimeInterface
+                ? $newValue->format('c')
+                : (string) $newValue;
+            $oldStr = $oldValue instanceof \DateTimeInterface
+                ? $oldValue->format('c')
+                : (string) $oldValue;
+
+            if ($newStr !== $oldStr) {
+                $changedLocked[] = $field;
+            }
+        }
+
+        if (!empty($changedLocked)) {
+            throw new UnprocessableEntityHttpException(sprintf(
+                'Champs verrouillés non modifiables : %s',
+                implode(', ', $changedLocked)
+            ));
+        }
+    }
+
+    private function checkDateConflicts(ActivityPlanning $planning, array $originalData): void
+    {
+        $datesChanged = false;
+        foreach (self::DATE_FIELDS as $field) {
+            $getter = 'get' . ucfirst($field);
+            if (!method_exists($planning, $getter)) {
+                continue;
+            }
+            $newValue = $planning->$getter();
+            $oldValue = $originalData[$field] ?? null;
+
+            $newStr = $newValue instanceof \DateTimeInterface
+                ? $newValue->format('c')
+                : (string) $newValue;
+            $oldStr = $oldValue instanceof \DateTimeInterface
+                ? $oldValue->format('c')
+                : (string) $oldValue;
+
+            if ($newStr !== $oldStr) {
+                $datesChanged = true;
+                break;
+            }
+        }
+
+        if ($datesChanged && $this->conflictDetector->hasConflict($planning)) {
+            throw new ConflictHttpException('Conflit avec interventions en cours');
+        }
+    }
+
+    private function logAudit(ActivityPlanning $planning, array $originalData): void
+    {
+        $user = $this->tokenStorage->getToken()?->getUser();
+        $changedBy = $user instanceof \App\Domain\User\Entity\User
+            ? $user->getUserIdentifier()
+            : 'system';
+
+        $this->auditLogger->logChanges($planning, $originalData, $changedBy);
+        $this->entityManager->flush();
+    }
+
+    private function dispatchNotification(ActivityPlanning $planning, array $originalData): void
+    {
+        $changes = [];
+        $trackedFields = [
+            'process', 'provider', 'projectDescription',
+            'siteCode', 'siteNumber', 'siteName', 'region',
+            'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+            'status',
+        ];
+
+        foreach ($trackedFields as $field) {
+            $getter = 'get' . ucfirst($field);
+            if (!method_exists($planning, $getter)) {
+                continue;
+            }
+            $newValue = $planning->$getter();
+            $oldValue = $originalData[$field] ?? null;
+
+            $newStr = $newValue instanceof \DateTimeInterface
+                ? $newValue->format('d/m/Y')
+                : (string) $newValue;
+            $oldStr = $oldValue instanceof \DateTimeInterface
+                ? $oldValue->format('d/m/Y')
+                : (string) $oldValue;
+
+            if ($newStr !== $oldStr) {
+                $changes[$field] = ['old' => $oldStr, 'new' => $newStr];
+            }
+        }
+
+        if (empty($changes)) {
+            return;
+        }
+
+        $providerEmail = $planning->getProviderEmail();
+
+        try {
+            $this->messageBus->dispatch(new ActivityPlanningUpdatedNotification(
+                planningId: $planning->getId() ?? 0,
+                providerEmail: $providerEmail ?? '',
+                providerName: $planning->getProvider() ?? '',
+                process: $planning->getProcess() ?? '',
+                changes: $changes,
+            ));
+        } catch (\Throwable) {
+        }
+    }
+}

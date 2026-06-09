@@ -15,7 +15,7 @@ use ApiPlatform\Metadata\Put;
 use App\Api\Processor\UserPasswordHasherProcessor;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use App\Domain\User\Validator\UniqueEmail;
 
 #[ApiResource(
     operations: [
@@ -32,7 +32,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 #[ORM\Entity]
 #[ORM\Table(name: '`user`')]
 #[ORM\HasLifecycleCallbacks]
-#[UniqueEntity(fields: ['email'], message: 'Email déjà utilisé')]
+#[UniqueEmail]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
