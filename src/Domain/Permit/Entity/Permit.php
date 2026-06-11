@@ -50,7 +50,7 @@ abstract class Permit
     protected ?string $planPreventionReference = null;
 
     #[ORM\Column(length: 100)]
-    #[Assert\NotBlank(message: 'Le code site est requis')]
+    #[Assert\NotBlank(message: 'site_code_required')]
     protected ?string $codeSite = null;
 
     #[ORM\Column(type: Types::INTEGER)]

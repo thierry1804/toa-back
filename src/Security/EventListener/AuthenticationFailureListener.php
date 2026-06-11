@@ -15,10 +15,10 @@ class AuthenticationFailureListener
     public function __invoke(AuthenticationFailureEvent $event): void
     {
         $exception = $event->getException();
-        $message = 'Identifiants incorrects';
+        $message = 'incorrect_credentials';
 
         if ($exception instanceof TooManyLoginAttemptsAuthenticationException) {
-            $message = 'Trop de tentatives de connexion. Veuillez réessayer plus tard.';
+            $message = 'too_many_login_attempts';
         }
 
         $response = new JWTAuthenticationFailureResponse($message, JsonResponse::HTTP_UNAUTHORIZED);

@@ -57,12 +57,12 @@ class MenuAccess
     #[ORM\ManyToOne(targetEntity: Menu::class, inversedBy: 'accessRules')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Groups(['menu_access:read', 'menu_access:write'])]
-    #[Assert\NotNull]
+    #[Assert\NotNull(message: 'menu_access_menu_required')]
     private ?Menu $menu = null;
 
     #[ORM\Column(name: 'role_name', length: 100)]
     #[Groups(['menu_access:read', 'menu_access:write'])]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: 'menu_access_role_required')]
     private string $role;
 
     #[ORM\Column]

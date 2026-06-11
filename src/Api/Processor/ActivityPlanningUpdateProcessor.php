@@ -106,10 +106,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         }
 
         if (!empty($changedLocked)) {
-            throw new UnprocessableEntityHttpException(sprintf(
-                'Champs verrouillés non modifiables : %s',
-                implode(', ', $changedLocked)
-            ));
+            throw new UnprocessableEntityHttpException('locked_fields_not_modifiable');
         }
     }
 
@@ -138,7 +135,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         }
 
         if ($datesChanged && $this->conflictDetector->hasConflict($planning)) {
-            throw new ConflictHttpException('Conflit avec interventions en cours');
+            throw new ConflictHttpException('conflict_with_active_interventions');
         }
     }
 

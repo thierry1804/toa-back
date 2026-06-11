@@ -42,7 +42,7 @@ class Menu
 
     #[ORM\Column(length: 255)]
     #[Groups(['menu:read', 'menu:write'])]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(message: 'menu_name_required')]
     private string $name;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -65,7 +65,7 @@ class Menu
 
     #[ORM\Column(type: 'integer')]
     #[Groups(['menu:read', 'menu:write'])]
-    #[Assert\NotNull]
+    #[Assert\NotNull(message: 'menu_position_required')]
     private int $position = 0;
 
     #[ORM\Column]

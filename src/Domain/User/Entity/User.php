@@ -43,13 +43,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]
     #[Groups(['user:read', 'user:write'])]
-    #[Assert\NotBlank(message: 'L\'email est obligatoire')]
-    #[Assert\Email(message: 'L\'email n\'est pas un email valide')]
+    #[Assert\NotBlank(message: 'email_required')]
+    #[Assert\Email(message: 'email_invalid')]
     private ?string $email = null;
 
     #[ORM\Column(type: 'string', length: 255)]
     #[Groups(['user:read', 'user:write'])]
-    #[Assert\NotBlank(message: 'Le nom est obligatoire')]
+    #[Assert\NotBlank(message: 'name_required')]
     private ?string $name = null;
 
     #[ORM\Column(type: 'string', length: 255)]
@@ -60,12 +60,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[Groups(['user:write'])]
-    #[Assert\NotBlank(message: 'Le mot de passe est obligatoire', groups: ['user:create'])]
+    #[Assert\NotBlank(message: 'password_required', groups: ['user:create'])]
     private ?string $plainPassword = null;
 
     #[ORM\Column(type: 'json')]
     #[Groups(['user:read', 'user:write'])]
-    #[Assert\NotBlank(message: 'Le rôle est obligatoire')]
+    #[Assert\NotBlank(message: 'role_required')]
     private array $roles = [];
 
     #[ORM\Column(type: 'datetime_immutable')]

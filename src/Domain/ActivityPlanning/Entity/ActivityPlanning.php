@@ -56,14 +56,14 @@ class ActivityPlanning
 
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank]
-    #[Assert\NotNull]
+    #[Assert\NotBlank(message: 'process_required')]
+    #[Assert\NotNull(message: 'process_required')]
     private ?string $process = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank]
-    #[Assert\NotNull]
+    #[Assert\NotBlank(message: 'provider_required')]
+    #[Assert\NotNull(message: 'provider_required')]
     private ?string $provider = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -72,47 +72,47 @@ class ActivityPlanning
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank]
-    #[Assert\NotNull]
+    #[Assert\NotBlank(message: 'project_description_required')]
+    #[Assert\NotNull(message: 'project_description_required')]
     private ?string $projectDescription = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank]
-    #[Assert\NotNull]
+    #[Assert\NotBlank(message: 'activity_site_code_required')]
+    #[Assert\NotNull(message: 'activity_site_code_required')]
     private ?string $siteCode = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank]
-    #[Assert\NotNull]
+    #[Assert\NotBlank(message: 'site_number_required')]
+    #[Assert\NotNull(message: 'site_number_required')]
     private ?string $siteNumber = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank]
-    #[Assert\NotNull]
+    #[Assert\NotBlank(message: 'site_name_required')]
+    #[Assert\NotNull(message: 'site_name_required')]
     private ?string $siteName = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank]
-    #[Assert\NotNull]
+    #[Assert\NotBlank(message: 'region_required')]
+    #[Assert\NotNull(message: 'region_required')]
     private ?string $region = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotNull]
+    #[Assert\NotNull(message: 'theoretical_start_date_required')]
     private ?\DateTimeImmutable $theoreticalStartDate = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotNull]
+    #[Assert\NotNull(message: 'expected_start_date_required')]
     private ?\DateTimeImmutable $expectedStartDate = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotNull]
+    #[Assert\NotNull(message: 'expected_end_date_required')]
     private ?\DateTimeImmutable $expectedEndDate = null;
 
     #[ORM\Column(length: 50)]
