@@ -54,14 +54,30 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 
         $originalData = $this->entityManager->getUnitOfWork()->getOriginalEntityData($existing);
 
-        // Apply all writable fields from the deserialized data to the managed entity
+        // Apply only fields that differ from the original entity data.
+        // This prevents a fresh deserialized $data from overwriting fields
+        // with PHP default values (e.g. status → 'brouillon', permitValidated → false)
+        // when those fields were not present in the PATCH request.
         foreach (self::ALL_FIELDS as $field) {
             $setter = 'set' . ucfirst($field);
             $getter = 'get' . ucfirst($field);
             if (!method_exists($data, $getter) || !method_exists($existing, $setter)) {
                 continue;
             }
-            $existing->$setter($data->$getter());
+
+            $newValue = $data->$getter();
+            $oldValue = $originalData[$field] ?? null;
+
+            $newStr = $newValue instanceof \DateTimeInterface
+                ? $newValue->format('c')
+                : (string) $newValue;
+            $oldStr = $oldValue instanceof \DateTimeInterface
+                ? $oldValue->format('c')
+                : (string) $oldValue;
+
+            if ($newStr !== $oldStr) {
+                $existing->$setter($newValue);
+            }
         }
 
         $this->checkLockedFields($existing, $originalData);
@@ -78,11 +94,35 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 
     private function checkLockedFields(ActivityPlanning $planning, array $originalData): void
     {
-        if (!$planning->isLocked() && !$planning->isPermitValidated()) {
+        $originalStatus = $originalData['status'] ?? null;
+        $originalPermitValidated = (bool) ($originalData['permitValidated'] ?? false);
+
+        $wasLocked = in_array($originalStatus, [
+            ActivityPlanning::STATUS_EN_COURS,
+            ActivityPlanning::STATUS_VALIDE,
+        ], true);
+
+        if (!$wasLocked && !$originalPermitValidated) {
             return;
         }
 
-        $lockedFields = $planning->getLockedFields();
+        // Compute locked fields from the ORIGINAL entity state (pre-changes).
+        // Mirrors ActivityPlanning::getLockedFields() but uses original values.
+        $lockedFields = [];
+
+        if ($wasLocked) {
+            $lockedFields = [
+                'process', 'siteCode', 'siteNumber', 'siteName', 'region',
+                'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+            ];
+        }
+
+        if ($originalPermitValidated) {
+            $lockedFields = array_merge($lockedFields, [
+                'provider', 'projectDescription',
+            ]);
+        }
+
         $changedLocked = [];
 
         foreach ($lockedFields as $field) {

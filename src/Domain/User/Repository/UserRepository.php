@@ -14,6 +14,22 @@ class UserRepository extends ServiceEntityRepository
     }
 
     /** @return User[] */
+    public function findByRole(string $role): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = 'SELECT id FROM "user" WHERE roles::text LIKE :role';
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue('role', '%"' . $role . '"%');
+        $ids = array_column($stmt->executeQuery()->fetchAllAssociative(), 'id');
+
+        if (empty($ids)) {
+            return [];
+        }
+
+        return $this->findBy(['id' => $ids], ['name' => 'ASC', 'firstname' => 'ASC']);
+    }
+
+    /** @return User[] */
     public function findByEmailExcludingId(array $criteria): array
     {
         $email = $criteria['email'] ?? null;

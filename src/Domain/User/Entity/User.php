@@ -13,6 +13,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Api\Processor\UserPasswordHasherProcessor;
+use App\Api\Provider\PrestataireProvider;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Domain\User\Validator\UniqueEmail;
@@ -20,6 +21,11 @@ use App\Domain\User\Validator\UniqueEmail;
 #[ApiResource(
     operations: [
         new GetCollection(),
+        new GetCollection(
+            uriTemplate: '/prestataires',
+            provider: PrestataireProvider::class,
+            paginationEnabled: false,
+        ),
         new Post(security: "is_granted('ROLE_SUPER_ADMIN')", processor: UserPasswordHasherProcessor::class, validationContext: ['groups' => ['Default', 'user:create']]),
         new Get(),
         new Put(security: "is_granted('ROLE_SUPER_ADMIN')", processor: UserPasswordHasherProcessor::class),
