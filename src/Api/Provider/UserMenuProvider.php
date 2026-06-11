@@ -27,53 +27,78 @@ class UserMenuProvider implements ProviderInterface
         $user = $token->getUser();
         $userRoles = $user->getRoles();
 
-        $accessQb = $this->entityManager->createQueryBuilder();
-        $accessQb->select('IDENTITY(a.menu)')
+        $accessRules = $this->entityManager->createQueryBuilder()
+            ->select('a, m')
             ->from(MenuAccess::class, 'a')
-            ->where('a.canView = :canView')
-            ->andWhere('a.role IN (:roles)')
-            ->setParameter('canView', true)
-            ->setParameter('roles', $userRoles);
+            ->join('a.menu', 'm')
+            ->where('a.role IN (:roles)')
+            ->setParameter('roles', $userRoles)
+            ->getQuery()
+            ->getResult();
 
-        $accessibleMenuIds = array_map('intval', array_unique(
-            $accessQb->getQuery()->getSingleColumnResult()
-        ));
+        $permissions = [];
+        foreach ($accessRules as $rule) {
+            $menuId = $rule->getMenu()->getId();
+            if (!isset($permissions[$menuId])) {
+                $permissions[$menuId] = [
+                    'canView' => false,
+                    'canCreate' => false,
+                    'canEdit' => false,
+                    'canDelete' => false,
+                ];
+            }
+            $p = &$permissions[$menuId];
+            $p['canView'] = $p['canView'] || $rule->getCanView();
+            $p['canCreate'] = $p['canCreate'] || $rule->getCanCreate();
+            $p['canEdit'] = $p['canEdit'] || $rule->getCanEdit();
+            $p['canDelete'] = $p['canDelete'] || $rule->getCanDelete();
+        }
+
+        $accessibleMenuIds = array_keys(array_filter($permissions, fn(array $p): bool => $p['canView']));
 
         $publicQb = $this->entityManager->createQueryBuilder();
-        $publicQb->select('m.id')
+        $publicQb->select('m')
             ->from(Menu::class, 'm')
             ->leftJoin('m.accessRules', 'a')
             ->where('a.id IS NULL')
             ->andWhere('m.isActive = :active')
             ->setParameter('active', true);
 
-        $publicMenuIds = array_map('intval', array_unique(
-            $publicQb->getQuery()->getSingleColumnResult()
-        ));
+        foreach ($publicQb->getQuery()->getResult() as $publicMenu) {
+            $permissions[$publicMenu->getId()] = [
+                'canView' => true,
+                'canCreate' => true,
+                'canEdit' => true,
+                'canDelete' => true,
+            ];
+            $accessibleMenuIds[] = $publicMenu->getId();
+        }
 
-        $allIds = array_unique(array_merge($accessibleMenuIds, $publicMenuIds));
+        $accessibleMenuIds = array_unique(array_map('intval', $accessibleMenuIds));
 
-        if (empty($allIds)) {
+        if (empty($accessibleMenuIds)) {
             return [];
         }
 
         $menuQb = $this->entityManager->createQueryBuilder();
         $menuQb->select('m')
             ->from(Menu::class, 'm')
-            ->leftJoin('m.children', 'c')
             ->where('m.id IN (:ids)')
             ->andWhere('m.isActive = :active')
             ->andWhere('m.parent IS NULL')
             ->orderBy('m.position', 'ASC')
-            ->setParameter('ids', $allIds)
+            ->setParameter('ids', $accessibleMenuIds)
             ->setParameter('active', true);
 
         $rootMenus = $menuQb->getQuery()->getResult();
 
-        return array_map(fn(Menu $menu) => $this->serializeMenu($menu, $allIds), $rootMenus);
+        return array_map(
+            fn(Menu $menu) => $this->serializeMenu($menu, $accessibleMenuIds, $permissions),
+            $rootMenus
+        );
     }
 
-    private function serializeMenu(Menu $menu, array $accessibleIds): array
+    private function serializeMenu(Menu $menu, array $accessibleIds, array $permissions): array
     {
         $children = [];
         foreach ($menu->getChildren() as $child) {
@@ -83,8 +108,15 @@ class UserMenuProvider implements ProviderInterface
             if (!in_array($child->getId(), $accessibleIds, true)) {
                 continue;
             }
-            $children[] = $this->serializeMenu($child, $accessibleIds);
+            $children[] = $this->serializeMenu($child, $accessibleIds, $permissions);
         }
+
+        $p = $permissions[$menu->getId()] ?? [
+            'canView' => false,
+            'canCreate' => false,
+            'canEdit' => false,
+            'canDelete' => false,
+        ];
 
         return [
             'id' => $menu->getId(),
@@ -93,6 +125,10 @@ class UserMenuProvider implements ProviderInterface
             'route' => $menu->getRoute(),
             'position' => $menu->getPosition(),
             'children' => $children,
+            'canView' => $p['canView'],
+            'canCreate' => $p['canCreate'],
+            'canEdit' => $p['canEdit'],
+            'canDelete' => $p['canDelete'],
         ];
     }
 }

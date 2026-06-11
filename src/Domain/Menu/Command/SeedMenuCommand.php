@@ -22,7 +22,7 @@ class SeedMenuCommand extends Command
 {
     private const MENUS = [
         ['name' => 'Dashboard',                'icon' => 'LayoutDashboard', 'route' => '/dashboard',      'position' => 1,  'public' => true],
-        ['name' => 'Planification',            'icon' => 'Calendar',        'route' => '/planification',  'position' => 2],
+        ['name' => 'Planification',            'icon' => 'Calendar',        'route' => '/planning',       'position' => 2,  'roles' => ['ROLE_SUPER_ADMIN', 'ROLE_CHEF_PROJET']],
         ['name' => 'Plans de Prévention',      'icon' => 'Shield',          'route' => '/prevention',     'position' => 3],
         ['name' => 'Permis de Travail',        'icon' => 'FileText',        'route' => '/permits',        'position' => 4],
         ['name' => 'Interventions',            'icon' => 'Clipboard',       'route' => '/interventions',  'position' => 5],
@@ -76,21 +76,25 @@ class SeedMenuCommand extends Command
             $this->entityManager->flush();
 
             $isPublic = $definition['public'] ?? false;
+            $roles = $definition['roles'] ?? ['ROLE_SUPER_ADMIN'];
 
             if (!$isPublic) {
-                $access = new MenuAccess();
-                $access->setMenu($menu);
-                $access->setRole('ROLE_SUPER_ADMIN');
-                $access->setCanView(true);
-                $access->setCanCreate(true);
-                $access->setCanEdit(true);
-                $access->setCanDelete(true);
+                foreach ($roles as $role) {
+                    $access = new MenuAccess();
+                    $access->setMenu($menu);
+                    $access->setRole($role);
+                    $access->setCanView(true);
+                    $access->setCanCreate(true);
+                    $access->setCanEdit(true);
+                    $access->setCanDelete(true);
 
-                $this->entityManager->persist($access);
-                $this->entityManager->flush();
+                    $this->entityManager->persist($access);
+                    $this->entityManager->flush();
+                }
             }
 
-            $io->writeln(sprintf('  ✓ <info>%s</info> %s.', $definition['name'], $isPublic ? 'créé (public)' : 'créé avec accès complet'));
+            $roleList = $isPublic ? 'public' : implode(', ', $roles);
+            $io->writeln(sprintf('  ✓ <info>%s</info> (%s).', $definition['name'], $roleList));
             ++$created;
         }
 

@@ -21,6 +21,13 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
     ];
 
+    private const ALL_FIELDS = [
+        'process', 'provider', 'providerEmail', 'projectDescription',
+        'siteCode', 'siteNumber', 'siteName', 'region',
+        'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+        'status', 'permitReference', 'permitValidated',
+    ];
+
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private ProcessorInterface $persistProcessor,
@@ -38,19 +45,33 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
             return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
         }
 
-        $originalData = $this->entityManager->getUnitOfWork()->getOriginalEntityData($data);
-        if (empty($originalData)) {
+        // API Platform creates a new instance during deserialization.
+        // Fetch the managed entity and apply changes to it.
+        $existing = $this->entityManager->getRepository(ActivityPlanning::class)->find($uriVariables['id'] ?? $data->getId());
+        if (!$existing) {
             return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
         }
 
-        $this->checkLockedFields($data, $originalData);
-        $this->checkDateConflicts($data, $originalData);
+        $originalData = $this->entityManager->getUnitOfWork()->getOriginalEntityData($existing);
 
-        $result = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+        // Apply all writable fields from the deserialized data to the managed entity
+        foreach (self::ALL_FIELDS as $field) {
+            $setter = 'set' . ucfirst($field);
+            $getter = 'get' . ucfirst($field);
+            if (!method_exists($data, $getter) || !method_exists($existing, $setter)) {
+                continue;
+            }
+            $existing->$setter($data->$getter());
+        }
 
-        $this->logAudit($data, $originalData);
+        $this->checkLockedFields($existing, $originalData);
+        $this->checkDateConflicts($existing, $originalData);
 
-        $this->dispatchNotification($data, $originalData);
+        $result = $this->persistProcessor->process($existing, $operation, $uriVariables, $context);
+
+        $this->logAudit($existing, $originalData);
+
+        $this->dispatchNotification($existing, $originalData);
 
         return $result;
     }
