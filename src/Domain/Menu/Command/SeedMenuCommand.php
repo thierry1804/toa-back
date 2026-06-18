@@ -21,13 +21,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class SeedMenuCommand extends Command
 {
     private const MENUS = [
-        ['name' => 'Dashboard',                'icon' => 'LayoutDashboard', 'route' => '/dashboard',      'position' => 1,  'public' => true],
-        ['name' => 'Planification',            'icon' => 'Calendar',        'route' => '/planning',       'position' => 2,  'roles' => ['ROLE_SUPER_ADMIN', 'ROLE_CHEF_PROJET']],
-        ['name' => 'Plans de Prévention',      'icon' => 'Shield',          'route' => '/prevention',     'position' => 3],
-        ['name' => 'Permis de Travail',        'icon' => 'FileText',        'route' => '/permits',        'position' => 4],
-        ['name' => 'Interventions',            'icon' => 'Clipboard',       'route' => '/interventions',  'position' => 5],
-        ['name' => 'Utilisateurs',             'icon' => 'Users',           'route' => '/users',          'position' => 6],
-        ['name' => 'Gestion Menu',             'icon' => 'menu',            'route' => '/menu-manager',   'position' => 7],
+        ['name' => 'Dashboard', 'icon' => 'LayoutDashboard', 'route' => '/dashboard', 'position' => 1, 'public' => true],
+        ['name' => 'Planification', 'icon' => 'Calendar', 'route' => '/planning', 'position' => 2, 'roles' => ['ROLE_SUPER_ADMIN', 'ROLE_CHEF_PROJET']],
+        ['name' => 'Plans de Prévention', 'icon' => 'Shield', 'route' => '/prevention', 'position' => 3],
+        ['name' => 'Permis de Travail', 'icon' => 'FileText', 'route' => '/permits', 'position' => 4],
+        ['name' => 'Interventions', 'icon' => 'Clipboard', 'route' => '/interventions', 'position' => 5],
+        ['name' => 'Utilisateurs', 'icon' => 'Users', 'route' => '/users', 'position' => 6],
+        ['name' => 'Gestion Menu', 'icon' => 'menu', 'route' => '/menu-manager', 'position' => 7],
     ];
 
     public function __construct(

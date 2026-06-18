@@ -1,16 +1,16 @@
 nelmio_cors:
     defaults:
+        origin_regex: true
+        allow_origin: ['^https://toa-front.dev.arkeup.com$', '^http://localhost:5173$']
+        allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+        allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
+        expose_headers: ['Link']
         allow_credentials: true
-        allow_origin: ["https://toa-front.dev.arkeup.com"]
-        allow_headers: ["Content-Type", "Authorization"]
-        allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-        expose_headers: ["Link"]
         max_age: 3600
-
     paths:
-        "^/":
-            allow_origin: ["https://toa-front.dev.arkeup.com"]
-            allow_headers: ["Content-Type", "Authorization"]
-            allow_methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+        '^/api/':
+            allow_origin: ['.*']
+            allow_headers: ['*']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
             allow_credentials: true
             max_age: 3600
