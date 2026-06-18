@@ -14,7 +14,7 @@ services:
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
             JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
-            JWT_PASSPHRASE: your_passphrase
+            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
             MERCURE_URL: http://mercure:3001/.well-known/mercure
             MERCURE_JWT_SECRET: mercure_secret
             MINIO_ENDPOINT: http://minio:9000
