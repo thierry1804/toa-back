@@ -9,11 +9,12 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use App\Domain\Menu\Repository\MenuAccessRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: MenuAccessRepository::class)]
 #[ORM\Table(name: '`menu_access`')]
 #[ORM\UniqueConstraint(columns: ['menu_id', 'role_name'])]
 #[ApiResource(

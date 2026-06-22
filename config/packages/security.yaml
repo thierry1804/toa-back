@@ -31,9 +31,7 @@ security:
             pattern: ^/api/login
             stateless: true
             provider: app_user_provider
-            login_throttling:
-                max_attempts: 5
-
+            user_checker: App\Security\UserChecker
             json_login:
                 check_path: /api/login_check
                 username_path: email
@@ -45,6 +43,7 @@ security:
             pattern: ^/api
             stateless: true
             provider: app_user_provider
+            user_checker: App\Security\UserChecker
             jwt: ~
         main:
             lazy: true

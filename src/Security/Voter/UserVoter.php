@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace App\Security\Voter;
 
-use App\Domain\Menu\Entity\Menu;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-class MenuVoter extends Voter
+class UserVoter extends Voter
 {
-    public const VIEW = 'MENU_VIEW';
-    public const CREATE = 'MENU_CREATE';
-    public const EDIT = 'MENU_EDIT';
-    public const DELETE = 'MENU_DELETE';
+    public const VIEW = 'USER_VIEW';
+    public const CREATE = 'USER_CREATE';
+    public const EDIT = 'USER_EDIT';
+    public const DELETE = 'USER_DELETE';
 
-    private const MENU_ROUTE = '/menu-manager';
+    private const MENU_ROUTE = '/users';
     private const ACTION_MAP = [
         self::VIEW   => 'VIEW',
         self::CREATE => 'CREATE',
@@ -31,7 +30,7 @@ class MenuVoter extends Voter
     protected function supports(string $attribute, mixed $subject): bool
     {
         return isset(self::ACTION_MAP[$attribute])
-            && ($subject instanceof Menu || $subject === null);
+            && ($subject instanceof User || $subject === null);
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool

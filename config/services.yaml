@@ -24,3 +24,7 @@ services:
 
     App\Api\OpenApi\JwtDecorator:
         decorates: 'api_platform.openapi.factory'
+
+    Predis\Client:
+        arguments:
+            - '%env(REDIS_URL)%'

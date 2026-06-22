@@ -20,17 +20,17 @@ use App\Domain\User\Validator\UniqueEmail;
 
 #[ApiResource(
     operations: [
-        new GetCollection(),
+        new GetCollection(security: "is_granted('USER_VIEW')"),
         new GetCollection(
             uriTemplate: '/prestataires',
             provider: PrestataireProvider::class,
             paginationEnabled: false,
         ),
-        new Post(security: "is_granted('ROLE_SUPER_ADMIN')", processor: UserPasswordHasherProcessor::class, validationContext: ['groups' => ['Default', 'user:create']]),
-        new Get(),
-        new Put(security: "is_granted('ROLE_SUPER_ADMIN')", processor: UserPasswordHasherProcessor::class),
-        new Patch(security: "is_granted('ROLE_SUPER_ADMIN')", processor: UserPasswordHasherProcessor::class),
-        new Delete(security: "is_granted('ROLE_SUPER_ADMIN')"),
+        new Post(security: "is_granted('USER_CREATE')", processor: UserPasswordHasherProcessor::class, validationContext: ['groups' => ['Default', 'user:create']]),
+        new Get(security: "is_granted('USER_VIEW', object)"),
+        new Put(security: "is_granted('USER_EDIT', object)", processor: UserPasswordHasherProcessor::class),
+        new Patch(security: "is_granted('USER_EDIT', object)", processor: UserPasswordHasherProcessor::class),
+        new Delete(security: "is_granted('USER_DELETE', object)"),
     ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']],
@@ -73,6 +73,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:write'])]
     #[Assert\NotBlank(message: 'role_required')]
     private array $roles = [];
+
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['user:read', 'user:write'])]
+    private bool $isActive = true;
 
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['user:read'])]
@@ -184,6 +188,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         $this->plainPassword = null;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getIsActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+
+        return $this;
     }
 
     public function getCreatedAt(): ?\DateTimeImmutable

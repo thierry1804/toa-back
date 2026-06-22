@@ -16,18 +16,80 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:menu:seed',
-    description: 'Insère les menus racines avec accès complet pour ROLE_SUPER_ADMIN',
+    description: 'Insère les menus racines avec leurs règles d\'accès par rôle',
 )]
 class SeedMenuCommand extends Command
 {
+    /**
+     * Each entry accepts:
+     *   - 'public' => true  : no MenuAccess records; visible to all authenticated users
+     *   - 'roles'  => [role => [view, create, edit, delete]]  : explicit per-role permissions
+     *   - (nothing): defaults to ROLE_SUPER_ADMIN with full access
+     *
+     * Omitted permission flags default to true (opt-in model for explicit entries).
+     */
     private const MENUS = [
-        ['name' => 'Dashboard', 'icon' => 'LayoutDashboard', 'route' => '/dashboard', 'position' => 1, 'public' => true],
-        ['name' => 'Planification', 'icon' => 'Calendar', 'route' => '/planning', 'position' => 2, 'roles' => ['ROLE_SUPER_ADMIN', 'ROLE_CHEF_PROJET']],
-        ['name' => 'Plans de Prévention', 'icon' => 'Shield', 'route' => '/prevention', 'position' => 3],
-        ['name' => 'Permis de Travail', 'icon' => 'FileText', 'route' => '/permits', 'position' => 4],
-        ['name' => 'Interventions', 'icon' => 'Clipboard', 'route' => '/interventions', 'position' => 5],
-        ['name' => 'Utilisateurs', 'icon' => 'Users', 'route' => '/users', 'position' => 6],
-        ['name' => 'Gestion Menu', 'icon' => 'menu', 'route' => '/menu-manager', 'position' => 7],
+        [
+            'name' => 'Dashboard',
+            'icon' => 'LayoutDashboard',
+            'route' => '/dashboard',
+            'position' => 1,
+            'public' => true,
+        ],
+        [
+            'name' => 'Planification',
+            'icon' => 'Calendar',
+            'route' => '/planning',
+            'position' => 2,
+            'roles' => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_CHEF_PROJET' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+            ],
+        ],
+        [
+            'name' => 'Plans de Prévention',
+            'icon' => 'Shield',
+            'route' => '/prevention',
+            'position' => 3,
+        ],
+        [
+            'name' => 'Permis de Travail',
+            'icon' => 'FileText',
+            'route' => '/permits',
+            'position' => 4,
+            'roles' => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_HSE' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_CHEF_PROJET' => ['view' => true, 'create' => false, 'edit' => true, 'delete' => false],
+                'ROLE_COLLABORATEUR' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_PRESTATAIRE' => ['view' => true, 'create' => true, 'edit' => false, 'delete' => false],
+            ],
+        ],
+        [
+            'name' => 'Interventions',
+            'icon' => 'Clipboard',
+            'route' => '/interventions',
+            'position' => 5,
+        ],
+        [
+            'name' => 'Utilisateurs',
+            'icon' => 'Users',
+            'route' => '/users',
+            'position' => 6,
+            'roles' => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_HSE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_CHEF_PROJET' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_COLLABORATEUR' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_PRESTATAIRE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+        ],
+        [
+            'name' => 'Gestion des accès',
+            'icon' => 'menu',
+            'route' => '/menu-manager',
+            'position' => 7,
+        ],
     ];
 
     public function __construct(
@@ -76,24 +138,24 @@ class SeedMenuCommand extends Command
             $this->entityManager->flush();
 
             $isPublic = $definition['public'] ?? false;
-            $roles = $definition['roles'] ?? ['ROLE_SUPER_ADMIN'];
+            $rolesConfig = $definition['roles'] ?? ['ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true]];
 
             if (!$isPublic) {
-                foreach ($roles as $role) {
+                foreach ($rolesConfig as $roleName => $permissions) {
                     $access = new MenuAccess();
                     $access->setMenu($menu);
-                    $access->setRole($role);
-                    $access->setCanView(true);
-                    $access->setCanCreate(true);
-                    $access->setCanEdit(true);
-                    $access->setCanDelete(true);
+                    $access->setRole($roleName);
+                    $access->setCanView($permissions['view'] ?? true);
+                    $access->setCanCreate($permissions['create'] ?? true);
+                    $access->setCanEdit($permissions['edit'] ?? true);
+                    $access->setCanDelete($permissions['delete'] ?? true);
 
                     $this->entityManager->persist($access);
                     $this->entityManager->flush();
                 }
             }
 
-            $roleList = $isPublic ? 'public' : implode(', ', $roles);
+            $roleList = $isPublic ? 'public' : implode(', ', array_keys($rolesConfig));
             $io->writeln(sprintf('  ✓ <info>%s</info> (%s).', $definition['name'], $roleList));
             ++$created;
         }
