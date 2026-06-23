@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use Predis\Client;
+use Predis\Connection\ConnectionException;
 
 /**
  * Progressive IP-based login rate limiter backed by Redis.
@@ -50,7 +51,12 @@ class LoginAttemptManager
      */
     public function getBlock(string $ip): ?array
     {
-        $tier = $this->redis->get($this->blockedKey($ip));
+        try {
+            $tier = $this->redis->get($this->blockedKey($ip));
+        } catch (ConnectionException|\Exception) {
+            return null;
+        }
+
         if ($tier === null) {
             return null;
         }
@@ -68,35 +74,39 @@ class LoginAttemptManager
      */
     public function recordFailure(string $ip): array
     {
-        // Tier-2 escalation: the IP was previously blocked (escalated key exists)
-        // but the block has since expired (blocked key is gone).
-        // Any new failure immediately triggers a 30-minute block.
-        if (
-            (int) $this->redis->exists($this->escalatedKey($ip)) > 0 &&
-            (int) $this->redis->exists($this->blockedKey($ip)) === 0
-        ) {
-            return $this->applyBlock($ip, 2, self::TIER2_TTL, deleteEscalated: true);
-        }
+        try {
+            // Tier-2 escalation: the IP was previously blocked (escalated key exists)
+            // but the block has since expired (blocked key is gone).
+            // Any new failure immediately triggers a 30-minute block.
+            if (
+                (int) $this->redis->exists($this->escalatedKey($ip)) > 0 &&
+                (int) $this->redis->exists($this->blockedKey($ip)) === 0
+            ) {
+                return $this->applyBlock($ip, 2, self::TIER2_TTL, deleteEscalated: true);
+            }
 
-        $count = (int) $this->redis->incr($this->attemptsKey($ip));
-        if ($count === 1) {
-            // Start the 15-minute window on the first failure
-            $this->redis->expire($this->attemptsKey($ip), self::TIER1_TTL);
-        }
+            $count = (int) $this->redis->incr($this->attemptsKey($ip));
+            if ($count === 1) {
+                // Start the 15-minute window on the first failure
+                $this->redis->expire($this->attemptsKey($ip), self::TIER1_TTL);
+            }
 
-        if ($count < self::WARN_AT) {
+            if ($count < self::WARN_AT) {
+                return ['action' => 'continue'];
+            }
+
+            if ($count === self::WARN_AT) {
+                // 4th attempt — warn the user that one attempt remains
+                return ['action' => 'warn'];
+            }
+
+            // 5th failure: tier-1 block + plant the escalation marker
+            $this->redis->setex($this->escalatedKey($ip), self::ESCALATED_TTL, '1');
+
+            return $this->applyBlock($ip, 1, self::TIER1_TTL, deleteEscalated: false);
+        } catch (ConnectionException|\Exception) {
             return ['action' => 'continue'];
         }
-
-        if ($count === self::WARN_AT) {
-            // 4th attempt — warn the user that one attempt remains
-            return ['action' => 'warn'];
-        }
-
-        // 5th failure: tier-1 block + plant the escalation marker
-        $this->redis->setex($this->escalatedKey($ip), self::ESCALATED_TTL, '1');
-
-        return $this->applyBlock($ip, 1, self::TIER1_TTL, deleteEscalated: false);
     }
 
     /**
@@ -105,7 +115,11 @@ class LoginAttemptManager
      */
     public function onSuccess(string $ip): void
     {
-        $this->redis->del([$this->attemptsKey($ip)]);
+        try {
+            $this->redis->del([$this->attemptsKey($ip)]);
+        } catch (ConnectionException|\Exception) {
+            // Redis unavailable — no-op, rate limiting is degraded
+        }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
