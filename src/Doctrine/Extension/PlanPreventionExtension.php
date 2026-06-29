@@ -38,8 +38,18 @@ class PlanPreventionExtension implements QueryCollectionExtensionInterface
             return;
         }
 
+        $root = $queryBuilder->getRootAliases()[0];
+
+        if ($this->security->isGranted('ROLE_CHEF_PROJET')) {
+            $queryBuilder
+                ->join(sprintf('%s.chefProjet', $root), 'pp_chef')
+                ->andWhere('pp_chef.email = :pp_chef_email')
+                ->setParameter('pp_chef_email', $user->getUserIdentifier());
+
+            return;
+        }
+
         if ($this->security->isGranted('ROLE_PRESTATAIRE')) {
-            $root = $queryBuilder->getRootAliases()[0];
             $queryBuilder
                 ->join(sprintf('%s.createdBy', $root), 'pp_user')
                 ->andWhere('pp_user.email = :pp_current_user')

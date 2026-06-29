@@ -14,10 +14,11 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class PlanPreventionVoter extends Voter
 {
-    public const VIEW   = 'PLAN_PREVENTION_VIEW';
-    public const CREATE = 'PLAN_PREVENTION_CREATE';
-    public const EDIT   = 'PLAN_PREVENTION_EDIT';
-    public const SUBMIT = 'PLAN_PREVENTION_SUBMIT';
+    public const VIEW    = 'PLAN_PREVENTION_VIEW';
+    public const CREATE  = 'PLAN_PREVENTION_CREATE';
+    public const EDIT    = 'PLAN_PREVENTION_EDIT';
+    public const SUBMIT  = 'PLAN_PREVENTION_SUBMIT';
+    public const EXAMINE = 'PLAN_PREVENTION_EXAMINE';
 
     private const MENU_ROUTE = '/plans-prevention';
     private const ACTION_MAP = [
@@ -30,7 +31,7 @@ class PlanPreventionVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE], true)) {
             return false;
         }
 
@@ -50,12 +51,21 @@ class PlanPreventionVoter extends Voter
             return $this->voteOnSubmit($subject, $roles, $user);
         }
 
+        if ($attribute === self::EXAMINE) {
+            return $this->voteOnExamine($subject, $roles, $user);
+        }
+
         if (!$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, self::ACTION_MAP[$attribute])) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if ($attribute === self::EDIT && in_array('ROLE_CHEF_PROJET', $roles, true)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
         if ($attribute === self::VIEW && $subject instanceof PlanPrevention) {
             $this->checkOwnershipForPrestataire($subject, $roles, $user);
+            $this->checkOwnershipForChefProjet($subject, $roles, $user);
         }
 
         if ($attribute === self::EDIT && $subject instanceof PlanPrevention) {
@@ -81,6 +91,22 @@ class PlanPreventionVoter extends Voter
         return true;
     }
 
+    private function voteOnExamine(mixed $subject, array $roles, User $user): bool
+    {
+        if (!in_array('ROLE_CHEF_PROJET', $roles, true)) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        $this->checkOwnershipForChefProjet($subject, $roles, $user);
+        $this->checkStatutForExamine($subject);
+
+        return true;
+    }
+
     private function checkOwnershipForPrestataire(PlanPrevention $plan, array $roles, User $user): void
     {
         if (!in_array('ROLE_PRESTATAIRE', $roles, true)) {
@@ -98,10 +124,30 @@ class PlanPreventionVoter extends Voter
         }
     }
 
+    private function checkOwnershipForChefProjet(PlanPrevention $plan, array $roles, User $user): void
+    {
+        if (!in_array('ROLE_CHEF_PROJET', $roles, true)) {
+            return;
+        }
+
+        if ($plan->getChefProjet()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+    }
+
     private function checkBrouillonStatut(PlanPrevention $plan): void
     {
         if ($plan->getStatut() !== StatutPlanPrevention::BROUILLON) {
             throw new AccessDeniedException('plan_prevention.statut_not_brouillon');
+        }
+    }
+
+    private function checkStatutForExamine(PlanPrevention $plan): void
+    {
+        $statuts = [StatutPlanPrevention::SOUMIS, StatutPlanPrevention::EN_COURS_DE_VALIDATION];
+
+        if (!in_array($plan->getStatut(), $statuts, true)) {
+            throw new AccessDeniedException('plan_prevention.statut_invalide_pour_examen');
         }
     }
 }

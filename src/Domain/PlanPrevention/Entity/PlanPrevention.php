@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Api\Processor\KmzImportProcessor;
 use App\Api\Processor\PlanPreventionCreateProcessor;
+use App\Api\Processor\PlanPreventionExaminerProcessor;
 use App\Api\Processor\PlanPreventionSoumettreProcessor;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\PlanPrevention\Repository\PlanPreventionRepository;
@@ -53,6 +54,14 @@ use Symfony\Component\Validator\Constraints as Assert;
             security: "is_granted('PLAN_PREVENTION_SUBMIT', object)",
             processor: PlanPreventionSoumettreProcessor::class,
             name: 'plan_prevention_soumettre',
+        ),
+        new Post(
+            uriTemplate: '/plans-prevention/{id}/examiner',
+            read: true,
+            deserialize: false,
+            security: "is_granted('PLAN_PREVENTION_EXAMINE', object)",
+            processor: PlanPreventionExaminerProcessor::class,
+            name: 'plan_prevention_examiner',
         ),
         new Post(
             uriTemplate: '/plans-prevention/{id}/import-kmz',
@@ -115,6 +124,11 @@ class PlanPrevention
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['plan_prevention:read'])]
     private ?User $createdBy = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
+    private ?User $chefProjet = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['plan_prevention:read'])]
@@ -254,6 +268,18 @@ class PlanPrevention
     public function setCreatedBy(?User $createdBy): static
     {
         $this->createdBy = $createdBy;
+
+        return $this;
+    }
+
+    public function getChefProjet(): ?User
+    {
+        return $this->chefProjet;
+    }
+
+    public function setChefProjet(?User $chefProjet): static
+    {
+        $this->chefProjet = $chefProjet;
 
         return $this;
     }
