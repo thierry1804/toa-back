@@ -16,6 +16,7 @@ use App\Api\Processor\UserPasswordHasherProcessor;
 use App\Api\Provider\PrestataireProvider;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Domain\User\Validator\EntrepriseNameCoherence;
 use App\Domain\User\Validator\UniqueEmail;
 
 #[ApiResource(
@@ -39,6 +40,7 @@ use App\Domain\User\Validator\UniqueEmail;
 #[ORM\Table(name: '`user`')]
 #[ORM\HasLifecycleCallbacks]
 #[UniqueEmail]
+#[EntrepriseNameCoherence]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -85,6 +87,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['user:read'])]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $entrepriseName = null;
 
     public function getId(): ?int
     {
@@ -227,6 +233,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    public function getEntrepriseName(): ?string
+    {
+        return $this->entrepriseName;
+    }
+
+    public function setEntrepriseName(?string $entrepriseName): static
+    {
+        $this->entrepriseName = $entrepriseName;
 
         return $this;
     }
