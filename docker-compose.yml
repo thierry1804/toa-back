@@ -35,6 +35,17 @@ services:
         networks:
             - toa_net
         depends_on: [php, redis]
+        environment:
+            DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
+            REDIS_URL: redis://redis:6379
+            JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+            JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
+            MERCURE_URL: http://mercure:3001/.well-known/mercure
+            MERCURE_JWT_SECRET: mercure_secret
+            MINIO_ENDPOINT: http://minio:9000
+            MINIO_KEY: minioadmin
+            MINIO_SECRET: minioadmin
 
     worker_pdf:
         build: ./docker/php
@@ -45,6 +56,17 @@ services:
         networks:
             - toa_net
         depends_on: [php, redis]
+        environment:
+            DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
+            REDIS_URL: redis://redis:6379
+            JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+            JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
+            MERCURE_URL: http://mercure:3001/.well-known/mercure
+            MERCURE_JWT_SECRET: mercure_secret
+            MINIO_ENDPOINT: http://minio:9000
+            MINIO_KEY: minioadmin
+            MINIO_SECRET: minioadmin
 
     scheduler:
         build: ./docker/php
@@ -54,6 +76,17 @@ services:
             - .:/var/www/toa-api
         networks:
             - toa_net
+        environment:
+            DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
+            REDIS_URL: redis://redis:6379
+            JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
+            JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
+            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
+            MERCURE_URL: http://mercure:3001/.well-known/mercure
+            MERCURE_JWT_SECRET: mercure_secret
+            MINIO_ENDPOINT: http://minio:9000
+            MINIO_KEY: minioadmin
+            MINIO_SECRET: minioadmin
 
     nginx:
         image: nginx:alpine

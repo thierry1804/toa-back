@@ -1,0 +1,7 @@
+framework:
+    messenger:
+        transports:
+            notifications:
+                dsn: 'doctrine://default?queue_name=notifications'
+            pdf_generation:
+                dsn: 'doctrine://default?queue_name=pdf_generation'
