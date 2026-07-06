@@ -12,7 +12,13 @@ use ApiPlatform\Metadata\Post;
 use App\Api\Processor\KmzImportProcessor;
 use App\Api\Processor\PlanPreventionCreateProcessor;
 use App\Api\Processor\PlanPreventionExaminerProcessor;
+use App\Api\Processor\PlanPreventionRefuserProcessor;
+use App\Api\Processor\PlanPreventionResoumettreProcessor;
 use App\Api\Processor\PlanPreventionSoumettreProcessor;
+use App\Api\Processor\PlanPreventionValiderProcessor;
+use App\Domain\PlanPrevention\Entity\DecisionHsePlanPrevention;
+use App\Domain\PlanPrevention\Entity\ExamenPlanPrevention;
+use App\Domain\PlanPrevention\Entity\VersionPlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\PlanPrevention\Repository\PlanPreventionRepository;
 use App\Domain\User\Entity\User;
@@ -62,6 +68,30 @@ use Symfony\Component\Validator\Constraints as Assert;
             security: "is_granted('PLAN_PREVENTION_EXAMINE', object)",
             processor: PlanPreventionExaminerProcessor::class,
             name: 'plan_prevention_examiner',
+        ),
+        new Post(
+            uriTemplate: '/plans-prevention/{id}/valider',
+            read: true,
+            deserialize: false,
+            security: "is_granted('PLAN_PREVENTION_VALIDER_HSE', object)",
+            processor: PlanPreventionValiderProcessor::class,
+            name: 'plan_prevention_valider',
+        ),
+        new Post(
+            uriTemplate: '/plans-prevention/{id}/refuser',
+            read: true,
+            deserialize: false,
+            security: "is_granted('PLAN_PREVENTION_REFUSER_HSE', object)",
+            processor: PlanPreventionRefuserProcessor::class,
+            name: 'plan_prevention_refuser',
+        ),
+        new Post(
+            uriTemplate: '/plans-prevention/{id}/resoumettre',
+            read: true,
+            deserialize: false,
+            security: "is_granted('PLAN_PREVENTION_RESOUMETTRE', object)",
+            processor: PlanPreventionResoumettreProcessor::class,
+            name: 'plan_prevention_resoumettre',
         ),
         new Post(
             uriTemplate: '/plans-prevention/{id}/import-kmz',
@@ -164,11 +194,44 @@ class PlanPrevention
     #[Groups(['plan_prevention:read'])]
     private Collection $sites;
 
+    #[ORM\OneToMany(
+        targetEntity: ExamenPlanPrevention::class,
+        mappedBy: 'planPrevention',
+        cascade: ['remove'],
+        fetch: 'EXTRA_LAZY',
+        orphanRemoval: true,
+    )]
+    #[ORM\OrderBy(['examineAt' => 'ASC'])]
+    #[Groups(['plan_prevention:read'])]
+    private Collection $examens;
+
+    #[ORM\OneToMany(
+        targetEntity: DecisionHsePlanPrevention::class,
+        mappedBy: 'planPrevention',
+        fetch: 'EXTRA_LAZY',
+    )]
+    #[Groups(['plan_prevention:read'])]
+    private Collection $decisionsHse;
+
+    #[ORM\OneToMany(
+        targetEntity: VersionPlanPrevention::class,
+        mappedBy: 'planPrevention',
+        cascade: ['remove'],
+        fetch: 'EXTRA_LAZY',
+        orphanRemoval: false,
+    )]
+    #[ORM\OrderBy(['numeroVersion' => 'ASC'])]
+    #[Groups(['plan_prevention:read'])]
+    private Collection $versions;
+
     public function __construct()
     {
-        $this->risques   = new ArrayCollection();
-        $this->documents = new ArrayCollection();
-        $this->sites     = new ArrayCollection();
+        $this->risques       = new ArrayCollection();
+        $this->documents     = new ArrayCollection();
+        $this->sites         = new ArrayCollection();
+        $this->examens       = new ArrayCollection();
+        $this->decisionsHse  = new ArrayCollection();
+        $this->versions      = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
@@ -332,6 +395,21 @@ class PlanPrevention
         }
 
         return $this;
+    }
+
+    public function getExamens(): Collection
+    {
+        return $this->examens;
+    }
+
+    public function getDecisionsHse(): Collection
+    {
+        return $this->decisionsHse;
+    }
+
+    public function getVersions(): Collection
+    {
+        return $this->versions;
     }
 
     #[ORM\PrePersist]

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\PlanPrevention\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Link;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Api\Processor\RisquePreventionProcessor;
 use Doctrine\DBAL\Types\Types;
@@ -32,6 +34,30 @@ use Symfony\Component\Validator\Constraints as Assert;
             security: "is_granted('PLAN_PREVENTION_EDIT')",
             processor: RisquePreventionProcessor::class,
             name: 'risque_prevention_create',
+        ),
+        new Patch(
+            uriTemplate: '/plans-prevention/{planPreventionId}/risques/{id}',
+            uriVariables: [
+                'planPreventionId' => new Link(
+                    fromClass: PlanPrevention::class,
+                    toProperty: 'planPrevention',
+                ),
+                'id' => new Link(fromClass: RisquePrevention::class),
+            ],
+            security: "is_granted('PLAN_PREVENTION_EDIT', object.getPlanPrevention())",
+            name: 'risque_prevention_update',
+        ),
+        new Delete(
+            uriTemplate: '/plans-prevention/{planPreventionId}/risques/{id}',
+            uriVariables: [
+                'planPreventionId' => new Link(
+                    fromClass: PlanPrevention::class,
+                    toProperty: 'planPrevention',
+                ),
+                'id' => new Link(fromClass: RisquePrevention::class),
+            ],
+            security: "is_granted('PLAN_PREVENTION_EDIT', object.getPlanPrevention())",
+            name: 'risque_prevention_delete',
         ),
     ],
     normalizationContext: ['groups' => ['risque_prevention:read']],

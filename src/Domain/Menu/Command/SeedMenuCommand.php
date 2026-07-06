@@ -51,6 +51,13 @@ class SeedMenuCommand extends Command
             'icon' => 'Shield',
             'route' => '/prevention',
             'position' => 3,
+            'roles' => [
+                'ROLE_SUPER_ADMIN'  => ['view' => true,  'create' => true,  'edit' => true,  'delete' => true],
+                'ROLE_ADMIN'        => ['view' => true,  'create' => true,  'edit' => true,  'delete' => true],
+                'ROLE_HSE'          => ['view' => true,  'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_CHEF_PROJET'  => ['view' => true,  'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_PRESTATAIRE'  => ['view' => true,  'create' => true,  'edit' => false, 'delete' => false],
+            ],
         ],
         [
             'name' => 'Permis de Travail',

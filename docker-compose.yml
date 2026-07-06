@@ -20,6 +20,7 @@ services:
             MINIO_ENDPOINT: http://minio:9000
             MINIO_KEY: minioadmin
             MINIO_SECRET: minioadmin
+            MINIO_BUCKET: toa
         healthcheck:
             test: ["CMD", "php-fpm", "-t"]
             interval: 10s
@@ -46,6 +47,7 @@ services:
             MINIO_ENDPOINT: http://minio:9000
             MINIO_KEY: minioadmin
             MINIO_SECRET: minioadmin
+            MINIO_BUCKET: toa
 
     worker_pdf:
         build: ./docker/php
@@ -67,6 +69,7 @@ services:
             MINIO_ENDPOINT: http://minio:9000
             MINIO_KEY: minioadmin
             MINIO_SECRET: minioadmin
+            MINIO_BUCKET: toa
 
     scheduler:
         build: ./docker/php
@@ -87,6 +90,7 @@ services:
             MINIO_ENDPOINT: http://minio:9000
             MINIO_KEY: minioadmin
             MINIO_SECRET: minioadmin
+            MINIO_BUCKET: toa
 
     nginx:
         image: nginx:alpine

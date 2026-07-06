@@ -9,6 +9,7 @@ use App\Domain\User\Entity\User;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: ExamenPlanPreventionRepository::class)]
@@ -19,20 +20,24 @@ class ExamenPlanPrevention
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    #[Groups(['plan_prevention:read'])]
     private ?Uuid $id = null;
 
-    #[ORM\ManyToOne(targetEntity: PlanPrevention::class)]
+    #[ORM\ManyToOne(targetEntity: PlanPrevention::class, inversedBy: 'examens')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?PlanPrevention $planPrevention = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['plan_prevention:read'])]
     private ?User $examinePar = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['plan_prevention:read'])]
     private ?\DateTimeImmutable $examineAt = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['plan_prevention:read'])]
     private ?string $commentaire = null;
 
     public function getId(): ?Uuid

@@ -79,6 +79,19 @@ final class DocumentUploadProcessor implements ProcessorInterface
             $extension,
         );
 
+        // Remove existing document of same type (file + DB record)
+        foreach ($plan->getDocuments() as $existing) {
+            if ($existing->getType() === $type) {
+                try {
+                    $this->storage->delete($existing->getFilePath());
+                } catch (\Throwable) {
+                    // Ignore missing file in storage
+                }
+                $this->entityManager->remove($existing);
+            }
+        }
+        $this->entityManager->flush();
+
         $this->storage->write($filePath, file_get_contents($file->getPathname()));
 
         $document = new DocumentPrevention();

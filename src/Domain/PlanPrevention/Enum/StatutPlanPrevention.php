@@ -14,4 +14,6 @@ enum StatutPlanPrevention: string
     case ENVOYE                 = 'ENVOYE';
     case EN_COURS_DE_VALIDATION = 'EN_COURS_DE_VALIDATION';
     case EXAMINE                = 'EXAMINE';
+    case VALIDE_HSE             = 'VALIDE_HSE';
+    case REFUSE_HSE             = 'REFUSE_HSE';
 }

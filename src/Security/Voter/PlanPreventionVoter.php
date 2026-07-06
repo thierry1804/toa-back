@@ -6,6 +6,7 @@ namespace App\Security\Voter;
 
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
+use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\User\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -14,11 +15,16 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class PlanPreventionVoter extends Voter
 {
-    public const VIEW    = 'PLAN_PREVENTION_VIEW';
-    public const CREATE  = 'PLAN_PREVENTION_CREATE';
-    public const EDIT    = 'PLAN_PREVENTION_EDIT';
-    public const SUBMIT  = 'PLAN_PREVENTION_SUBMIT';
-    public const EXAMINE = 'PLAN_PREVENTION_EXAMINE';
+    public const VIEW        = 'PLAN_PREVENTION_VIEW';
+    public const CREATE      = 'PLAN_PREVENTION_CREATE';
+    public const EDIT        = 'PLAN_PREVENTION_EDIT';
+    public const SUBMIT      = 'PLAN_PREVENTION_SUBMIT';
+    public const EXAMINE     = 'PLAN_PREVENTION_EXAMINE';
+    public const VALIDER_HSE = 'PLAN_PREVENTION_VALIDER_HSE';
+    public const REFUSER_HSE = 'PLAN_PREVENTION_REFUSER_HSE';
+    public const RESOUMETTRE = 'PLAN_PREVENTION_RESOUMETTRE';
+
+    private const ADMIN_ROLES = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'];
 
     private const MENU_ROUTE = '/plans-prevention';
     private const ACTION_MAP = [
@@ -31,7 +37,7 @@ class PlanPreventionVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE], true)) {
             return false;
         }
 
@@ -47,12 +53,24 @@ class PlanPreventionVoter extends Voter
 
         $roles = $user->getRoles();
 
+        if ($attribute === self::RESOUMETTRE) {
+            return $this->voteOnResoumettre($subject, $roles, $user);
+        }
+
         if ($attribute === self::SUBMIT) {
             return $this->voteOnSubmit($subject, $roles, $user);
         }
 
         if ($attribute === self::EXAMINE) {
             return $this->voteOnExamine($subject, $roles, $user);
+        }
+
+        if ($attribute === self::VALIDER_HSE) {
+            return $this->voteOnValiderHse($subject, $roles);
+        }
+
+        if ($attribute === self::REFUSER_HSE) {
+            return $this->voteOnRefuserHse($subject, $roles);
         }
 
         if (!$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, self::ACTION_MAP[$attribute])) {
@@ -70,6 +88,35 @@ class PlanPreventionVoter extends Voter
 
         if ($attribute === self::EDIT && $subject instanceof PlanPrevention) {
             $this->checkBrouillonStatut($subject);
+            $this->checkOwnershipForPrestataire($subject, $roles, $user);
+        }
+
+        return true;
+    }
+
+    private function voteOnResoumettre(mixed $subject, array $roles, User $user): bool
+    {
+        if (!in_array('ROLE_PRESTATAIRE', $roles, true)) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        $this->checkOwnershipForPrestataire($subject, $roles, $user);
+        $this->checkBrouillonStatut($subject);
+
+        $hasRefus = false;
+        foreach ($subject->getDecisionsHse() as $decision) {
+            if ($decision->getDecision() === DecisionHse::REFUSE) {
+                $hasRefus = true;
+                break;
+            }
+        }
+
+        if (!$hasRefus) {
+            throw new AccessDeniedException('plan_prevention.no_previous_refus');
         }
 
         return true;
@@ -93,7 +140,10 @@ class PlanPreventionVoter extends Voter
 
     private function voteOnExamine(mixed $subject, array $roles, User $user): bool
     {
-        if (!in_array('ROLE_CHEF_PROJET', $roles, true)) {
+        $isAdmin = !empty(array_intersect(self::ADMIN_ROLES, $roles));
+        $isChefProjet = in_array('ROLE_CHEF_PROJET', $roles, true);
+
+        if (!$isAdmin && !$isChefProjet) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
@@ -101,7 +151,10 @@ class PlanPreventionVoter extends Voter
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
-        $this->checkOwnershipForChefProjet($subject, $roles, $user);
+        if (!$isAdmin) {
+            $this->checkOwnershipForChefProjet($subject, $roles, $user);
+        }
+
         $this->checkStatutForExamine($subject);
 
         return true;
@@ -148,6 +201,47 @@ class PlanPreventionVoter extends Voter
 
         if (!in_array($plan->getStatut(), $statuts, true)) {
             throw new AccessDeniedException('plan_prevention.statut_invalide_pour_examen');
+        }
+    }
+
+    private function voteOnValiderHse(mixed $subject, array $roles): bool
+    {
+        $isAdmin = !empty(array_intersect(self::ADMIN_ROLES, $roles));
+
+        if (!$isAdmin && !in_array('ROLE_HSE', $roles, true)) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        $this->checkStatutForHse($subject);
+
+        return true;
+    }
+
+    private function voteOnRefuserHse(mixed $subject, array $roles): bool
+    {
+        $isAdmin = !empty(array_intersect(self::ADMIN_ROLES, $roles));
+
+        if (!$isAdmin && !in_array('ROLE_HSE', $roles, true)) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        $this->checkStatutForHse($subject);
+
+        return true;
+    }
+
+    private function checkStatutForHse(PlanPrevention $plan): void
+    {
+        if ($plan->getStatut() !== StatutPlanPrevention::EXAMINE) {
+            throw new AccessDeniedException('plan_prevention.statut_invalide_pour_decision_hse');
         }
     }
 }
