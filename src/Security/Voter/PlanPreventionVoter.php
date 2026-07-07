@@ -23,6 +23,7 @@ class PlanPreventionVoter extends Voter
     public const VALIDER_HSE = 'PLAN_PREVENTION_VALIDER_HSE';
     public const REFUSER_HSE = 'PLAN_PREVENTION_REFUSER_HSE';
     public const RESOUMETTRE = 'PLAN_PREVENTION_RESOUMETTRE';
+    public const IMPORT_KMZ  = 'PLAN_PREVENTION_IMPORT_KMZ';
 
     private const ADMIN_ROLES = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'];
 
@@ -37,7 +38,7 @@ class PlanPreventionVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE, self::IMPORT_KMZ], true)) {
             return false;
         }
 
@@ -52,6 +53,10 @@ class PlanPreventionVoter extends Voter
         }
 
         $roles = $user->getRoles();
+
+        if ($attribute === self::IMPORT_KMZ) {
+            return $this->voteOnImportKmz($subject, $roles, $user);
+        }
 
         if ($attribute === self::RESOUMETTRE) {
             return $this->voteOnResoumettre($subject, $roles, $user);
@@ -89,6 +94,26 @@ class PlanPreventionVoter extends Voter
         if ($attribute === self::EDIT && $subject instanceof PlanPrevention) {
             $this->checkBrouillonStatut($subject);
             $this->checkOwnershipForPrestataire($subject, $roles, $user);
+        }
+
+        return true;
+    }
+
+    private function voteOnImportKmz(mixed $subject, array $roles, User $user): bool
+    {
+        $isAdmin      = !empty(array_intersect(self::ADMIN_ROLES, $roles));
+        $isChefProjet = in_array('ROLE_CHEF_PROJET', $roles, true);
+
+        if (!$isAdmin && !$isChefProjet) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$isAdmin) {
+            $this->checkOwnershipForChefProjet($subject, $roles, $user);
         }
 
         return true;

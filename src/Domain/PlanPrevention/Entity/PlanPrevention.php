@@ -97,7 +97,7 @@ use Symfony\Component\Validator\Constraints as Assert;
             uriTemplate: '/plans-prevention/{id}/import-kmz',
             read: true,
             deserialize: false,
-            security: "is_granted('PLAN_PREVENTION_EDIT', object)",
+            security: "is_granted('PLAN_PREVENTION_IMPORT_KMZ', object)",
             processor: KmzImportProcessor::class,
             name: 'plan_prevention_import_kmz',
         ),
