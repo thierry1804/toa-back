@@ -2,6 +2,8 @@
 
 namespace App\Domain\ActivityPlanning\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
@@ -22,6 +24,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: '`activity_planning`')]
 #[ORM\HasLifecycleCallbacks]
 #[CoherentDates]
+#[ApiFilter(OrderFilter::class, properties: ['id', 'createdAt', 'expectedStartDate', 'status'])]
 #[ApiResource(
     operations: [
         new GetCollection(security: "is_granted('ACTIVITY_PLANNING_VIEW')"),
@@ -47,6 +50,7 @@ class ActivityPlanning
     public const STATUS_EN_COURS = 'en_cours';
     public const STATUS_VALIDE = 'valide';
     public const STATUS_ANNULE = 'annule';
+    public const STATUS_STAND_BY = 'stand_by';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -100,9 +104,9 @@ class ActivityPlanning
     #[Assert\NotNull(message: 'region_required')]
     private ?string $region = null;
 
-    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotNull(message: 'theoretical_start_date_required')]
+    // Kept in DB for historical data but no longer required or exposed in write operations.
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['activity_planning:read'])]
     private ?\DateTimeImmutable $theoreticalStartDate = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
@@ -115,9 +119,19 @@ class ActivityPlanning
     #[Assert\NotNull(message: 'expected_end_date_required')]
     private ?\DateTimeImmutable $expectedEndDate = null;
 
+    // Auto-set on status transition: en_cours → actualStartDate, valide/annule → actualEndDate.
+    // Read-only via API — never in activity_planning:write group.
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['activity_planning:read'])]
+    private ?\DateTimeImmutable $actualStartDate = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['activity_planning:read'])]
+    private ?\DateTimeImmutable $actualEndDate = null;
+
     #[ORM\Column(length: 50)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    private string $status = self::STATUS_BROUILLON;
+    private string $status = self::STATUS_PLANIFIE;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
@@ -255,9 +269,33 @@ class ActivityPlanning
         return $this->theoreticalStartDate;
     }
 
-    public function setTheoreticalStartDate(\DateTimeImmutable $theoreticalStartDate): static
+    public function setTheoreticalStartDate(?\DateTimeImmutable $theoreticalStartDate): static
     {
         $this->theoreticalStartDate = $theoreticalStartDate;
+
+        return $this;
+    }
+
+    public function getActualStartDate(): ?\DateTimeImmutable
+    {
+        return $this->actualStartDate;
+    }
+
+    public function setActualStartDate(?\DateTimeImmutable $actualStartDate): static
+    {
+        $this->actualStartDate = $actualStartDate;
+
+        return $this;
+    }
+
+    public function getActualEndDate(): ?\DateTimeImmutable
+    {
+        return $this->actualEndDate;
+    }
+
+    public function setActualEndDate(?\DateTimeImmutable $actualEndDate): static
+    {
+        $this->actualEndDate = $actualEndDate;
 
         return $this;
     }
@@ -359,7 +397,7 @@ class ActivityPlanning
         if ($this->isLocked()) {
             $fields = array_merge($fields, [
                 'process', 'siteCode', 'siteNumber', 'siteName', 'region',
-                'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+                'expectedStartDate', 'expectedEndDate',
             ]);
         }
 
@@ -387,6 +425,8 @@ class ActivityPlanning
             'theoreticalStartDate' => $this->theoreticalStartDate?->format('c'),
             'expectedStartDate' => $this->expectedStartDate?->format('c'),
             'expectedEndDate' => $this->expectedEndDate?->format('c'),
+            'actualStartDate' => $this->actualStartDate?->format('c'),
+            'actualEndDate' => $this->actualEndDate?->format('c'),
             'status' => $this->status,
             'permitReference' => $this->permitReference,
             'permitValidated' => $this->permitValidated,

@@ -18,13 +18,13 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 {
     private const DATE_FIELDS = [
-        'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+        'expectedStartDate', 'expectedEndDate',
     ];
 
     private const ALL_FIELDS = [
         'process', 'provider', 'providerEmail', 'projectDescription',
         'siteCode', 'siteNumber', 'siteName', 'region',
-        'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+        'expectedStartDate', 'expectedEndDate',
         'status', 'permitReference', 'permitValidated',
     ];
 
@@ -56,7 +56,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 
         // Apply only fields that differ from the original entity data.
         // This prevents a fresh deserialized $data from overwriting fields
-        // with PHP default values (e.g. status → 'brouillon', permitValidated → false)
+        // with PHP default values (e.g. status → 'planifie', permitValidated → false)
         // when those fields were not present in the PATCH request.
         foreach (self::ALL_FIELDS as $field) {
             $setter = 'set' . ucfirst($field);
@@ -80,6 +80,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
             }
         }
 
+        $this->applyActualDates($existing, $originalData);
         $this->checkLockedFields($existing, $originalData);
         $this->checkDateConflicts($existing, $originalData);
 
@@ -90,6 +91,29 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         $this->dispatchNotification($existing, $originalData);
 
         return $result;
+    }
+
+    private function applyActualDates(ActivityPlanning $planning, array $originalData): void
+    {
+        $previousStatus = $originalData['status'] ?? null;
+        $newStatus = $planning->getStatus();
+
+        if ($previousStatus === $newStatus) {
+            return;
+        }
+
+        $now = new \DateTimeImmutable();
+
+        if ($newStatus === ActivityPlanning::STATUS_EN_COURS && $planning->getActualStartDate() === null) {
+            $planning->setActualStartDate($now);
+        }
+
+        if (
+            in_array($newStatus, [ActivityPlanning::STATUS_VALIDE, ActivityPlanning::STATUS_ANNULE], true)
+            && $planning->getActualEndDate() === null
+        ) {
+            $planning->setActualEndDate($now);
+        }
     }
 
     private function checkLockedFields(ActivityPlanning $planning, array $originalData): void
@@ -113,7 +137,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         if ($wasLocked) {
             $lockedFields = [
                 'process', 'siteCode', 'siteNumber', 'siteName', 'region',
-                'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+                'expectedStartDate', 'expectedEndDate',
             ];
         }
 
@@ -196,7 +220,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         $trackedFields = [
             'process', 'provider', 'projectDescription',
             'siteCode', 'siteNumber', 'siteName', 'region',
-            'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
+            'expectedStartDate', 'expectedEndDate',
             'status',
         ];
 
