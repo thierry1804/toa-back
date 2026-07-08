@@ -97,6 +97,12 @@ class SeedMenuCommand extends Command
             'route' => '/menu-manager',
             'position' => 7,
         ],
+        [
+            'name'     => 'Gestion des rôles',
+            'icon'     => 'ShieldCheck',
+            'route'    => '/roles',
+            'position' => 8,
+        ],
     ];
 
     public function __construct(

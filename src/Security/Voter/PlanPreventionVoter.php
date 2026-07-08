@@ -25,8 +25,6 @@ class PlanPreventionVoter extends Voter
     public const RESOUMETTRE = 'PLAN_PREVENTION_RESOUMETTRE';
     public const IMPORT_KMZ  = 'PLAN_PREVENTION_IMPORT_KMZ';
 
-    private const ADMIN_ROLES = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'];
-
     private const MENU_ROUTE = '/plans-prevention';
     private const ACTION_MAP = [
         self::VIEW   => 'VIEW',
@@ -82,13 +80,14 @@ class PlanPreventionVoter extends Voter
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
-        if ($attribute === self::EDIT && in_array('ROLE_CHEF_PROJET', $roles, true)) {
+        if ($attribute === self::EDIT && $this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'VIEW')
+            && !$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'EDIT')) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
         if ($attribute === self::VIEW && $subject instanceof PlanPrevention) {
             $this->checkOwnershipForPrestataire($subject, $roles, $user);
-            $this->checkOwnershipForChefProjet($subject, $roles, $user);
+            $this->checkOwnershipForRestrictedRole($subject, $roles, $user);
         }
 
         if ($attribute === self::EDIT && $subject instanceof PlanPrevention) {
@@ -101,10 +100,9 @@ class PlanPreventionVoter extends Voter
 
     private function voteOnImportKmz(mixed $subject, array $roles, User $user): bool
     {
-        $isAdmin      = !empty(array_intersect(self::ADMIN_ROLES, $roles));
-        $isChefProjet = in_array('ROLE_CHEF_PROJET', $roles, true);
+        $roleActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.import_kmz');
 
-        if (!$isAdmin && !$isChefProjet) {
+        if (empty($roleActions)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
@@ -112,8 +110,9 @@ class PlanPreventionVoter extends Voter
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
-        if (!$isAdmin) {
-            $this->checkOwnershipForChefProjet($subject, $roles, $user);
+        $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
+        if (empty($canBypass)) {
+            $this->checkOwnershipForChefProjet($subject, $user);
         }
 
         return true;
@@ -121,7 +120,9 @@ class PlanPreventionVoter extends Voter
 
     private function voteOnResoumettre(mixed $subject, array $roles, User $user): bool
     {
-        if (!in_array('ROLE_PRESTATAIRE', $roles, true)) {
+        $roleActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.resoumettre');
+
+        if (empty($roleActions)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
@@ -129,7 +130,11 @@ class PlanPreventionVoter extends Voter
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
-        $this->checkOwnershipForPrestataire($subject, $roles, $user);
+        $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
+        if (empty($canBypass)) {
+            $this->checkOwnershipForCreatedBy($subject, $user);
+        }
+
         $this->checkBrouillonStatut($subject);
 
         $hasRefus = false;
@@ -149,7 +154,9 @@ class PlanPreventionVoter extends Voter
 
     private function voteOnSubmit(mixed $subject, array $roles, User $user): bool
     {
-        if (!in_array('ROLE_PRESTATAIRE', $roles, true)) {
+        $roleActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.submit');
+
+        if (empty($roleActions)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
@@ -157,7 +164,11 @@ class PlanPreventionVoter extends Voter
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
-        $this->checkOwnershipForPrestataire($subject, $roles, $user);
+        $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
+        if (empty($canBypass)) {
+            $this->checkOwnershipForCreatedBy($subject, $user);
+        }
+
         $this->checkBrouillonStatut($subject);
 
         return true;
@@ -165,10 +176,9 @@ class PlanPreventionVoter extends Voter
 
     private function voteOnExamine(mixed $subject, array $roles, User $user): bool
     {
-        $isAdmin = !empty(array_intersect(self::ADMIN_ROLES, $roles));
-        $isChefProjet = in_array('ROLE_CHEF_PROJET', $roles, true);
+        $roleActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.examine');
 
-        if (!$isAdmin && !$isChefProjet) {
+        if (empty($roleActions)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
@@ -176,8 +186,9 @@ class PlanPreventionVoter extends Voter
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
-        if (!$isAdmin) {
-            $this->checkOwnershipForChefProjet($subject, $roles, $user);
+        $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
+        if (empty($canBypass)) {
+            $this->checkOwnershipForChefProjet($subject, $user);
         }
 
         $this->checkStatutForExamine($subject);
@@ -185,15 +196,52 @@ class PlanPreventionVoter extends Voter
         return true;
     }
 
+    private function voteOnValiderHse(mixed $subject, array $roles): bool
+    {
+        $roleActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.valider_hse');
+
+        if (empty($roleActions)) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        $this->checkStatutForHse($subject);
+
+        return true;
+    }
+
+    private function voteOnRefuserHse(mixed $subject, array $roles): bool
+    {
+        $roleActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.refuser_hse');
+
+        if (empty($roleActions)) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        $this->checkStatutForHse($subject);
+
+        return true;
+    }
+
     private function checkOwnershipForPrestataire(PlanPrevention $plan, array $roles, User $user): void
     {
-        if (!in_array('ROLE_PRESTATAIRE', $roles, true)) {
+        if (!$this->permissionChecker->hasAction($roles, 'plan_prevention.submit')) {
             return;
         }
 
-        if (in_array('ROLE_HSE', $roles, true)
-            || in_array('ROLE_ADMIN', $roles, true)
-            || in_array('ROLE_SUPER_ADMIN', $roles, true)) {
+        $canBypass = array_filter(
+            $this->permissionChecker->getRoleActions($roles, 'plan_prevention.submit'),
+            fn($ra) => $ra->isBypassOwnership()
+        );
+
+        if (!empty($canBypass)) {
             return;
         }
 
@@ -202,13 +250,33 @@ class PlanPreventionVoter extends Voter
         }
     }
 
-    private function checkOwnershipForChefProjet(PlanPrevention $plan, array $roles, User $user): void
+    private function checkOwnershipForRestrictedRole(PlanPrevention $plan, array $roles, User $user): void
     {
-        if (!in_array('ROLE_CHEF_PROJET', $roles, true)) {
+        $examineActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.examine');
+        if (empty($examineActions)) {
+            return;
+        }
+
+        $canBypass = array_filter($examineActions, fn($ra) => $ra->isBypassOwnership());
+        if (!empty($canBypass)) {
             return;
         }
 
         if ($plan->getChefProjet()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+    }
+
+    private function checkOwnershipForChefProjet(PlanPrevention $plan, User $user): void
+    {
+        if ($plan->getChefProjet()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+    }
+
+    private function checkOwnershipForCreatedBy(PlanPrevention $plan, User $user): void
+    {
+        if ($plan->getCreatedBy()?->getUserIdentifier() !== $user->getUserIdentifier()) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
     }
@@ -227,40 +295,6 @@ class PlanPreventionVoter extends Voter
         if (!in_array($plan->getStatut(), $statuts, true)) {
             throw new AccessDeniedException('plan_prevention.statut_invalide_pour_examen');
         }
-    }
-
-    private function voteOnValiderHse(mixed $subject, array $roles): bool
-    {
-        $isAdmin = !empty(array_intersect(self::ADMIN_ROLES, $roles));
-
-        if (!$isAdmin && !in_array('ROLE_HSE', $roles, true)) {
-            throw new AccessDeniedException('error.voter.access_denied');
-        }
-
-        if (!$subject instanceof PlanPrevention) {
-            throw new AccessDeniedException('error.voter.access_denied');
-        }
-
-        $this->checkStatutForHse($subject);
-
-        return true;
-    }
-
-    private function voteOnRefuserHse(mixed $subject, array $roles): bool
-    {
-        $isAdmin = !empty(array_intersect(self::ADMIN_ROLES, $roles));
-
-        if (!$isAdmin && !in_array('ROLE_HSE', $roles, true)) {
-            throw new AccessDeniedException('error.voter.access_denied');
-        }
-
-        if (!$subject instanceof PlanPrevention) {
-            throw new AccessDeniedException('error.voter.access_denied');
-        }
-
-        $this->checkStatutForHse($subject);
-
-        return true;
     }
 
     private function checkStatutForHse(PlanPrevention $plan): void
