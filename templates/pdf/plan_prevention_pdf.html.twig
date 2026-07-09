@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan de Prévention — {{ plan.reference }}</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #1a1a1a; background: #fff; }
+    @page { size: A4; margin: 20mm 15mm 20mm 15mm; }
+
+    /* ===== WATERMARK ===== */
+    .watermark {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      z-index: -1; pointer-events: none;
+    }
+    .watermark span {
+      font-size: 100pt; font-weight: 900; color: rgba(0, 150, 80, 0.07);
+      transform: rotate(-45deg); white-space: nowrap; letter-spacing: 8px;
+      text-transform: uppercase;
+    }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 3px solid #006633; padding-bottom: 10px; margin-bottom: 16px;
+    }
+    .logo-area { display: flex; align-items: center; gap: 10px; }
+    .logo-img {
+      height: 48px; width: auto;
+    }
+    .doc-title { text-align: right; }
+    .doc-title h1 { font-size: 13pt; font-weight: 900; color: #006633; text-transform: uppercase; }
+    .doc-title .subtitle { font-size: 8pt; color: #555; margin-top: 2px; }
+
+    /* ===== REFERENCE BANNER ===== */
+    .reference-banner {
+      background: #006633; color: #fff; padding: 10px 16px;
+      border-radius: 6px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .reference-banner .ref { font-size: 14pt; font-weight: 900; letter-spacing: 1px; }
+    .validation-stamp {
+      background: #fff; color: #006633; border: 2px solid #fff;
+      border-radius: 4px; padding: 4px 12px; font-size: 9pt; font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* ===== SECTIONS ===== */
+    .section { margin-bottom: 16px; }
+    .section-title {
+      background: #f0f7f0; border-left: 4px solid #006633;
+      padding: 5px 10px; font-size: 10pt; font-weight: 700; color: #006633;
+      margin-bottom: 8px; text-transform: uppercase;
+    }
+
+    /* ===== INFO GRID ===== */
+    .info-grid { display: table; width: 100%; border-collapse: collapse; }
+    .info-row { display: table-row; }
+    .info-label {
+      display: table-cell; width: 32%; background: #f5f5f5;
+      border: 1px solid #ddd; padding: 4px 8px; font-weight: 600; font-size: 9pt;
+      vertical-align: top;
+    }
+    .info-value {
+      display: table-cell; border: 1px solid #ddd; padding: 4px 8px;
+      font-size: 9pt; vertical-align: top;
+    }
+
+    /* ===== TABLES ===== */
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    th {
+      background: #006633; color: #fff; padding: 5px 6px;
+      text-align: left; font-size: 8.5pt; font-weight: 700;
+    }
+    td { border: 1px solid #ccc; padding: 4px 6px; vertical-align: top; }
+    tr:nth-child(even) td { background: #f9f9f9; }
+
+    /* ===== RISK MATRIX COLORS ===== */
+    .risk-low  { background-color: #d4edda !important; color: #155724; font-weight: 700; }
+    .risk-mid  { background-color: #fff3cd !important; color: #856404; font-weight: 700; }
+    .risk-high { background-color: #f8d7da !important; color: #721c24; font-weight: 700; }
+
+    /* ===== KMZ BADGE ===== */
+    .badge-kmz {
+      display: inline-block; background: #17a2b8; color: #fff;
+      border-radius: 3px; padding: 1px 6px; font-size: 7.5pt; font-weight: 700;
+    }
+    .badge-manual {
+      display: inline-block; background: #6c757d; color: #fff;
+      border-radius: 3px; padding: 1px 6px; font-size: 7.5pt; font-weight: 700;
+    }
+
+    /* ===== SIGNATURE BLOCK ===== */
+    .signature-block {
+      border: 1px solid #ccc; border-radius: 4px; padding: 10px 14px;
+      background: #f9fff9;
+    }
+    .signature-block .sig-label { font-size: 8pt; color: #555; margin-bottom: 2px; }
+    .signature-block .sig-hash {
+      font-family: monospace; font-size: 8pt; color: #333;
+      word-break: break-all; background: #eee; padding: 3px 6px; border-radius: 3px;
+    }
+    .sig-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
+    .sig-item { flex: 1; min-width: 160px; }
+
+    /* ===== HISTORY ENTRY ===== */
+    .history-entry {
+      border: 1px solid #ddd; border-radius: 4px; padding: 8px 12px; margin-bottom: 8px;
+    }
+    .history-entry .hist-header {
+      font-weight: 700; font-size: 9pt; color: #006633; margin-bottom: 4px;
+    }
+    .history-entry .hist-meta { font-size: 8pt; color: #555; }
+    .history-entry .hist-comment {
+      margin-top: 6px; font-size: 9pt; font-style: italic; color: #333;
+      border-left: 3px solid #ccc; padding-left: 8px;
+    }
+
+    /* ===== FOOTER ===== */
+    .page-footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      border-top: 1px solid #006633; padding: 4px 15mm;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 7.5pt; color: #555; background: #fff;
+    }
+    .footer-ref { font-weight: 700; color: #006633; }
+
+    /* ===== PAGE BREAK ===== */
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+  <!-- WATERMARK -->
+  <div class="watermark"><span>VALIDÉ</span></div>
+
+  <!-- FIXED FOOTER (every page) -->
+  <div class="page-footer">
+    <span class="footer-ref">{{ plan.reference }}</span>
+    <span>Plan de Prévention HSSES — CONFIDENTIEL</span>
+    <span>Généré le {{ generatedAt|date('d/m/Y à H:i') }}</span>
+  </div>
+
+  <!-- ===== EN-TÊTE ===== -->
+  <div class="page-header">
+    <div class="logo-area">
+      {% if logoBase64 %}
+        <img src="data:image/png;base64,{{ logoBase64 }}" alt="TOA" class="logo-img">
+      {% else %}
+        <div style="width:48px;height:48px;background:#006633;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14pt;">TOA</div>
+      {% endif %}
+      <div>
+        <div style="font-weight:900;font-size:11pt;color:#006633;">TowerCo of Africa</div>
+        <div style="font-size:8pt;color:#555;">Direction HSSES</div>
+      </div>
+    </div>
+    <div class="doc-title">
+      <h1>Plan de Prévention HSSES</h1>
+      <div class="subtitle">Document officiel — Usage interne</div>
+    </div>
+  </div>
+
+  <!-- ===== REFERENCE BANNER ===== -->
+  <div class="reference-banner">
+    <span class="ref">{{ plan.reference }}</span>
+    {% set lastValidation = null %}
+    {% for d in plan.decisionsHse %}
+      {% if d.decision.value == 'VALIDE' %}{% set lastValidation = d %}{% endif %}
+    {% endfor %}
+    {% if lastValidation %}
+      <span class="validation-stamp">✓ Validé le {{ lastValidation.decidedAt|date('d/m/Y') }}</span>
+    {% endif %}
+  </div>
+
+  <!-- ===== INFORMATIONS GÉNÉRALES ===== -->
+  <div class="section">
+    <div class="section-title">Informations générales</div>
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="info-label">Code site</div>
+        <div class="info-value">{{ plan.codeSite }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Localité</div>
+        <div class="info-value">{{ plan.localite }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Activité planifiée</div>
+        <div class="info-value" style="white-space:pre-wrap;">{{ plan.activitePlanifiee }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Date de début</div>
+        <div class="info-value">{{ plan.dateDebut|date('d/m/Y') }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Date de fin</div>
+        <div class="info-value">{{ plan.dateFin|date('d/m/Y') }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Créé par (Prestataire)</div>
+        <div class="info-value">{{ plan.createdBy.firstname }} {{ plan.createdBy.name }}</div>
+      </div>
+      {% if plan.chefProjet %}
+      <div class="info-row">
+        <div class="info-label">Chef de Projet</div>
+        <div class="info-value">{{ plan.chefProjet.firstname }} {{ plan.chefProjet.name }}</div>
+      </div>
+      {% endif %}
+      <div class="info-row">
+        <div class="info-label">Statut</div>
+        <div class="info-value" style="font-weight:700;color:#006633;">{{ plan.statut.value }}</div>
+      </div>
+      {% set currentVersion = null %}
+      {% for v in plan.versions %}{% set currentVersion = v %}{% endfor %}
+      {% if currentVersion %}
+      <div class="info-row">
+        <div class="info-label">Version</div>
+        <div class="info-value">v{{ currentVersion.numeroVersion }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== SITES D'INTERVENTION ===== -->
+  {% if plan.sites|length > 0 %}
+  <div class="section">
+    <div class="section-title">Sites d'intervention ({{ plan.sites|length }})</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nom du site</th>
+          <th>Latitude</th>
+          <th>Longitude</th>
+          <th>Adresse</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for site in plan.sites %}
+        <tr>
+          <td style="font-weight:600;">{{ site.nom }}</td>
+          <td>{{ site.latitude|number_format(6) }}</td>
+          <td>{{ site.longitude|number_format(6) }}</td>
+          <td>{{ site.adresse ?? '—' }}</td>
+          <td>
+            {% if site.sourceKmz %}
+              <span class="badge-kmz">KMZ</span>
+            {% else %}
+              <span class="badge-manual">Manuel</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- ===== MATRICE DES RISQUES ===== -->
+  {% if plan.risques|length > 0 %}
+  <div class="section page-break">
+    <div class="section-title">Matrice des risques ({{ plan.risques|length }})</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30%;">Description du risque</th>
+          <th style="width:8%;text-align:center;">Gravité</th>
+          <th style="width:10%;text-align:center;">Probabilité</th>
+          <th style="width:10%;text-align:center;">Niveau risque</th>
+          <th style="width:42%;">Mesures préventives</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for risque in plan.risques %}
+          {% if risque.niveauRisque <= 4 %}
+            {% set riskClass = 'risk-low' %}
+          {% elseif risque.niveauRisque <= 9 %}
+            {% set riskClass = 'risk-mid' %}
+          {% else %}
+            {% set riskClass = 'risk-high' %}
+          {% endif %}
+        <tr>
+          <td>{{ risque.description }}</td>
+          <td style="text-align:center;">{{ risque.gravite }}/5</td>
+          <td style="text-align:center;">{{ risque.probabilite }}/5</td>
+          <td class="{{ riskClass }}" style="text-align:center;">{{ risque.niveauRisque }}</td>
+          <td style="white-space:pre-wrap;">{{ risque.mesuresPreventives }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div style="margin-top:6px;display:flex;gap:12px;font-size:8pt;">
+      <span><span style="display:inline-block;width:12px;height:12px;background:#d4edda;border:1px solid #ccc;vertical-align:middle;"></span> Faible (1–4)</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#fff3cd;border:1px solid #ccc;vertical-align:middle;"></span> Modéré (5–9)</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#f8d7da;border:1px solid #ccc;vertical-align:middle;"></span> Élevé (10–25)</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== DOCUMENTS JOINTS ===== -->
+  <div class="section">
+    <div class="section-title">Documents joints</div>
+    {% if plan.documents|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Type de document</th>
+          <th>Type MIME</th>
+          <th>Date d'upload</th>
+          <th style="text-align:center;">Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set docTypes = ['PLAN_URGENCE','FDS','LISTE_INTERVENANTS','ATTESTATION_HSE','FICHE_CONFORMITE'] %}
+        {% for type in docTypes %}
+          {% set found = null %}
+          {% for doc in plan.documents %}
+            {% if doc.type.value == type %}{% set found = doc %}{% endif %}
+          {% endfor %}
+          <tr>
+            <td style="font-weight:600;">{{ type|replace({'_': ' '}) }}</td>
+            <td>{{ found ? found.mimeType : '—' }}</td>
+            <td>{{ found ? found.uploadedAt|date('d/m/Y H:i') : '—' }}</td>
+            <td style="text-align:center;">
+              {% if found %}
+                <span style="color:#155724;font-weight:700;">✓ Présent</span>
+              {% else %}
+                <span style="color:#721c24;">✗ Manquant</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p style="font-style:italic;color:#555;padding:6px;">Aucun document joint.</p>
+    {% endif %}
+  </div>
+
+  <!-- ===== ENGAGEMENTS ET SIGNATURE HSE ===== -->
+  {% if lastValidation %}
+  <div class="section">
+    <div class="section-title">Signature électronique HSE</div>
+    <div class="signature-block">
+      <div class="sig-grid">
+        <div class="sig-item">
+          <div class="sig-label">Signataire HSE</div>
+          <div style="font-weight:700;font-size:10pt;">{{ lastValidation.decidePar.firstname }} {{ lastValidation.decidePar.name }}</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-label">Date de validation</div>
+          <div style="font-weight:700;">{{ lastValidation.decidedAt|date('d/m/Y à H:i') }}</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-label">Décision</div>
+          <div style="font-weight:700;color:#006633;">✓ {{ lastValidation.decision.value }}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="sig-label">Empreinte numérique (SHA-256)</div>
+        <div class="sig-hash">{{ lastValidation.signatureElectronique }}</div>
+      </div>
+      {% if lastValidation.commentaire %}
+      <div style="margin-top:8px;">
+        <div class="sig-label">Commentaire</div>
+        <div style="font-size:9pt;font-style:italic;">{{ lastValidation.commentaire }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ===== HISTORIQUE ===== -->
+  <div class="section">
+    <div class="section-title">Historique de traitement</div>
+
+    {% if plan.examens|length > 0 %}
+    <div style="margin-bottom:6px;font-size:9pt;font-weight:600;color:#444;">Examens Chef de Projet</div>
+    {% for examen in plan.examens %}
+    <div class="history-entry">
+      <div class="hist-header">Examiné par {{ examen.examinePar.firstname }} {{ examen.examinePar.name }}</div>
+      <div class="hist-meta">{{ examen.examineAt|date('d/m/Y à H:i') }}</div>
+      {% if examen.commentaire %}
+      <div class="hist-comment">{{ examen.commentaire }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if plan.decisionsHse|length > 0 %}
+    <div style="margin-top:10px;margin-bottom:6px;font-size:9pt;font-weight:600;color:#444;">Décisions HSE</div>
+    {% for decision in plan.decisionsHse %}
+    <div class="history-entry" style="border-color:{% if decision.decision.value == 'VALIDE' %}#006633{% else %}#dc3545{% endif %};">
+      <div class="hist-header" style="color:{% if decision.decision.value == 'VALIDE' %}#006633{% else %}#dc3545{% endif %};">
+        {% if decision.decision.value == 'VALIDE' %}✓ Validé{% else %}✗ Refusé{% endif %}
+        — {{ decision.decidePar.firstname }} {{ decision.decidePar.name }}
+      </div>
+      <div class="hist-meta">{{ decision.decidedAt|date('d/m/Y à H:i') }}</div>
+      {% if decision.commentaire %}
+      <div class="hist-comment">{{ decision.commentaire }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if plan.examens|length == 0 and plan.decisionsHse|length == 0 %}
+    <p style="font-style:italic;color:#555;padding:6px;">Aucun historique disponible.</p>
+    {% endif %}
+  </div>
+
+</body>
+</html>

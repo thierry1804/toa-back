@@ -22,8 +22,9 @@ class PlanPreventionVoter extends Voter
     public const EXAMINE     = 'PLAN_PREVENTION_EXAMINE';
     public const VALIDER_HSE = 'PLAN_PREVENTION_VALIDER_HSE';
     public const REFUSER_HSE = 'PLAN_PREVENTION_REFUSER_HSE';
-    public const RESOUMETTRE = 'PLAN_PREVENTION_RESOUMETTRE';
-    public const IMPORT_KMZ  = 'PLAN_PREVENTION_IMPORT_KMZ';
+    public const RESOUMETTRE  = 'PLAN_PREVENTION_RESOUMETTRE';
+    public const IMPORT_KMZ   = 'PLAN_PREVENTION_IMPORT_KMZ';
+    public const GENERATE_PDF = 'PLAN_PREVENTION_GENERATE_PDF';
 
     private const MENU_ROUTE = '/plans-prevention';
     private const ACTION_MAP = [
@@ -36,7 +37,7 @@ class PlanPreventionVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE, self::IMPORT_KMZ], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE, self::IMPORT_KMZ, self::GENERATE_PDF], true)) {
             return false;
         }
 
@@ -51,6 +52,10 @@ class PlanPreventionVoter extends Voter
         }
 
         $roles = $user->getRoles();
+
+        if ($attribute === self::GENERATE_PDF) {
+            return $this->voteOnGeneratePdf($subject, $roles);
+        }
 
         if ($attribute === self::IMPORT_KMZ) {
             return $this->voteOnImportKmz($subject, $roles, $user);
@@ -302,5 +307,24 @@ class PlanPreventionVoter extends Voter
         if ($plan->getStatut() !== StatutPlanPrevention::EXAMINE) {
             throw new AccessDeniedException('plan_prevention.statut_invalide_pour_decision_hse');
         }
+    }
+
+    private function voteOnGeneratePdf(mixed $subject, array $roles): bool
+    {
+        $roleActions = $this->permissionChecker->getRoleActions($roles, 'plan_prevention.valider_hse');
+
+        if (empty($roleActions)) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if (!$subject instanceof PlanPrevention) {
+            throw new AccessDeniedException('error.voter.access_denied');
+        }
+
+        if ($subject->getStatut() !== StatutPlanPrevention::VALIDE_HSE) {
+            throw new AccessDeniedException('plan_prevention.pdf_only_for_validated');
+        }
+
+        return true;
     }
 }

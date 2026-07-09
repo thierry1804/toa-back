@@ -2,6 +2,6 @@ framework:
     messenger:
         transports:
             notifications:
-                dsn: 'doctrine://default?queue_name=notifications'
+                dsn: 'in-memory://'
             pdf_generation:
-                dsn: 'doctrine://default?queue_name=pdf_generation'
+                dsn: 'sync://'

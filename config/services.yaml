@@ -38,3 +38,8 @@ services:
               credentials:
                   key: '%env(MINIO_KEY)%'
                   secret: '%env(MINIO_SECRET)%'
+
+    App\Domain\PlanPrevention\Service\GotenbergPdfService:
+        arguments:
+            $httpClient: '@http_client'
+            $gotenbergUrl: '%env(GOTENBERG_URL)%'
