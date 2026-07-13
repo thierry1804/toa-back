@@ -34,6 +34,8 @@ class ActivityPlanningVoter extends Voter
             && ($subject instanceof ActivityPlanning || $subject === null);
     }
 
+    private const BYPASS_ROLES = ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_HSE', 'ROLE_DG'];
+
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
@@ -45,6 +47,32 @@ class ActivityPlanningVoter extends Voter
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
+        if ($subject === null) {
+            return true;
+        }
+
+        if ($this->hasBypass($user)) {
+            return true;
+        }
+
+        if ($subject instanceof ActivityPlanning) {
+            $owner = $subject->getCreatedBy();
+            if ($owner !== null && $owner->getUserIdentifier() !== $user->getUserIdentifier()) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+        }
+
         return true;
+    }
+
+    private function hasBypass(User $user): bool
+    {
+        foreach (self::BYPASS_ROLES as $role) {
+            if (in_array($role, $user->getRoles(), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

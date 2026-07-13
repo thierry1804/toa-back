@@ -62,7 +62,7 @@ class SeedMenuCommand extends Command
         [
             'name' => 'Permis de Travail',
             'icon' => 'FileText',
-            'route' => '/permits',
+            'route' => '/permits-travail',
             'position' => 4,
             'roles' => [
                 'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],

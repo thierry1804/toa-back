@@ -56,6 +56,43 @@ class SeedRoleActionCommand extends Command
             'module'         => 'plan_prevention',
             'ownershipField' => 'chef_projet',
         ],
+        // permit_travail
+        [
+            'key'            => 'permit_travail.view',
+            'label'          => 'Consulter un permis de travail',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'permit_travail.create',
+            'label'          => 'Créer un permis de travail',
+            'module'         => 'permit_travail',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'permit_travail.edit',
+            'label'          => 'Modifier un permis de travail (statut BROUILLON)',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'permit_travail.submit',
+            'label'          => 'Soumettre un permis de travail',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'permit_travail.valider_hse',
+            'label'          => 'Valider un permis de travail (HSE)',
+            'module'         => 'permit_travail',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'permit_travail.refuser_hse',
+            'label'          => 'Refuser un permis de travail (HSE)',
+            'module'         => 'permit_travail',
+            'ownershipField' => null,
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -81,6 +118,31 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'plan_prevention.import_kmz',  'bypass' => true],
         ['role' => 'ROLE_ADMIN',        'key' => 'plan_prevention.import_kmz',  'bypass' => true],
         ['role' => 'ROLE_CHEF_PROJET',  'key' => 'plan_prevention.import_kmz',  'bypass' => false],
+        // permit_travail.view
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.view',   'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.view',   'bypass' => true],
+        ['role' => 'ROLE_CHEF_PROJET',  'key' => 'permit_travail.view',   'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.view',   'bypass' => false],
+        // permit_travail.create
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.create', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.create', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.create', 'bypass' => true],
+        // permit_travail.edit
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.edit',   'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.edit',   'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.edit',   'bypass' => false],
+        // permit_travail.submit
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.submit',      'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.submit',      'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.submit',      'bypass' => false],
+        // permit_travail.valider_hse
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.valider_hse', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'permit_travail.valider_hse', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.valider_hse', 'bypass' => true],
+        // permit_travail.refuser_hse
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.refuser_hse', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'permit_travail.refuser_hse', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.refuser_hse', 'bypass' => true],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)

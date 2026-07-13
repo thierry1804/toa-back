@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\PermitTravail\Enum;
+
+enum TypeDocumentPermitTravail: string
+{
+    // GENERAL
+    case ATTESTATION_ENTREPRISE = 'ATTESTATION_ENTREPRISE';
+    case LISTE_INTERVENANTS     = 'LISTE_INTERVENANTS';
+    case PLAN_PREVENTION_REF    = 'PLAN_PREVENTION_REF';
+    // ELECTRIQUE
+    case HABILITATION_ELECTRIQUE    = 'HABILITATION_ELECTRIQUE';
+    case CONSIGNATION_FICHE         = 'CONSIGNATION_FICHE';
+    case ATTESTATION_BASSE_TENSION  = 'ATTESTATION_BASSE_TENSION';
+    // HAUTEUR
+    case CERTIFICAT_TRAVAIL_HAUTEUR = 'CERTIFICAT_TRAVAIL_HAUTEUR';
+    case EPI_FICHE                  = 'EPI_FICHE';
+    case PLAN_SAUVETAGE             = 'PLAN_SAUVETAGE';
+}

@@ -11,8 +11,10 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use App\Api\Processor\ActivityPlanningCreateProcessor;
 use App\Api\Processor\ActivityPlanningUpdateProcessor;
 use App\Domain\ActivityPlanning\Validator\CoherentDates;
+use App\Domain\User\Entity\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -28,7 +30,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ApiResource(
     operations: [
         new GetCollection(security: "is_granted('ACTIVITY_PLANNING_VIEW')"),
-        new Post(security: "is_granted('ACTIVITY_PLANNING_CREATE')"),
+        new Post(security: "is_granted('ACTIVITY_PLANNING_CREATE')", processor: ActivityPlanningCreateProcessor::class),
         new Get(security: "is_granted('ACTIVITY_PLANNING_VIEW', object)"),
         new Put(
             security: "is_granted('ACTIVITY_PLANNING_EDIT', object)",
@@ -157,6 +159,11 @@ class ActivityPlanning
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['activity_planning:read'])]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['activity_planning:read'])]
+    private ?User $createdBy = null;
 
     public function __construct()
     {
@@ -383,6 +390,18 @@ class ActivityPlanning
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getCreatedBy(): ?User
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(?User $createdBy): static
+    {
+        $this->createdBy = $createdBy;
+
+        return $this;
     }
 
     public function isLocked(): bool
