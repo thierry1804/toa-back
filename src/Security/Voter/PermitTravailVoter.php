@@ -20,27 +20,31 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  */
 class PermitTravailVoter extends Voter
 {
-    public const VIEW        = 'PERMIT_TRAVAIL_VIEW';
-    public const CREATE      = 'PERMIT_TRAVAIL_CREATE';
-    public const EDIT        = 'PERMIT_TRAVAIL_EDIT';
-    public const SUBMIT      = 'PERMIT_TRAVAIL_SUBMIT';
-    public const VALIDER_HSE = 'PERMIT_TRAVAIL_VALIDER_HSE';
-    public const REFUSER_HSE = 'PERMIT_TRAVAIL_REFUSER_HSE';
+    public const VIEW         = 'PERMIT_TRAVAIL_VIEW';
+    public const CREATE       = 'PERMIT_TRAVAIL_CREATE';
+    public const EDIT         = 'PERMIT_TRAVAIL_EDIT';
+    public const SUBMIT       = 'PERMIT_TRAVAIL_SUBMIT';
+    public const VALIDER_HSE  = 'PERMIT_TRAVAIL_VALIDER_HSE';
+    public const REFUSER_HSE  = 'PERMIT_TRAVAIL_REFUSER_HSE';
+    public const GENERATE_PDF = 'PERMIT_TRAVAIL_GENERATE_PDF';
+    public const RESOUMETTRE  = 'PERMIT_TRAVAIL_RESOUMETTRE';
 
     private const ACTION_KEY_MAP = [
-        self::VIEW        => 'permit_travail.view',
-        self::CREATE      => 'permit_travail.create',
-        self::EDIT        => 'permit_travail.edit',
-        self::SUBMIT      => 'permit_travail.submit',
-        self::VALIDER_HSE => 'permit_travail.valider_hse',
-        self::REFUSER_HSE => 'permit_travail.refuser_hse',
+        self::VIEW         => 'permit_travail.view',
+        self::CREATE       => 'permit_travail.create',
+        self::EDIT         => 'permit_travail.edit',
+        self::SUBMIT       => 'permit_travail.submit',
+        self::VALIDER_HSE  => 'permit_travail.valider_hse',
+        self::REFUSER_HSE  => 'permit_travail.refuser_hse',
+        self::GENERATE_PDF => 'permit_travail.generate_pdf',
+        self::RESOUMETTRE  => 'permit_travail.resoumettre',
     ];
 
     public function __construct(private readonly PermissionChecker $permissionChecker) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE], true)) {
             return false;
         }
 
@@ -122,6 +126,28 @@ class PermitTravailVoter extends Voter
             }
 
             $this->checkSoumisStatut($subject);
+
+            if (empty($canBypass)) {
+                $this->checkOwnershipForCreatedBy($subject, $user);
+            }
+
+            return true;
+        }
+
+        if ($attribute === self::GENERATE_PDF) {
+            if (!$subject instanceof PermitTravail) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            return true;
+        }
+
+        if ($attribute === self::RESOUMETTRE) {
+            if (!$subject instanceof PermitTravail) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            $this->checkBrouillonStatut($subject);
 
             if (empty($canBypass)) {
                 $this->checkOwnershipForCreatedBy($subject, $user);

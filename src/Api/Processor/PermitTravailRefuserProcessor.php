@@ -72,7 +72,7 @@ final class PermitTravailRefuserProcessor implements ProcessorInterface
         $decision->setSignatureElectronique($signatureElectronique);
         $decision->setDecidedAt(new \DateTimeImmutable());
 
-        $permit->setStatut(StatutPermitTravail::REFUSE_HSE);
+        $permit->setStatut(StatutPermitTravail::BROUILLON);
         $permit->addDecisionHse($decision);
 
         $this->entityManager->persist($decision);

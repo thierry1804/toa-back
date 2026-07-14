@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Api\Processor\PermitTravailCreateProcessor;
 use App\Api\Processor\PermitTravailRefuserProcessor;
+use App\Api\Processor\PermitTravailResoumettreProcessor;
 use App\Api\Processor\PermitTravailSoumettreProcessor;
 use App\Api\Processor\PermitTravailValiderProcessor;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
@@ -74,6 +75,14 @@ use Symfony\Component\Validator\Constraints as Assert;
             security: "is_granted('PERMIT_TRAVAIL_REFUSER_HSE', object)",
             processor: PermitTravailRefuserProcessor::class,
             name: 'permit_travail_refuser',
+        ),
+        new Post(
+            uriTemplate: '/permits-travail/{id}/resoumettre',
+            read: true,
+            deserialize: false,
+            security: "is_granted('PERMIT_TRAVAIL_RESOUMETTRE', object)",
+            processor: PermitTravailResoumettreProcessor::class,
+            name: 'permit_travail_resoumettre',
         ),
     ],
     normalizationContext: ['groups' => ['permit_travail:read']],
@@ -171,6 +180,17 @@ class PermitTravail
     #[Groups(['permit_travail:read'])]
     private Collection $decisionsHse;
 
+    #[ORM\OneToMany(
+        targetEntity: VersionPermitTravail::class,
+        mappedBy: 'permitTravail',
+        cascade: ['remove'],
+        fetch: 'EXTRA_LAZY',
+        orphanRemoval: false,
+    )]
+    #[ORM\OrderBy(['numeroVersion' => 'ASC'])]
+    #[Groups(['permit_travail:read'])]
+    private Collection $versions;
+
     #[ORM\OneToOne(mappedBy: 'permitGeneral', targetEntity: PermitTravailGroupe::class)]
     private ?PermitTravailGroupe $groupeAsGeneral = null;
 
@@ -183,6 +203,7 @@ class PermitTravail
     {
         $this->documents    = new ArrayCollection();
         $this->decisionsHse = new ArrayCollection();
+        $this->versions     = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
@@ -376,6 +397,21 @@ class PermitTravail
         if (!$this->decisionsHse->contains($decision)) {
             $this->decisionsHse->add($decision);
             $decision->setPermitTravail($this);
+        }
+
+        return $this;
+    }
+
+    public function getVersions(): Collection
+    {
+        return $this->versions;
+    }
+
+    public function addVersion(VersionPermitTravail $version): static
+    {
+        if (!$this->versions->contains($version)) {
+            $this->versions->add($version);
+            $version->setPermitTravail($this);
         }
 
         return $this;

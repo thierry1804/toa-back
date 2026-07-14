@@ -93,6 +93,18 @@ class SeedRoleActionCommand extends Command
             'module'         => 'permit_travail',
             'ownershipField' => null,
         ],
+        [
+            'key'            => 'permit_travail.generate_pdf',
+            'label'          => 'Générer le PDF officiel d\'un permis de travail validé',
+            'module'         => 'permit_travail',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'permit_travail.resoumettre',
+            'label'          => 'Resoumettre un permis de travail refusé',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'created_by',
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -143,6 +155,13 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.refuser_hse', 'bypass' => true],
         ['role' => 'ROLE_ADMIN',        'key' => 'permit_travail.refuser_hse', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'permit_travail.refuser_hse', 'bypass' => true],
+        // permit_travail.generate_pdf
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.generate_pdf', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'permit_travail.generate_pdf', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.generate_pdf', 'bypass' => true],
+        // permit_travail.resoumettre
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.resoumettre', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.resoumettre', 'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)
