@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Domain\PermitTravail\MessageHandler;
 
 use App\Domain\PermitTravail\Entity\PermitTravail;
+use App\Domain\PermitTravail\Enum\ActionPermitTravailLog;
 use App\Domain\PermitTravail\Enum\StatutPermitTravailPdf;
 use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Message\GeneratePermitTravailPdfMessage;
 use App\Domain\PermitTravail\Repository\PermitTravailPdfRepository;
+use App\Domain\PermitTravail\Service\PermitTravailLogService;
 use App\Domain\PlanPrevention\Service\GotenbergPdfService;
+use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Psr\Log\LoggerInterface;
@@ -31,6 +34,7 @@ final class GeneratePermitTravailPdfHandler
         private readonly PermitTravailPdfRepository $pdfRepository,
         private readonly GotenbergPdfService $gotenbergPdfService,
         private readonly Environment $twig,
+        private readonly PermitTravailLogService $logService,
         #[Autowire('@default.storage')]
         private readonly FilesystemOperator $storage,
         private readonly LoggerInterface $logger,
@@ -99,6 +103,20 @@ final class GeneratePermitTravailPdfHandler
                 'fileSize' => $size,
                 'filePath' => $filePath,
             ]);
+
+            $requester = $this->entityManager->find(\App\Domain\User\Entity\User::class, $message->requesterId);
+            if ($requester instanceof User) {
+                try {
+                    $this->logService->log(
+                        $permit,
+                        ActionPermitTravailLog::PDF_GENERE,
+                        $requester,
+                        ['filePath' => $filePath, 'tailleFichier' => $size],
+                    );
+                } catch (\Throwable) {
+                    // Do not fail PDF generation if logging fails
+                }
+            }
         } catch (\Throwable $e) {
             $pdfRecord->setStatut(StatutPermitTravailPdf::ERREUR);
             $this->entityManager->flush();

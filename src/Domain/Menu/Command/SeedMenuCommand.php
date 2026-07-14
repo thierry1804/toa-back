@@ -73,6 +73,18 @@ class SeedMenuCommand extends Command
             ],
         ],
         [
+            'name'        => 'Suivi Permis de Travail',
+            'icon'        => 'BarChart2',
+            'route'       => '/permits-travail/suivi',
+            'position'    => 1,
+            'parentRoute' => '/permits-travail',
+            'roles'       => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_ADMIN'       => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_HSE'         => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+        ],
+        [
             'name' => 'Interventions',
             'icon' => 'Clipboard',
             'route' => '/interventions',
@@ -146,6 +158,13 @@ class SeedMenuCommand extends Command
             $menu->setRoute($definition['route']);
             $menu->setPosition($definition['position']);
             $menu->setIsActive(true);
+
+            if (isset($definition['parentRoute'])) {
+                $parent = $menuRepo->findOneBy(['route' => $definition['parentRoute']]);
+                if ($parent !== null) {
+                    $menu->setParent($parent);
+                }
+            }
 
             $this->entityManager->persist($menu);
             $this->entityManager->flush();

@@ -28,6 +28,8 @@ class PermitTravailVoter extends Voter
     public const REFUSER_HSE  = 'PERMIT_TRAVAIL_REFUSER_HSE';
     public const GENERATE_PDF = 'PERMIT_TRAVAIL_GENERATE_PDF';
     public const RESOUMETTRE  = 'PERMIT_TRAVAIL_RESOUMETTRE';
+    public const SUIVI        = 'PERMIT_TRAVAIL_SUIVI';
+    public const LOGS         = 'PERMIT_TRAVAIL_LOGS';
 
     private const ACTION_KEY_MAP = [
         self::VIEW         => 'permit_travail.view',
@@ -38,13 +40,15 @@ class PermitTravailVoter extends Voter
         self::REFUSER_HSE  => 'permit_travail.refuser_hse',
         self::GENERATE_PDF => 'permit_travail.generate_pdf',
         self::RESOUMETTRE  => 'permit_travail.resoumettre',
+        self::SUIVI        => 'permit_travail.suivi',
+        self::LOGS         => 'permit_travail.logs',
     ];
 
     public function __construct(private readonly PermissionChecker $permissionChecker) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE, self::SUIVI, self::LOGS], true)) {
             return false;
         }
 
@@ -153,6 +157,11 @@ class PermitTravailVoter extends Voter
                 $this->checkOwnershipForCreatedBy($subject, $user);
             }
 
+            return true;
+        }
+
+        if ($attribute === self::SUIVI || $attribute === self::LOGS) {
+            // No ownership check — role_action existence is sufficient
             return true;
         }
 

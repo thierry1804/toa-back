@@ -46,10 +46,12 @@ use Symfony\Component\Validator\Constraints as Assert;
         ),
         new Get(
             uriTemplate: '/permits-travail/{id}',
+            requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'],
             security: "is_granted('PERMIT_TRAVAIL_VIEW', object)",
         ),
         new Patch(
             uriTemplate: '/permits-travail/{id}',
+            requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'],
             security: "is_granted('PERMIT_TRAVAIL_EDIT', object)",
         ),
         new Post(

@@ -105,6 +105,18 @@ class SeedRoleActionCommand extends Command
             'module'         => 'permit_travail',
             'ownershipField' => 'created_by',
         ],
+        [
+            'key'            => 'permit_travail.suivi',
+            'label'          => 'Tableau de bord suivi des permis de travail',
+            'module'         => 'permit_travail',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'permit_travail.logs',
+            'label'          => 'Consulter les logs journaliers d\'un permis de travail',
+            'module'         => 'permit_travail',
+            'ownershipField' => null,
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -162,6 +174,14 @@ class SeedRoleActionCommand extends Command
         // permit_travail.resoumettre
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.resoumettre', 'bypass' => true],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.resoumettre', 'bypass' => false],
+        // permit_travail.suivi
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.suivi', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'permit_travail.suivi', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.suivi', 'bypass' => true],
+        // permit_travail.logs
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.logs', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'permit_travail.logs', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.logs', 'bypass' => true],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)

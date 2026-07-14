@@ -6,10 +6,14 @@ namespace App\Api\Controller;
 
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Entity\PermitTravailDocument;
+use App\Domain\PermitTravail\Enum\ActionPermitTravailLog;
+use App\Domain\PermitTravail\Service\PermitTravailLogService;
+use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use League\Flysystem\UnableToReadFile;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -19,6 +23,8 @@ class PermitTravailDocumentDownloadController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
+        private readonly PermitTravailLogService $logService,
+        private readonly Security $security,
         #[Autowire('@default.storage')]
         private readonly FilesystemOperator $storage,
     ) {}
@@ -52,6 +58,20 @@ class PermitTravailDocumentDownloadController extends AbstractController
             $stream = $this->storage->readStream($filePath);
         } catch (UnableToReadFile) {
             throw new NotFoundHttpException('document_file_not_found');
+        }
+
+        $user = $this->security->getUser();
+        if ($user instanceof User) {
+            try {
+                $this->logService->log(
+                    $permit,
+                    ActionPermitTravailLog::DOCUMENT_TELECHARGE,
+                    $user,
+                    ['documentId' => $documentId, 'filename' => $filename],
+                );
+            } catch (\Throwable) {
+                // Do not break the download if logging fails
+            }
         }
 
         return new StreamedResponse(static function () use ($stream): void {
