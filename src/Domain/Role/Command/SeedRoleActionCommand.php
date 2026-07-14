@@ -142,6 +142,7 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'plan_prevention.import_kmz',  'bypass' => true],
         ['role' => 'ROLE_ADMIN',        'key' => 'plan_prevention.import_kmz',  'bypass' => true],
         ['role' => 'ROLE_CHEF_PROJET',  'key' => 'plan_prevention.import_kmz',  'bypass' => false],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'plan_prevention.import_kmz',  'bypass' => false],
         // permit_travail.view
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.view',   'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'permit_travail.view',   'bypass' => true],
