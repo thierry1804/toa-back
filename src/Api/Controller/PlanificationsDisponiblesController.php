@@ -54,6 +54,13 @@ class PlanificationsDisponiblesController extends AbstractController
                 'permitValidated'      => $p->isPermitValidated(),
                 'createdAt'            => $p->getCreatedAt()?->format(\DateTimeInterface::ATOM),
                 'updatedAt'            => $p->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
+                'createdBy'            => $p->getCreatedBy() !== null ? [
+                    '@id'       => '/api/users/' . $p->getCreatedBy()->getId(),
+                    'id'        => $p->getCreatedBy()->getId(),
+                    'email'     => $p->getCreatedBy()->getEmail(),
+                    'name'      => $p->getCreatedBy()->getName(),
+                    'firstname' => $p->getCreatedBy()->getFirstname(),
+                ] : null,
             ],
             $planifications,
         );

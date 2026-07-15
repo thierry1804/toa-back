@@ -224,6 +224,14 @@ class PlanPrevention
     #[Groups(['plan_prevention:read'])]
     private Collection $versions;
 
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
+    private array $installations = [];
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
+    private array $equipements = [];
+
     public function __construct()
     {
         $this->risques       = new ArrayCollection();
@@ -410,6 +418,30 @@ class PlanPrevention
     public function getVersions(): Collection
     {
         return $this->versions;
+    }
+
+    public function getInstallations(): array
+    {
+        return $this->installations ?? [];
+    }
+
+    public function setInstallations(array $installations): static
+    {
+        $this->installations = $installations;
+
+        return $this;
+    }
+
+    public function getEquipements(): array
+    {
+        return $this->equipements ?? [];
+    }
+
+    public function setEquipements(array $equipements): static
+    {
+        $this->equipements = $equipements;
+
+        return $this;
     }
 
     #[ORM\PrePersist]
