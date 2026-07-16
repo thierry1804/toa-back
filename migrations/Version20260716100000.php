@@ -17,16 +17,8 @@ final class Version20260716100000 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // ── 1. Resync identity sequences (SERIAL→IDENTITY left them at 1) ─────────
-        $this->addSql(<<<'SQL'
-            DO $$
-            DECLARE v INT;
-            BEGIN
-                SELECT COALESCE(MAX(id), 0) + 1 INTO v FROM "action_key";
-                EXECUTE format('ALTER TABLE action_key ALTER COLUMN id RESTART WITH %s', v);
-                SELECT COALESCE(MAX(id), 0) + 1 INTO v FROM "role_action";
-                EXECUTE format('ALTER TABLE role_action ALTER COLUMN id RESTART WITH %s', v);
-            END $$
-        SQL);
+        $this->addSql('SELECT setval(pg_get_serial_sequence(\'"action_key"\', \'id\'), COALESCE(MAX(id), 1)) FROM "action_key"');
+        $this->addSql('SELECT setval(pg_get_serial_sequence(\'"role_action"\', \'id\'), COALESCE(MAX(id), 1)) FROM "role_action"');
 
         // ── 2. permit_travail_log table ───────────────────────────────────────────
         $this->addSql(<<<'SQL'
