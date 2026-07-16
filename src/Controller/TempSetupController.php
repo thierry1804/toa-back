@@ -19,6 +19,12 @@ class TempSetupController
 {
     private const SECRET = 'toa-setup-2026';
 
+    private const KEEP_MIGRATIONS = [
+        'Version20260716200000.php',
+        'Version20260716300000.php',
+        'Version20260716400000.php',
+    ];
+
     public function __construct(private readonly KernelInterface $kernel) {}
 
     #[Route('/internal/temp-setup', name: 'temp_setup', methods: ['POST'])]
@@ -28,16 +34,28 @@ class TempSetupController
             return new JsonResponse(['error' => 'Forbidden'], 403);
         }
 
-        $app = new Application($this->kernel);
-        $app->setAutoExit(false);
         $results = [];
 
-        $commands = [
+        // ── 1. Purge stale migration files deployment left behind ─────────────────
+        $migrationsDir = $this->kernel->getProjectDir() . '/migrations';
+        $purged = [];
+        foreach (glob($migrationsDir . '/Version*.php') as $file) {
+            $basename = basename($file);
+            if (!in_array($basename, self::KEEP_MIGRATIONS, true)) {
+                unlink($file);
+                $purged[] = $basename;
+            }
+        }
+        $results[] = ['step' => 'purge_stale_migrations', 'deleted' => $purged];
+
+        // ── 2. doctrine:migrations:migrate ───────────────────────────────────────
+        $app = new Application($this->kernel);
+        $app->setAutoExit(false);
+
+        foreach ([
             ['command' => 'doctrine:migrations:migrate', '--no-interaction' => true],
             ['command' => 'app:setup:fix-week'],
-        ];
-
-        foreach ($commands as $args) {
+        ] as $args) {
             $output = new BufferedOutput();
             try {
                 $code = $app->run(new ArrayInput($args), $output);
