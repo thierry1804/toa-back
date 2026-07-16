@@ -26,8 +26,17 @@ class PlanificationsDisponiblesController extends AbstractController
         $planifications = $this->em
             ->getRepository(ActivityPlanning::class)
             ->createQueryBuilder('ap')
-            ->where('ap.createdBy = :user')
-            ->setParameter('user', $user)
+            ->where(
+                'ap.providerEmail = :email OR (ap.providerEmail IS NULL AND ap.provider = :entrepriseName)'
+            )
+            ->andWhere('ap.status IN (:statuses)')
+            ->setParameter('email', $user->getEmail())
+            ->setParameter('entrepriseName', $user->getEntrepriseName() ?? '')
+            ->setParameter('statuses', [
+                ActivityPlanning::STATUS_PLANIFIE,
+                ActivityPlanning::STATUS_EN_COURS,
+                ActivityPlanning::STATUS_VALIDE,
+            ])
             ->orderBy('ap.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

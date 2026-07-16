@@ -13,6 +13,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Api\Processor\UserPasswordHasherProcessor;
+use App\Api\Processor\SignatureUploadProcessor;
 use App\Api\Provider\PrestataireProvider;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -32,6 +33,14 @@ use App\Domain\User\Validator\UniqueEmail;
         new Put(security: "is_granted('USER_EDIT', object)", processor: UserPasswordHasherProcessor::class),
         new Patch(security: "is_granted('USER_EDIT', object)", processor: UserPasswordHasherProcessor::class),
         new Delete(security: "is_granted('USER_DELETE', object)"),
+        new Post(
+            uriTemplate: '/users/{id}/signature',
+            read: false,
+            deserialize: false,
+            processor: SignatureUploadProcessor::class,
+            security: "is_granted('USER_UPLOAD_SIGNATURE')",
+            name: 'user_signature_upload',
+        ),
     ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']],
@@ -91,6 +100,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
     private ?string $entrepriseName = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $numeroRegistreCommerce = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    private ?string $siegeSocial = null;
+
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    #[Assert\Length(max: 100)]
+    private ?string $qualiteRepresentant = null;
+
+    #[ORM\Column(type: 'string', nullable: true)]
+    #[Groups(['user:read'])]
+    private ?string $signaturePath = null;
 
     public function getId(): ?int
     {
@@ -245,6 +271,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEntrepriseName(?string $entrepriseName): static
     {
         $this->entrepriseName = $entrepriseName;
+
+        return $this;
+    }
+
+    public function getNumeroRegistreCommerce(): ?string
+    {
+        return $this->numeroRegistreCommerce;
+    }
+
+    public function setNumeroRegistreCommerce(?string $numeroRegistreCommerce): static
+    {
+        $this->numeroRegistreCommerce = $numeroRegistreCommerce;
+
+        return $this;
+    }
+
+    public function getSiegeSocial(): ?string
+    {
+        return $this->siegeSocial;
+    }
+
+    public function setSiegeSocial(?string $siegeSocial): static
+    {
+        $this->siegeSocial = $siegeSocial;
+
+        return $this;
+    }
+
+    public function getQualiteRepresentant(): ?string
+    {
+        return $this->qualiteRepresentant;
+    }
+
+    public function setQualiteRepresentant(?string $qualiteRepresentant): static
+    {
+        $this->qualiteRepresentant = $qualiteRepresentant;
+
+        return $this;
+    }
+
+    public function getSignaturePath(): ?string
+    {
+        return $this->signaturePath;
+    }
+
+    public function setSignaturePath(?string $signaturePath): static
+    {
+        $this->signaturePath = $signaturePath;
 
         return $this;
     }

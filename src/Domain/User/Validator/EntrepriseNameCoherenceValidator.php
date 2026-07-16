@@ -20,13 +20,23 @@ class EntrepriseNameCoherenceValidator extends ConstraintValidator
             throw new UnexpectedValueException($value, User::class);
         }
 
-        if ($value->getEntrepriseName() === null) {
-            return;
-        }
+        $isPrestataire = in_array('ROLE_PRESTATAIRE', $value->getRoles(), true);
 
-        if (!in_array('ROLE_PRESTATAIRE', $value->getRoles(), true)) {
+        if ($value->getEntrepriseName() !== null && !$isPrestataire) {
             $this->context->buildViolation($constraint->message)
                 ->atPath('entrepriseName')
+                ->addViolation();
+        }
+
+        if ($value->getNumeroRegistreCommerce() !== null && !$isPrestataire) {
+            $this->context->buildViolation($constraint->message)
+                ->atPath('numeroRegistreCommerce')
+                ->addViolation();
+        }
+
+        if ($value->getSiegeSocial() !== null && !$isPrestataire) {
+            $this->context->buildViolation($constraint->message)
+                ->atPath('siegeSocial')
                 ->addViolation();
         }
     }

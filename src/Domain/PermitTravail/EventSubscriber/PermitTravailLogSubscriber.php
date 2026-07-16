@@ -123,13 +123,18 @@ class PermitTravailLogSubscriber
 
         [$oldStatut, $newStatut] = $changeSet['statut'];
 
+        // Doctrine's UoW may store raw string snapshots for newly-persisted entities
+        // instead of the PHP-backed enum — handle both cases.
+        $ancienStatut  = $oldStatut instanceof \BackedEnum ? $oldStatut->value : (string) $oldStatut;
+        $nouveauStatut = $newStatut instanceof \BackedEnum ? $newStatut->value : (string) $newStatut;
+
         $this->pendingLogs[] = $this->logService->buildLog(
             $entity,
             ActionPermitTravailLog::STATUT_CHANGE,
             $user,
             [
-                'ancienStatut'   => $oldStatut->value,
-                'nouveauStatut'  => $newStatut->value,
+                'ancienStatut'   => $ancienStatut,
+                'nouveauStatut'  => $nouveauStatut,
             ],
         );
     }

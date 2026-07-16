@@ -12,10 +12,11 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class UserVoter extends Voter
 {
-    public const VIEW = 'USER_VIEW';
-    public const CREATE = 'USER_CREATE';
-    public const EDIT = 'USER_EDIT';
-    public const DELETE = 'USER_DELETE';
+    public const VIEW             = 'USER_VIEW';
+    public const CREATE           = 'USER_CREATE';
+    public const EDIT             = 'USER_EDIT';
+    public const DELETE           = 'USER_DELETE';
+    public const UPLOAD_SIGNATURE = 'USER_UPLOAD_SIGNATURE';
 
     private const MENU_ROUTE = '/users';
     private const ACTION_MAP = [
@@ -29,7 +30,7 @@ class UserVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return isset(self::ACTION_MAP[$attribute])
+        return (isset(self::ACTION_MAP[$attribute]) || $attribute === self::UPLOAD_SIGNATURE)
             && ($subject instanceof User || $subject === null);
     }
 
@@ -38,6 +39,13 @@ class UserVoter extends Voter
         $user = $token->getUser();
         if (!$user instanceof User) {
             return false;
+        }
+
+        if ($attribute === self::UPLOAD_SIGNATURE) {
+            if (!$this->permissionChecker->hasAction($user->getRoles(), 'user.upload_signature')) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+            return true;
         }
 
         if (!$this->permissionChecker->isGranted($user->getRoles(), self::MENU_ROUTE, self::ACTION_MAP[$attribute])) {
