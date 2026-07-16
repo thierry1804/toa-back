@@ -147,6 +147,14 @@ class SeedMenuCommand extends Command
         foreach (self::MENUS as $definition) {
             $existing = $menuRepo->findOneBy(['name' => $definition['name']]);
             if (null !== $existing) {
+                if (isset($definition['parentRoute']) && $existing->getParent() === null) {
+                    $parent = $menuRepo->findOneBy(['route' => $definition['parentRoute']]);
+                    if ($parent !== null) {
+                        $existing->setParent($parent);
+                        $this->entityManager->flush();
+                        $io->writeln(sprintf('  ✓ <info>%s</info> parent corrigé → %s', $definition['name'], $definition['parentRoute']));
+                    }
+                }
                 $io->note(sprintf('Menu "%s" existe déjà, ignoré.', $definition['name']));
                 ++$skipped;
                 continue;
