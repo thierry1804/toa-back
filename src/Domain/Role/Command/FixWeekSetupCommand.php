@@ -139,6 +139,24 @@ class FixWeekSetupCommand extends Command
         $menuCommand = $this->getApplication()->find('app:menu:seed');
         $menuCommand->run(new ArrayInput([]), $output);
 
+        // ── 5. Force-fix child menu parent relationships ──────────────────────────
+        $io->section('menu parent fix');
+        $childRoutes = [
+            '/permits-travail/suivi' => '/permits-travail',
+        ];
+        foreach ($childRoutes as $childRoute => $parentRoute) {
+            $fixed = $this->connection->executeStatement(
+                'UPDATE "menu" SET parent_id = (SELECT id FROM "menu" WHERE route = :parent)
+                 WHERE route = :child AND parent_id IS NULL',
+                ['parent' => $parentRoute, 'child' => $childRoute]
+            );
+            if ($fixed > 0) {
+                $io->writeln(sprintf('  ✓ %s → parent set to %s', $childRoute, $parentRoute));
+            } else {
+                $io->writeln(sprintf('  – %s already has parent or not found', $childRoute));
+            }
+        }
+
         $io->success('Done.');
 
         return Command::SUCCESS;
