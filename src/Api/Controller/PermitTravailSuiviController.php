@@ -57,7 +57,7 @@ class PermitTravailSuiviController extends AbstractController
                     'declenchePar' => $l->getDeclenchePar() !== null ? [
                         'id'        => $l->getDeclenchePar()->getId(),
                         'email'     => $l->getDeclenchePar()->getEmail(),
-                        'name'      => $l->getDeclenchePar()->getNom(),
+                        'name'      => $l->getDeclenchePar()->getName(),
                         'firstname' => $l->getDeclenchePar()->getPrenom(),
                     ] : null,
                 ],
