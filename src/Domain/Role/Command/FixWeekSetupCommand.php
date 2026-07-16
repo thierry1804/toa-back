@@ -141,19 +141,29 @@ class FixWeekSetupCommand extends Command
 
         // ── 5. Force-fix child menu parent relationships ──────────────────────────
         $io->section('menu parent fix');
-        $childRoutes = [
-            '/permits-travail/suivi' => '/permits-travail',
+
+        // Fix route discrepancy first (server may have /permits instead of /permits-travail)
+        $routeFixed = $this->connection->executeStatement(
+            "UPDATE \"menu\" SET route = '/permits-travail' WHERE name = 'Permis de Travail' AND route <> '/permits-travail'"
+        );
+        if ($routeFixed > 0) {
+            $io->writeln('  ✓ Permis de Travail route corrigé → /permits-travail');
+        }
+
+        // Fix parent by name (robust — does not depend on route being correct)
+        $childNames = [
+            'Suivi Permis de Travail' => 'Permis de Travail',
         ];
-        foreach ($childRoutes as $childRoute => $parentRoute) {
+        foreach ($childNames as $childName => $parentName) {
             $fixed = $this->connection->executeStatement(
-                'UPDATE "menu" SET parent_id = (SELECT id FROM "menu" WHERE route = :parent)
-                 WHERE route = :child AND parent_id IS NULL',
-                ['parent' => $parentRoute, 'child' => $childRoute]
+                'UPDATE "menu" SET parent_id = (SELECT id FROM "menu" WHERE name = :parent)
+                 WHERE name = :child AND parent_id IS NULL',
+                ['parent' => $parentName, 'child' => $childName]
             );
             if ($fixed > 0) {
-                $io->writeln(sprintf('  ✓ %s → parent set to %s', $childRoute, $parentRoute));
+                $io->writeln(sprintf('  ✓ %s → parent set to %s', $childName, $parentName));
             } else {
-                $io->writeln(sprintf('  – %s already has parent or not found', $childRoute));
+                $io->writeln(sprintf('  – %s already has parent or not found', $childName));
             }
         }
 
