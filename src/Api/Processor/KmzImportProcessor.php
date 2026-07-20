@@ -73,6 +73,9 @@ final class KmzImportProcessor implements ProcessorInterface
             $site->setCouleurMarqueur($placemark['couleurMarqueur']);
             $site->setOrdreAffichage($placemark['ordreAffichage']);
             $site->setSourceKmz(true);
+            $site->setFokontany($placemark['fokontany']);
+            $site->setCommune($placemark['commune']);
+            $site->setDistrict($placemark['district']);
 
             $this->entityManager->persist($site);
             $sites[] = $site;
@@ -90,6 +93,9 @@ final class KmzImportProcessor implements ProcessorInterface
                 'description'     => $site->getDescription(),
                 'couleurMarqueur' => $site->getCouleurMarqueur(),
                 'ordreAffichage'  => $site->getOrdreAffichage(),
+                'fokontany'       => $site->getFokontany(),
+                'commune'         => $site->getCommune(),
+                'district'        => $site->getDistrict(),
             ];
         }, $sites);
 
@@ -174,7 +180,7 @@ final class KmzImportProcessor implements ProcessorInterface
     }
 
     /**
-     * @return array{placemarks: array<int, array{name: string, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, ordreAffichage: int}>, nbIgnores: int}
+     * @return array{placemarks: array<int, array{name: string, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, ordreAffichage: int, fokontany: string|null, commune: string|null, district: string|null}>, nbIgnores: int}
      */
     private function parsePlacemarks(string $kmlContent): array
     {
@@ -221,6 +227,8 @@ final class KmzImportProcessor implements ProcessorInterface
             $description = isset($placemark->description) ? trim((string) $placemark->description) : null;
             $description = ($description === '') ? null : $description;
 
+            $extendedData = $this->extractExtendedData($placemark);
+
             $results[] = [
                 'name'            => $name,
                 'longitude'       => (float) $parts[0],
@@ -229,10 +237,43 @@ final class KmzImportProcessor implements ProcessorInterface
                 'description'     => $description,
                 'couleurMarqueur' => $this->extractColor($placemark, $styleMap),
                 'ordreAffichage'  => $ordre++,
+                'fokontany'       => $extendedData['fokontany'],
+                'commune'         => $extendedData['commune'],
+                'district'        => $extendedData['district'],
             ];
         }
 
         return ['placemarks' => $results, 'nbIgnores' => $nbIgnores];
+    }
+
+    /** @return array{fokontany: string|null, commune: string|null, district: string|null} */
+    private function extractExtendedData(\SimpleXMLElement $placemark): array
+    {
+        $result = ['fokontany' => null, 'commune' => null, 'district' => null];
+
+        if (!isset($placemark->ExtendedData)) {
+            return $result;
+        }
+
+        foreach ($placemark->ExtendedData->Data as $data) {
+            $attrs = $data->attributes();
+            if ($attrs === null) {
+                continue;
+            }
+            $key = strtolower((string) ($attrs['name'] ?? ''));
+            $val = isset($data->value) ? trim((string) $data->value) : '';
+            if ($val === '') {
+                continue;
+            }
+            match ($key) {
+                'fokontany' => $result['fokontany'] = $val,
+                'commune'   => $result['commune']   = $val,
+                'district'  => $result['district']  = $val,
+                default     => null,
+            };
+        }
+
+        return $result;
     }
 
     /** @return array<string, string|null> */

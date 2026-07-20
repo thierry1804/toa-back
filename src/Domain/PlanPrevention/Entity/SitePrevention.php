@@ -61,6 +61,18 @@ class SitePrevention
     #[Groups(['site_prevention:read', 'plan_prevention:read'])]
     private int $ordreAffichage = 0;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['site_prevention:read', 'plan_prevention:read'])]
+    private ?string $fokontany = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['site_prevention:read', 'plan_prevention:read'])]
+    private ?string $commune = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['site_prevention:read', 'plan_prevention:read'])]
+    private ?string $district = null;
+
     public function getId(): ?Uuid
     {
         return $this->id;
@@ -182,6 +194,42 @@ class SitePrevention
     public function setOrdreAffichage(int $ordreAffichage): static
     {
         $this->ordreAffichage = $ordreAffichage;
+
+        return $this;
+    }
+
+    public function getFokontany(): ?string
+    {
+        return $this->fokontany;
+    }
+
+    public function setFokontany(?string $fokontany): static
+    {
+        $this->fokontany = $fokontany;
+
+        return $this;
+    }
+
+    public function getCommune(): ?string
+    {
+        return $this->commune;
+    }
+
+    public function setCommune(?string $commune): static
+    {
+        $this->commune = $commune;
+
+        return $this;
+    }
+
+    public function getDistrict(): ?string
+    {
+        return $this->district;
+    }
+
+    public function setDistrict(?string $district): static
+    {
+        $this->district = $district;
 
         return $this;
     }

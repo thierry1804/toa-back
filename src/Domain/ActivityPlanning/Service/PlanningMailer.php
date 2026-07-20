@@ -10,6 +10,7 @@ class PlanningMailer
 {
     public function __construct(
         private MailerInterface $mailer,
+        private readonly string $fromAddress = 'noreply@toa.app',
     ) {
     }
 
@@ -35,7 +36,7 @@ class PlanningMailer
         }
 
         $email = (new Email())
-            ->from('noreply@toa.app')
+            ->from($this->fromAddress)
             ->to($recipientEmail)
             ->subject(sprintf('[TOA] Planning #%d mis à jour', $planningId))
             ->text($this->buildTextBody($recipientName, $planningId, $process, $changeLines))

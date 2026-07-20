@@ -1,0 +1,44 @@
+{% extends 'email/layout.html.twig' %}
+
+{% block subject %}[TOA] Test de configuration SMTP{% endblock %}
+{% block badge %}Test SMTP{% endblock %}
+
+{% block body %}
+  <h2 style="margin:0 0 8px;font-size:18px;color:#006633;">Configuration SMTP opérationnelle ✓</h2>
+  <p style="margin:0 0 24px;color:#6b7280;font-size:13px;">Ce message confirme que le serveur de mail TOA fonctionne correctement.</p>
+
+  <p style="margin:0 0 24px;">Bonjour,</p>
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:6px;margin-bottom:24px;">
+    <tr style="background:#f0faf4;">
+      <td style="padding:10px 16px;font-size:12px;font-weight:700;color:#006633;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e5e7eb;" colspan="2">
+        Configuration SMTP
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;width:40%;">Serveur</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;font-family:monospace;">{{ host }}</td>
+    </tr>
+    <tr style="background:#fafafa;">
+      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;">Port</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;font-family:monospace;">{{ port }} (TLS/STARTTLS)</td>
+    </tr>
+    <tr>
+      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;">Expéditeur</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;font-family:monospace;">{{ from }}</td>
+    </tr>
+    <tr style="background:#fafafa;">
+      <td style="padding:10px 16px;font-weight:600;color:#374151;">Destinataire test</td>
+      <td style="padding:10px 16px;font-family:monospace;">{{ to }}</td>
+    </tr>
+  </table>
+
+  <div style="background:#f0faf4;border-left:4px solid #006633;border-radius:0 4px 4px 0;padding:12px 16px;margin-bottom:24px;">
+    <p style="margin:0;font-size:13px;color:#065f46;">
+      Les notifications automatiques (soumission, examen, refus, validation) sont maintenant actives.
+    </p>
+  </div>
+
+  <p style="margin:0 0 8px;color:#6b7280;font-size:13px;">Cordialement,</p>
+  <p style="margin:0;font-weight:600;color:#006633;">L'équipe TOA</p>
+{% endblock %}

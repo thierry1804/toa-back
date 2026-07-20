@@ -17,6 +17,7 @@ class PermitTravailNotificationService
         private readonly MailerInterface $mailer,
         private readonly UserRepository $userRepository,
         private readonly LoggerInterface $logger,
+        private readonly string $fromAddress = 'noreply@toa.app',
     ) {
     }
 
@@ -34,7 +35,7 @@ class PermitTravailNotificationService
 
         try {
             $email = (new Email())
-                ->from('noreply@toa.app')
+                ->from($this->fromAddress)
                 ->to((string) $prestataire->getEmail())
                 ->subject(sprintf('[TOA] Permis de Travail #%s validé', $permit->getReference()))
                 ->text($this->buildValidationText($permit, $prestataire))
@@ -69,7 +70,7 @@ class PermitTravailNotificationService
 
         try {
             $email = (new Email())
-                ->from('noreply@toa.app')
+                ->from($this->fromAddress)
                 ->to((string) $prestataire->getEmail())
                 ->subject(sprintf('[TOA] Permis de Travail #%s refusé', $permit->getReference()))
                 ->text($this->buildRefusText($permit, $prestataire, $commentaire))
@@ -170,7 +171,7 @@ class PermitTravailNotificationService
         foreach ($hseUsers as $hseUser) {
             try {
                 $email = (new Email())
-                    ->from('noreply@toa.app')
+                    ->from($this->fromAddress)
                     ->to((string) $hseUser->getEmail())
                     ->subject(sprintf('[TOA] Permis %s resoumis (v%d)', $permit->getReference(), $numeroVersion))
                     ->text($this->buildResoumissionText($permit, $hseUser, $numeroVersion))

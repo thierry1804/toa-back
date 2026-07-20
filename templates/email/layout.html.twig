@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block subject %}Notification TOA{% endblock %}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+
+        {# Header #}
+        <tr>
+          <td style="background:#006633;padding:20px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td>
+                  <span style="font-size:20px;font-weight:900;color:#fff;letter-spacing:2px;text-transform:uppercase;">TOA</span>
+                  <span style="font-size:11px;color:rgba(255,255,255,.7);margin-left:10px;">Travaux en Opération Anticipée</span>
+                </td>
+                <td align="right">
+                  <span style="background:rgba(255,255,255,.15);color:#fff;font-size:11px;padding:4px 12px;border-radius:20px;">
+                    {% block badge %}Notification{% endblock %}
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        {# Body #}
+        <tr>
+          <td style="padding:32px;">
+            {% block body %}{% endblock %}
+          </td>
+        </tr>
+
+        {# Footer #}
+        <tr>
+          <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#9ca3af;">
+              Ce message est généré automatiquement par <strong>TOA</strong> — merci de ne pas y répondre directement.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
