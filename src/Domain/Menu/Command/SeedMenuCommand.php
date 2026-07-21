@@ -89,6 +89,10 @@ class SeedMenuCommand extends Command
             'icon' => 'Clipboard',
             'route' => '/interventions',
             'position' => 5,
+            'roles' => [
+                'ROLE_SUPER_ADMIN'  => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_PRESTATAIRE'  => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+            ],
         ],
         [
             'name' => 'Utilisateurs',

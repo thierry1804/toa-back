@@ -117,6 +117,31 @@ class SeedRoleActionCommand extends Command
             'module'         => 'permit_travail',
             'ownershipField' => null,
         ],
+        // intervention
+        [
+            'key'            => 'intervention.create',
+            'label'          => 'Créer une intervention',
+            'module'         => 'intervention',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'intervention.view',
+            'label'          => 'Consulter une intervention',
+            'module'         => 'intervention',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'intervention.edit',
+            'label'          => 'Modifier une évaluation de risque (statut EN_PREPARATION)',
+            'module'         => 'intervention',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'intervention.valider_evaluation',
+            'label'          => 'Valider l\'évaluation des risques avant intervention',
+            'module'         => 'intervention',
+            'ownershipField' => 'created_by',
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -183,6 +208,18 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.logs', 'bypass' => true],
         ['role' => 'ROLE_ADMIN',        'key' => 'permit_travail.logs', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'permit_travail.logs', 'bypass' => true],
+        // intervention.create
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.create',             'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'intervention.create',             'bypass' => false],
+        // intervention.view
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.view',               'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'intervention.view',               'bypass' => false],
+        // intervention.edit
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.edit',               'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'intervention.edit',               'bypass' => false],
+        // intervention.valider_evaluation
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.valider_evaluation', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'intervention.valider_evaluation', 'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)
