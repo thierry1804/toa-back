@@ -1,52 +1,108 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
   <title>{% block subject %}Notification TOA{% endblock %}</title>
+  <style type="text/css">
+    body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table { border-spacing: 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    td { border-collapse: collapse; }
+    img { border: 0; display: block; outline: none; text-decoration: none; }
+    @media only screen and (max-width: 640px) {
+      .email-wrap { padding: 16px 0 !important; }
+      .email-container { width: 100% !important; border-radius: 0 !important; }
+      .body-cell { padding: 24px 20px !important; }
+      .header-cell { padding: 18px 20px !important; }
+      .footer-cell { padding: 16px 20px !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#171717;-webkit-font-smoothing:antialiased;">
 
-        {# Header #}
-        <tr>
-          <td style="background:#006633;padding:20px 32px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td>
-                  <span style="font-size:20px;font-weight:900;color:#fff;letter-spacing:2px;text-transform:uppercase;">TOA</span>
-                  <span style="font-size:11px;color:rgba(255,255,255,.7);margin-left:10px;">Travaux en Opération Anticipée</span>
-                </td>
-                <td align="right">
-                  <span style="background:rgba(255,255,255,.15);color:#fff;font-size:11px;padding:4px 12px;border-radius:20px;">
-                    {% block badge %}Notification{% endblock %}
-                  </span>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" class="email-wrap" style="background-color:#f1f5f9;padding:40px 0;">
+    <tr>
+      <td align="center" style="padding:0 16px;">
 
-        {# Body #}
-        <tr>
-          <td style="padding:32px;">
-            {% block body %}{% endblock %}
-          </td>
-        </tr>
+        {# ── Outer card ── #}
+        <table class="email-container" width="600" cellpadding="0" cellspacing="0" role="presentation"
+               style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.09);">
 
-        {# Footer #}
-        <tr>
-          <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
-            <p style="margin:0;font-size:12px;color:#9ca3af;">
-              Ce message est généré automatiquement par <strong>TOA</strong> — merci de ne pas y répondre directement.
-            </p>
-          </td>
-        </tr>
+          {# ── Header ── #}
+          <tr>
+            <td class="header-cell" style="background-color:#ffffff;padding:22px 32px;border-bottom:3px solid #006633;">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <img src="{{ email.image('@email_images/toa_logo.png') }}"
+                         alt="TOA" height="38"
+                         style="display:block;height:38px;width:auto;border:0;max-height:38px;">
+                  </td>
+                  <td align="right" style="vertical-align:middle;">
+                    <span style="display:inline-block;background-color:#006633;color:#ffffff;font-size:11px;font-weight:700;letter-spacing:0.5px;padding:5px 14px;border-radius:20px;text-transform:uppercase;">
+                      {% block badge %}Notification{% endblock %}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-      </table>
-    </td></tr>
+          {# ── Status banner (injected per-template) ── #}
+          {% block status_banner %}{% endblock %}
+
+          {# ── Body ── #}
+          <tr>
+            <td class="body-cell" style="padding:32px;">
+              {% block body %}{% endblock %}
+            </td>
+          </tr>
+
+          {# ── Divider ── #}
+          <tr>
+            <td style="padding:0 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                <tr><td style="border-top:1px solid #e5e7eb;font-size:0;line-height:0;">&nbsp;</td></tr>
+              </table>
+            </td>
+          </tr>
+
+          {# ── Signature ── #}
+          <tr>
+            <td style="padding:20px 32px 24px;">
+              <table cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                  <td style="border-left:2px solid #006633;padding-left:12px;">
+                    <p style="margin:0 0 2px;font-size:13px;color:#6b7280;">Cordialement,</p>
+                    <p style="margin:0;font-size:14px;font-weight:700;color:#006633;letter-spacing:0.1px;">L'équipe TOA</p>
+                    <p style="margin:2px 0 0;font-size:11px;color:#9ca3af;">eTech Consulting Madagascar</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          {# ── Footer ── #}
+          <tr>
+            <td class="footer-cell" style="background-color:#f8fafc;border-top:1px solid #e5e7eb;padding:18px 32px;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
+                Ce message est généré automatiquement par la plateforme <strong style="color:#6b7280;font-weight:600;">TOA</strong> &mdash; merci de ne pas y répondre directement.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        {# ── Sub-footer ── #}
+        <p style="margin:14px 0 0;font-size:11px;color:#94a3b8;text-align:center;">
+          TOA &middot; Travaux en Opération Anticipée &middot; eTech Consulting Madagascar
+        </p>
+
+      </td>
+    </tr>
   </table>
+
 </body>
 </html>
