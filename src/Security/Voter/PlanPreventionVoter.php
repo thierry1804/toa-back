@@ -165,7 +165,10 @@ class PlanPreventionVoter extends Voter
     /** PRESTATAIRE (can_create, no can_edit) can only act on their own plans. */
     private function checkOwnershipForPrestataire(PlanPrevention $plan, array $roles, User $user): void
     {
-        // Roles with can_edit bypass ownership (ADMIN, SUPER_ADMIN, CHEF_PROJET, HSE after seed update).
+        // HSE, ADMIN, SUPER_ADMIN, CHEF_PROJET bypass ownership.
+        if (in_array('ROLE_HSE', $roles, true)) {
+            return;
+        }
         if ($this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'EDIT')) {
             return;
         }
@@ -178,17 +181,22 @@ class PlanPreventionVoter extends Voter
     /** CHEF_PROJET (can_edit, no can_delete) can only view plans assigned to them. */
     private function checkOwnershipForChefProjetView(PlanPrevention $plan, array $roles, User $user): void
     {
-        // Roles with can_delete bypass (ADMIN, SUPER_ADMIN).
+        // ADMIN / SUPER_ADMIN bypass via can_delete.
         if ($this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'DELETE')) {
             return;
         }
 
-        // Roles with can_create but NOT can_edit = PRESTATAIRE — ownership already checked above.
+        // HSE must see all plans regardless of DB-configured permission levels.
+        if (in_array('ROLE_HSE', $roles, true)) {
+            return;
+        }
+
+        // PRESTATAIRE (can_create, no can_edit) — ownership already checked above.
         if (!$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'EDIT')) {
             return;
         }
 
-        // CHEF_PROJET / HSE (can_edit, no can_delete): restrict to assigned plan.
+        // CHEF_PROJET (can_edit, no can_delete): restrict to plans assigned to them.
         if ($plan->getChefProjet()?->getUserIdentifier() !== $user->getUserIdentifier()) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
