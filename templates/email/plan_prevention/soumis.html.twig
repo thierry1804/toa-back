@@ -1,53 +1,157 @@
 {% extends 'email/layout.html.twig' %}
 
-{% block subject %}[TOA] Plan de Prévention #{{ plan.reference }} à examiner{% endblock %}
+{% block subject %}[TOA] Plan de Prévention #{{ plan.reference }} — Examen requis{% endblock %}
 {% block badge %}Plan de Prévention{% endblock %}
 
-{% block body %}
-  <h2 style="margin:0 0 8px;font-size:18px;color:#006633;">Plan de Prévention soumis</h2>
-  <p style="margin:0 0 24px;color:#6b7280;font-size:13px;">Un nouveau plan requiert votre examen.</p>
+{% block status_banner %}
+<tr>
+  <td style="background-color:#eff6ff;border-bottom:1px solid #bfdbfe;padding:14px 32px;">
+    <table cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td style="vertical-align:middle;padding-right:10px;">
+          <span style="display:inline-block;width:8px;height:8px;background-color:#2563eb;border-radius:50%;"></span>
+        </td>
+        <td style="vertical-align:middle;">
+          <span style="font-size:12px;font-weight:700;color:#1d4ed8;letter-spacing:0.4px;text-transform:uppercase;">
+            {% if version is defined %}Résoumission — Nouvelle version{% else %}Action requise — Examen du plan{% endif %}
+          </span>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+{% endblock %}
 
-  <p style="margin:0 0 20px;">Bonjour <strong>{{ recipient.firstname }} {{ recipient.name }}</strong>,</p>
-  <p style="margin:0 0 24px;">
-    Le Plan de Prévention suivant a été soumis par le prestataire et requiert votre examen :
+{% block body %}
+
+  {# ── Greeting ── #}
+  <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#111827;line-height:1.4;">
+    Bonjour {{ recipient.firstname }} {{ recipient.name }},
+  </p>
+  <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.6;">
+    {% if version is defined %}
+      Le Plan de Prévention ci-dessous a été <strong>resoumis en version {{ version }}</strong> par le prestataire après correction. Il nécessite un nouvel examen de votre part.
+    {% else %}
+      Un Plan de Prévention vient d'être soumis par le prestataire. Il nécessite votre <strong>examen avant validation HSE</strong>.
+    {% endif %}
   </p>
 
-  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:6px;margin-bottom:24px;">
-    <tr style="background:#f0faf4;">
-      <td style="padding:10px 16px;font-size:12px;font-weight:700;color:#006633;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e5e7eb;" colspan="2">
-        Détails du plan
+  {# ── Plan details card ── #}
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+         style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+
+    {# Card header #}
+    <tr>
+      <td colspan="2" style="background-color:#f9fafb;border-bottom:1px solid #e5e7eb;padding:11px 18px;">
+        <span style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.6px;text-transform:uppercase;">
+          Détails du plan
+        </span>
       </td>
     </tr>
+
+    {# Référence #}
     <tr>
-      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;width:40%;">Référence</td>
-      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;"><strong style="color:#006633;">{{ plan.reference }}</strong></td>
-    </tr>
-    <tr style="background:#fafafa;">
-      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;">Site</td>
-      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;">{{ plan.codeSite }}</td>
-    </tr>
-    <tr>
-      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;">Localité</td>
-      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;">{{ plan.localite }}</td>
-    </tr>
-    <tr style="background:#fafafa;">
-      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;">Activité planifiée</td>
-      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;">{{ plan.activitePlanifiee }}</td>
-    </tr>
-    <tr>
-      <td style="padding:10px 16px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;">Période</td>
-      <td style="padding:10px 16px;border-bottom:1px solid #f3f4f6;">
-        {{ plan.dateDebut ? plan.dateDebut|date('d/m/Y') : '—' }} → {{ plan.dateFin ? plan.dateFin|date('d/m/Y') : '—' }}
+      <td style="padding:12px 18px;font-size:13px;font-weight:600;color:#374151;width:38%;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        Référence
+      </td>
+      <td style="padding:12px 18px;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        <span style="font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#006633;background-color:#f0fdf4;padding:2px 8px;border-radius:4px;">
+          {{ plan.reference }}
+        </span>
+        {% if version is defined %}
+          <span style="margin-left:8px;display:inline-block;background-color:#006633;color:#ffffff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;">
+            v{{ version }}
+          </span>
+        {% endif %}
       </td>
     </tr>
-    {% if version is defined %}
-    <tr style="background:#fafafa;">
-      <td style="padding:10px 16px;font-weight:600;color:#374151;">Version</td>
-      <td style="padding:10px 16px;"><span style="background:#006633;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;">v{{ version }}</span></td>
+
+    {# Site #}
+    <tr style="background-color:#fafafa;">
+      <td style="padding:12px 18px;font-size:13px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        Site
+      </td>
+      <td style="padding:12px 18px;font-size:14px;color:#171717;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        {{ plan.codeSite }}
+      </td>
     </tr>
-    {% endif %}
+
+    {# Localité #}
+    <tr>
+      <td style="padding:12px 18px;font-size:13px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        Localité
+      </td>
+      <td style="padding:12px 18px;font-size:14px;color:#171717;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        {{ plan.localite }}
+      </td>
+    </tr>
+
+    {# Activité #}
+    <tr style="background-color:#fafafa;">
+      <td style="padding:12px 18px;font-size:13px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        Activité planifiée
+      </td>
+      <td style="padding:12px 18px;font-size:14px;color:#171717;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        {{ plan.activitePlanifiee }}
+      </td>
+    </tr>
+
+    {# Chef de projet #}
+    <tr>
+      <td style="padding:12px 18px;font-size:13px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        Chef de projet
+      </td>
+      <td style="padding:12px 18px;font-size:14px;color:#171717;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        {% if plan.chefProjet %}
+          {{ plan.chefProjet.firstname }} {{ plan.chefProjet.name }}
+        {% else %}
+          <span style="color:#9ca3af;">Non assigné</span>
+        {% endif %}
+      </td>
+    </tr>
+
+    {# Entreprise prestataire #}
+    <tr style="background-color:#fafafa;">
+      <td style="padding:12px 18px;font-size:13px;font-weight:600;color:#374151;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        Entreprise prestataire
+      </td>
+      <td style="padding:12px 18px;font-size:14px;color:#171717;border-bottom:1px solid #f3f4f6;vertical-align:top;">
+        {% if plan.createdBy and plan.createdBy.entrepriseName %}
+          {{ plan.createdBy.entrepriseName }}
+        {% else %}
+          <span style="color:#9ca3af;">—</span>
+        {% endif %}
+      </td>
+    </tr>
+
+    {# Période #}
+    <tr>
+      <td style="padding:12px 18px;font-size:13px;font-weight:600;color:#374151;vertical-align:top;">
+        Période
+      </td>
+      <td style="padding:12px 18px;font-size:14px;color:#171717;vertical-align:top;">
+        {% if plan.dateDebut %}
+          <span style="font-family:'Courier New',Courier,monospace;color:#374151;">{{ plan.dateDebut|date('d/m/Y') }}</span>
+          <span style="color:#9ca3af;margin:0 6px;">&rarr;</span>
+          <span style="font-family:'Courier New',Courier,monospace;color:#374151;">{{ plan.dateFin ? plan.dateFin|date('d/m/Y') : '—' }}</span>
+        {% else %}
+          <span style="color:#9ca3af;">Non définie</span>
+        {% endif %}
+      </td>
+    </tr>
+
   </table>
 
-  <p style="margin:0 0 8px;color:#6b7280;font-size:13px;">Cordialement,</p>
-  <p style="margin:0;font-weight:600;color:#006633;">L'équipe TOA</p>
+  {# ── Statut du plan ── #}
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+         style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:8px;">
+    <tr>
+      <td style="padding:14px 18px;">
+        <p style="margin:0;font-size:13px;color:#15803d;line-height:1.5;">
+          <strong>Prochaine étape :</strong> Connectez-vous à la plateforme TOA pour examiner ce plan et le transmettre à l'équipe HSE pour validation.
+        </p>
+      </td>
+    </tr>
+  </table>
+
 {% endblock %}
