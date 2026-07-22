@@ -58,7 +58,7 @@ class Intervention
     #[Groups(['intervention:read'])]
     private ?Uuid $id = null;
 
-    #[ORM\ManyToOne(targetEntity: PermitTravail::class)]
+    #[ORM\OneToOne(targetEntity: PermitTravail::class, inversedBy: 'intervention')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Groups(['intervention:read', 'intervention:write'])]
     private ?PermitTravail $permitTravail = null;
@@ -99,6 +99,12 @@ class Intervention
     public function getPermitTravail(): ?PermitTravail
     {
         return $this->permitTravail;
+    }
+
+    #[Groups(['intervention:read'])]
+    public function getPermitTravailId(): ?string
+    {
+        return $this->permitTravail?->getId()?->toRfc4122();
     }
 
     public function setPermitTravail(?PermitTravail $permitTravail): static

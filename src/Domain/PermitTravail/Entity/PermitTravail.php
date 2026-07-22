@@ -18,6 +18,7 @@ use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailRepository;
+use App\Domain\Intervention\Entity\Intervention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\User\Entity\User;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -192,6 +193,9 @@ class PermitTravail
     #[ORM\OrderBy(['numeroVersion' => 'ASC'])]
     #[Groups(['permit_travail:read'])]
     private Collection $versions;
+
+    #[ORM\OneToOne(targetEntity: Intervention::class, mappedBy: 'permitTravail', fetch: 'EXTRA_LAZY')]
+    private ?Intervention $intervention = null;
 
     #[ORM\OneToOne(mappedBy: 'permitGeneral', targetEntity: PermitTravailGroupe::class)]
     private ?PermitTravailGroupe $groupeAsGeneral = null;
@@ -423,6 +427,12 @@ class PermitTravail
     public function getPlanPreventionId(): ?string
     {
         return $this->planPrevention?->getId()?->toRfc4122();
+    }
+
+    #[Groups(['permit_travail:read'])]
+    public function getInterventionId(): ?string
+    {
+        return $this->intervention?->getId()?->toRfc4122();
     }
 
     #[Groups(['permit_travail:read'])]
