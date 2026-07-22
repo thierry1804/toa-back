@@ -130,6 +130,16 @@
 
     /* ===== PAGE BREAK ===== */
     .page-break { page-break-before: always; }
+
+    /* ===== PREVENT CUT CONTENT ===== */
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    td { page-break-inside: avoid; }
+    .history-entry { page-break-inside: avoid; }
+    .signature-block { page-break-inside: avoid; }
+    .info-row { page-break-inside: avoid; }
+    .section-title { page-break-after: avoid; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
   </style>
 </head>
 <body>
@@ -200,8 +210,14 @@
         <div class="info-value">{{ plan.dateFin|date('d/m/Y') }}</div>
       </div>
       <div class="info-row">
-        <div class="info-label">Créé par (Prestataire)</div>
-        <div class="info-value">{{ plan.createdBy.firstname }} {{ plan.createdBy.name }}</div>
+        <div class="info-label">Prestataire</div>
+        <div class="info-value">
+          {% if plan.createdBy.entrepriseName %}
+            {{ plan.createdBy.entrepriseName }} ({{ plan.createdBy.firstname }} {{ plan.createdBy.name }})
+          {% else %}
+            {{ plan.createdBy.firstname }} {{ plan.createdBy.name }}
+          {% endif %}
+        </div>
       </div>
       {% if plan.chefProjet %}
       <div class="info-row">
@@ -252,6 +268,52 @@
               <span class="badge-manual">Manuel</span>
             {% endif %}
           </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- ===== INSTALLATIONS ===== -->
+  {% if plan.installations|length > 0 %}
+  <div class="section">
+    <div class="section-title">Installations ({{ plan.installations|length }})</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:45%;">Description</th>
+          <th style="width:55%;">Conditions d'utilisation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for installation in plan.installations %}
+        <tr>
+          <td>{{ installation.description ?? '—' }}</td>
+          <td style="white-space:pre-wrap;">{{ installation.conditionsUtilisation ?? '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- ===== ÉQUIPEMENTS ===== -->
+  {% if plan.equipements|length > 0 %}
+  <div class="section">
+    <div class="section-title">Équipements ({{ plan.equipements|length }})</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:45%;">Description</th>
+          <th style="width:55%;">Conditions d'utilisation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for equipement in plan.equipements %}
+        <tr>
+          <td>{{ equipement.description ?? '—' }}</td>
+          <td style="white-space:pre-wrap;">{{ equipement.conditionsUtilisation ?? '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
