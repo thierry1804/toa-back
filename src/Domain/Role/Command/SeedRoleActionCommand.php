@@ -142,6 +142,31 @@ class SeedRoleActionCommand extends Command
             'module'         => 'intervention',
             'ownershipField' => 'created_by',
         ],
+        // suivi_journalier
+        [
+            'key'            => 'suivi_journalier.create',
+            'label'          => 'Créer un suivi journalier d\'intervention',
+            'module'         => 'suivi_journalier',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'suivi_journalier.view',
+            'label'          => 'Consulter les suivis journaliers',
+            'module'         => 'suivi_journalier',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'suivi_journalier.edit',
+            'label'          => 'Modifier un suivi journalier (jour J uniquement)',
+            'module'         => 'suivi_journalier',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'suivi_journalier.delete_document',
+            'label'          => 'Supprimer un document de suivi journalier',
+            'module'         => 'suivi_journalier',
+            'ownershipField' => 'created_by',
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -220,6 +245,20 @@ class SeedRoleActionCommand extends Command
         // intervention.valider_evaluation
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.valider_evaluation', 'bypass' => true],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'intervention.valider_evaluation', 'bypass' => false],
+        // suivi_journalier.create
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'suivi_journalier.create',          'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'suivi_journalier.create',          'bypass' => false],
+        // suivi_journalier.view
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'suivi_journalier.view',            'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'suivi_journalier.view',            'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'suivi_journalier.view',            'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'suivi_journalier.view',            'bypass' => false],
+        // suivi_journalier.edit
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'suivi_journalier.edit',            'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'suivi_journalier.edit',            'bypass' => false],
+        // suivi_journalier.delete_document
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'suivi_journalier.delete_document', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'suivi_journalier.delete_document', 'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)

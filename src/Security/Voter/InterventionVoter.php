@@ -71,8 +71,16 @@ class InterventionVoter extends Voter
                 throw new AccessDeniedException('error.voter.access_denied');
             }
 
-            if (empty($canBypass)) {
-                $this->checkOwnership($subject, $user, $canBypass);
+            if (!empty($canBypass)) {
+                return true;
+            }
+
+            $uid = $user->getUserIdentifier();
+            $isCreator       = $subject->getCreatedBy()?->getUserIdentifier() === $uid;
+            $isPermitCreator = $subject->getPermitTravail()?->getCreatedBy()?->getUserIdentifier() === $uid;
+
+            if (!$isCreator && !$isPermitCreator) {
+                throw new AccessDeniedException('error.voter.access_denied');
             }
 
             return true;

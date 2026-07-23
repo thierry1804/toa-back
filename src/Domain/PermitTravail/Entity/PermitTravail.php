@@ -101,11 +101,11 @@ class PermitTravail
     private ?Uuid $id = null;
 
     #[ORM\Column(length: 255, unique: true)]
-    #[Groups(['permit_travail:read'])]
+    #[Groups(['permit_travail:read', 'intervention:read'])]
     private ?string $reference = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    #[Groups(['permit_travail:read', 'permit_travail:write', 'intervention:read'])]
     #[Assert\NotBlank(message: 'code_site_required')]
     #[Assert\NotNull(message: 'code_site_required')]
     private ?string $codeSite = null;
@@ -131,15 +131,15 @@ class PermitTravail
     private StatutPermitTravail $statut = StatutPermitTravail::BROUILLON;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    #[Groups(['permit_travail:read', 'permit_travail:write', 'intervention:read'])]
     private ?string $descriptionTravaux = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    #[Groups(['permit_travail:read', 'permit_travail:write', 'intervention:read'])]
     private ?\DateTimeImmutable $dateDebutPrevue = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    #[Groups(['permit_travail:read', 'permit_travail:write', 'intervention:read'])]
     private ?\DateTimeImmutable $dateFinPrevue = null;
 
     #[ORM\Column]
@@ -156,7 +156,7 @@ class PermitTravail
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['permit_travail:read'])]
+    #[Groups(['permit_travail:read', 'intervention:read'])]
     private ?User $createdBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

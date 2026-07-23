@@ -95,6 +95,17 @@ class SeedMenuCommand extends Command
             ],
         ],
         [
+            'name'        => 'Suivis journaliers',
+            'icon'        => 'ClipboardList',
+            'route'       => '/interventions/suivis',
+            'position'    => 1,
+            'parentRoute' => '/interventions',
+            'roles'       => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_PRESTATAIRE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+        ],
+        [
             'name' => 'Utilisateurs',
             'icon' => 'Users',
             'route' => '/users',

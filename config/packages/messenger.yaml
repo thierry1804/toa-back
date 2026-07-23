@@ -21,6 +21,7 @@ framework:
             'App\Domain\ActivityPlanning\Message\ActivityPlanningUpdatedNotification': notifications
             'Symfony\Component\Mercure\Update': notifications
             'App\Domain\PlanPrevention\Message\GeneratePlanPreventionPdfMessage': pdf_generation
+            'Symfony\Component\Mailer\Messenger\SendEmailMessage': notifications
 
 # when@test:
 #    framework:

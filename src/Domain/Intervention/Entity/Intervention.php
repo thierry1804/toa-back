@@ -6,6 +6,7 @@ namespace App\Domain\Intervention\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use App\Api\Processor\EvaluationRisqueValiderProcessor;
 use App\Api\Processor\InterventionCreateProcessor;
@@ -20,6 +21,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Uid\Uuid;
+use App\Domain\Intervention\Entity\SuiviJournalier;
 
 #[ORM\Entity(repositoryClass: InterventionRepository::class)]
 #[ORM\Table(name: '`intervention`')]
@@ -27,6 +29,10 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\HasLifecycleCallbacks]
 #[ApiResource(
     operations: [
+        new GetCollection(
+            uriTemplate: '/interventions',
+            security: "is_granted('INTERVENTION_VIEW', null)",
+        ),
         new Post(
             uriTemplate: '/interventions',
             security: "is_granted('INTERVENTION_CREATE')",
@@ -86,9 +92,19 @@ class Intervention
     #[Groups(['intervention:read'])]
     private Collection $evaluations;
 
+    #[ORM\OneToMany(
+        targetEntity: SuiviJournalier::class,
+        mappedBy: 'intervention',
+        cascade: ['remove'],
+        orphanRemoval: true,
+        fetch: 'EXTRA_LAZY',
+    )]
+    private Collection $suivis;
+
     public function __construct()
     {
         $this->evaluations = new ArrayCollection();
+        $this->suivis = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
@@ -146,6 +162,11 @@ class Intervention
     public function getEvaluations(): Collection
     {
         return $this->evaluations;
+    }
+
+    public function getSuivis(): Collection
+    {
+        return $this->suivis;
     }
 
     public function addEvaluation(EvaluationRisque $evaluation): static
