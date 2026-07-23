@@ -167,6 +167,18 @@ class SeedRoleActionCommand extends Command
             'module'         => 'suivi_journalier',
             'ownershipField' => 'created_by',
         ],
+        [
+            'key'            => 'intervention.suivi.dashboard',
+            'label'          => 'Tableau de bord suivi avancements interventions (HSE/Chef de Projet)',
+            'module'         => 'intervention',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'intervention.suivi.detail',
+            'label'          => 'Détail suivi intervention (lecture seule HSE/Chef de Projet)',
+            'module'         => 'intervention',
+            'ownershipField' => null,
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -259,6 +271,14 @@ class SeedRoleActionCommand extends Command
         // suivi_journalier.delete_document
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'suivi_journalier.delete_document', 'bypass' => true],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'suivi_journalier.delete_document', 'bypass' => false],
+        // intervention.suivi.dashboard
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.suivi.dashboard', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'intervention.suivi.dashboard', 'bypass' => true],
+        ['role' => 'ROLE_CHEF_PROJET',  'key' => 'intervention.suivi.dashboard', 'bypass' => true],
+        // intervention.suivi.detail
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.suivi.detail', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'intervention.suivi.detail', 'bypass' => true],
+        ['role' => 'ROLE_CHEF_PROJET',  'key' => 'intervention.suivi.detail', 'bypass' => true],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)
