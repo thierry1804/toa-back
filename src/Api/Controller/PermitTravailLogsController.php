@@ -45,8 +45,8 @@ class PermitTravailLogsController extends AbstractController
                 'declenchePar' => $l->getDeclenchePar() !== null ? [
                     'id'        => $l->getDeclenchePar()->getId(),
                     'email'     => $l->getDeclenchePar()->getEmail(),
-                    'name'      => $l->getDeclenchePar()->getNom(),
-                    'firstname' => $l->getDeclenchePar()->getPrenom(),
+                    'name'      => $l->getDeclenchePar()->getName(),
+                    'firstname' => $l->getDeclenchePar()->getFirstname(),
                 ] : null,
             ],
             $logs,
