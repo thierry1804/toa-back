@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>PV de Réception — {{ permit.reference }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #1a1a1a; background: #fff; }
+    @page { size: A4; margin: 20mm 15mm 20mm 15mm; }
+
+    .watermark {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      z-index: -1; pointer-events: none;
+    }
+    .watermark span {
+      font-size: 80pt; font-weight: 900; color: rgba(180, 0, 0, 0.05);
+      transform: rotate(-45deg); white-space: nowrap; letter-spacing: 6px;
+      text-transform: uppercase;
+    }
+
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 3px solid #b40000; padding-bottom: 10px; margin-bottom: 16px;
+    }
+    .logo-area { display: flex; align-items: center; gap: 10px; }
+    .logo-img { height: 48px; width: auto; }
+    .doc-title { text-align: right; }
+    .doc-title h1 { font-size: 13pt; font-weight: 900; color: #b40000; text-transform: uppercase; }
+    .doc-title .subtitle { font-size: 8pt; color: #555; margin-top: 2px; }
+
+    .reference-banner {
+      background: #b40000; color: #fff; padding: 10px 16px;
+      border-radius: 6px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .reference-banner .ref { font-size: 14pt; font-weight: 900; letter-spacing: 1px; }
+    .type-badge {
+      background: #fff; color: #b40000; border-radius: 4px;
+      padding: 4px 12px; font-size: 9pt; font-weight: 700; text-transform: uppercase;
+    }
+
+    .section { margin-bottom: 16px; }
+    .section-title {
+      background: #fff0f0; border-left: 4px solid #b40000;
+      padding: 5px 10px; font-size: 10pt; font-weight: 700; color: #b40000;
+      margin-bottom: 8px; text-transform: uppercase;
+    }
+
+    .info-grid { display: table; width: 100%; border-collapse: collapse; }
+    .info-row { display: table-row; }
+    .info-label {
+      display: table-cell; width: 32%; background: #f5f5f5;
+      border: 1px solid #ddd; padding: 4px 8px; font-weight: 600; font-size: 9pt;
+      vertical-align: top;
+    }
+    .info-value { display: table-cell; border: 1px solid #ddd; padding: 4px 8px; font-size: 9pt; vertical-align: top; }
+
+    .cloture-block {
+      border: 2px solid #b40000; border-radius: 6px; padding: 12px 16px; background: #fff8f8;
+      margin-bottom: 16px;
+    }
+    .cloture-label { font-size: 8pt; color: #888; margin-bottom: 2px; }
+    .cloture-value { font-size: 10pt; font-weight: 700; }
+    .cloture-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+    .cloture-item { flex: 1; min-width: 140px; }
+
+    .accord-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 4px;
+      font-size: 9pt; font-weight: 700;
+    }
+    .accord-oui { background: #d4edda; color: #155724; }
+    .accord-non { background: #f8d7da; color: #721c24; }
+
+    .page-footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      border-top: 1px solid #b40000; padding: 4px 15mm;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 7.5pt; color: #555; background: #fff;
+    }
+    .footer-ref { font-weight: 700; color: #b40000; }
+  </style>
+</head>
+<body>
+
+  <div class="watermark"><span>CLÔTURÉ</span></div>
+
+  <div class="page-footer">
+    <span class="footer-ref">{{ permit.reference }}</span>
+    <span>PV de Réception — CONFIDENTIEL</span>
+    <span>Généré le {{ generatedAt|date('d/m/Y à H:i') }}</span>
+  </div>
+
+  <!-- EN-TÊTE -->
+  <div class="page-header">
+    <div class="logo-area">
+      {% if logoBase64 %}
+        <img src="data:image/png;base64,{{ logoBase64 }}" alt="TOA" class="logo-img">
+      {% else %}
+        <div style="width:48px;height:48px;background:#b40000;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14pt;">TOA</div>
+      {% endif %}
+      <div>
+        <div style="font-weight:900;font-size:11pt;color:#b40000;">TowerCo of Africa</div>
+        <div style="font-size:8pt;color:#555;">Direction HSSES</div>
+      </div>
+    </div>
+    <div class="doc-title">
+      <h1>Procès-verbal de réception</h1>
+      <div class="subtitle">Document officiel — Clôture de permis de travail</div>
+    </div>
+  </div>
+
+  <!-- REFERENCE BANNER -->
+  <div class="reference-banner">
+    <span class="ref">{{ permit.reference }}</span>
+    <span class="type-badge">CLÔTURÉ</span>
+  </div>
+
+  <!-- PARTIES INTERVENANTES -->
+  <div class="section">
+    <div class="section-title">Parties intervenantes</div>
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="info-label">Entreprise prestataire</div>
+        <div class="info-value" style="font-weight:700;">
+          {{ permit.createdBy and permit.createdBy.entrepriseName ? permit.createdBy.entrepriseName : '—' }}
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Responsable prestataire</div>
+        <div class="info-value">
+          {{ permit.createdBy ? permit.createdBy.firstname ~ ' ' ~ permit.createdBy.name : '—' }}
+        </div>
+      </div>
+      {% set chefProjet = permit.planPrevention ? permit.planPrevention.chefProjet : null %}
+      <div class="info-row">
+        <div class="info-label">Chef de projet</div>
+        <div class="info-value" style="font-weight:700;">
+          {% if chefProjet %}
+            {{ chefProjet.firstname }} {{ chefProjet.name }}
+          {% else %}
+            —
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFORMATIONS PERMIS -->
+  <div class="section">
+    <div class="section-title">Informations du permis de travail</div>
+    <div class="info-grid">
+      <div class="info-row">
+        <div class="info-label">Code site</div>
+        <div class="info-value">{{ permit.codeSite }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Type de permis</div>
+        <div class="info-value">{{ permit.type ? permit.type.value : '—' }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Référence</div>
+        <div class="info-value" style="font-weight:700;font-family:monospace;">{{ permit.reference }}</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Statut</div>
+        <div class="info-value" style="font-weight:700;color:#b40000;">CLÔTURÉ</div>
+      </div>
+      {% if permit.dateDebutPrevue %}
+      <div class="info-row">
+        <div class="info-label">Date début prévue</div>
+        <div class="info-value">{{ permit.dateDebutPrevue|date('d/m/Y H:i') }}</div>
+      </div>
+      {% endif %}
+      {% if permit.dateFinPrevue %}
+      <div class="info-row">
+        <div class="info-label">Date fin prévue</div>
+        <div class="info-value">{{ permit.dateFinPrevue|date('d/m/Y H:i') }}</div>
+      </div>
+      {% endif %}
+      {% if permit.descriptionTravaux %}
+      <div class="info-row">
+        <div class="info-label">Description travaux</div>
+        <div class="info-value" style="white-space:pre-wrap;">{{ permit.descriptionTravaux }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- DÉTAILS CLÔTURE -->
+  {% if cloture %}
+  <div class="section">
+    <div class="section-title">Détails de la clôture</div>
+    <div class="cloture-block">
+      <div class="cloture-grid">
+        <div class="cloture-item">
+          <div class="cloture-label">Type de clôture</div>
+          <div class="cloture-value">{{ cloture.typeCloture.value }}</div>
+        </div>
+        <div class="cloture-item">
+          <div class="cloture-label">Date effective</div>
+          <div class="cloture-value">{{ cloture.dateClotureEffective|date('d/m/Y à H:i') }}</div>
+        </div>
+        <div class="cloture-item">
+          <div class="cloture-label">Accord client</div>
+          <div class="cloture-value">
+            {% if cloture.accordClient %}
+              <span class="accord-badge accord-oui">✓ Oui</span>
+            {% else %}
+              <span class="accord-badge accord-non">✗ Non</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if cloture.accordClientAt %}
+        <div class="cloture-item">
+          <div class="cloture-label">Accord client le</div>
+          <div class="cloture-value">{{ cloture.accordClientAt|date('d/m/Y à H:i') }}</div>
+        </div>
+        {% endif %}
+        {% if cloture.clotureBy %}
+        <div class="cloture-item">
+          <div class="cloture-label">Clôturé par</div>
+          <div class="cloture-value">{{ cloture.clotureBy.firstname }} {{ cloture.clotureBy.name }}</div>
+        </div>
+        {% endif %}
+      </div>
+      {% if cloture.commentaire %}
+      <div style="margin-top:12px;">
+        <div class="cloture-label">Commentaire</div>
+        <div style="margin-top:4px;padding:8px;background:#fff;border:1px solid #fcc;border-radius:4px;font-size:9pt;font-style:italic;">{{ cloture.commentaire }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ATTESTATION -->
+  <div class="section">
+    <div class="section-title">Attestation de réception</div>
+    <div style="border:1px solid #ccc;border-radius:4px;padding:14px;background:#fafafa;font-size:9pt;line-height:1.6;">
+      <p>Le soussigné atteste que les travaux décrits dans le permis de travail référencé ci-dessus ont été réceptionnés conformément aux exigences de sécurité et aux procédures HSE en vigueur.</p>
+      <p style="margin-top:10px;">Le site a été restitué dans un état conforme aux normes de sécurité applicables.</p>
+      <div style="margin-top:20px;display:flex;gap:40px;">
+        <div style="flex:1;">
+          <div style="border-bottom:1px solid #999;margin-bottom:4px;height:40px;"></div>
+          <div style="font-size:8pt;color:#555;">Signature — Responsable HSE</div>
+        </div>
+        <div style="flex:1;">
+          <div style="border-bottom:1px solid #999;margin-bottom:4px;height:40px;"></div>
+          <div style="font-size:8pt;color:#555;">Signature — Représentant Prestataire</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

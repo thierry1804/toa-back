@@ -179,6 +179,13 @@ class SeedRoleActionCommand extends Command
             'module'         => 'intervention',
             'ownershipField' => null,
         ],
+        // cloture
+        [
+            'key'            => 'permit_travail.cloturer',
+            'label'          => 'Clôturer un permis de travail',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'created_by',
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -279,6 +286,10 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.suivi.detail', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'intervention.suivi.detail', 'bypass' => true],
         ['role' => 'ROLE_CHEF_PROJET',  'key' => 'intervention.suivi.detail', 'bypass' => true],
+        // permit_travail.cloturer
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.cloturer', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.cloturer', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.cloturer', 'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)

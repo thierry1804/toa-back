@@ -30,6 +30,7 @@ class PermitTravailVoter extends Voter
     public const RESOUMETTRE  = 'PERMIT_TRAVAIL_RESOUMETTRE';
     public const SUIVI        = 'PERMIT_TRAVAIL_SUIVI';
     public const LOGS         = 'PERMIT_TRAVAIL_LOGS';
+    public const CLOTURER     = 'PERMIT_TRAVAIL_CLOTURER';
 
     private const ACTION_KEY_MAP = [
         self::VIEW         => 'permit_travail.view',
@@ -42,13 +43,14 @@ class PermitTravailVoter extends Voter
         self::RESOUMETTRE  => 'permit_travail.resoumettre',
         self::SUIVI        => 'permit_travail.suivi',
         self::LOGS         => 'permit_travail.logs',
+        self::CLOTURER     => 'permit_travail.cloturer',
     ];
 
     public function __construct(private readonly PermissionChecker $permissionChecker) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE, self::SUIVI, self::LOGS], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE, self::SUIVI, self::LOGS, self::CLOTURER], true)) {
             return false;
         }
 
@@ -162,6 +164,18 @@ class PermitTravailVoter extends Voter
 
         if ($attribute === self::SUIVI || $attribute === self::LOGS) {
             // No ownership check — role_action existence is sufficient
+            return true;
+        }
+
+        if ($attribute === self::CLOTURER) {
+            if (!$subject instanceof PermitTravail) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            if (empty($canBypass)) {
+                $this->checkOwnershipForCreatedBy($subject, $user);
+            }
+
             return true;
         }
 
