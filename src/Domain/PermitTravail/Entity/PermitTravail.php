@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\PermitTravail\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
@@ -14,6 +16,8 @@ use App\Api\Processor\PermitTravailRefuserProcessor;
 use App\Api\Processor\PermitTravailResoumettreProcessor;
 use App\Api\Processor\PermitTravailSoumettreProcessor;
 use App\Api\Processor\PermitTravailValiderProcessor;
+use App\Api\Processor\PvRefuserProcessor;
+use App\Api\Processor\PvValiderProcessor;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypePermitTravail;
@@ -34,6 +38,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: PermitTravailRepository::class)]
 #[ORM\Table(name: '`permit_travail`')]
 #[ORM\HasLifecycleCallbacks]
+#[ApiFilter(SearchFilter::class, properties: ['statut' => 'exact', 'codeSite' => 'exact', 'typePermis' => 'exact'])]
 #[ApiResource(
     operations: [
         new GetCollection(
@@ -86,6 +91,22 @@ use Symfony\Component\Validator\Constraints as Assert;
             security: "is_granted('PERMIT_TRAVAIL_RESOUMETTRE', object)",
             processor: PermitTravailResoumettreProcessor::class,
             name: 'permit_travail_resoumettre',
+        ),
+        new Post(
+            uriTemplate: '/permits-travail/{id}/pv/valider',
+            read: true,
+            deserialize: false,
+            security: "is_granted('PERMIT_TRAVAIL_PV_VALIDER', object)",
+            processor: PvValiderProcessor::class,
+            name: 'permit_travail_pv_valider',
+        ),
+        new Post(
+            uriTemplate: '/permits-travail/{id}/pv/refuser',
+            read: true,
+            deserialize: false,
+            security: "is_granted('PERMIT_TRAVAIL_PV_REFUSER', object)",
+            processor: PvRefuserProcessor::class,
+            name: 'permit_travail_pv_refuser',
         ),
     ],
     normalizationContext: ['groups' => ['permit_travail:read']],

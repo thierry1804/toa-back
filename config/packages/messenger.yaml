@@ -16,12 +16,17 @@ framework:
                 dsn: '%env(REDIS_URL)%'
                 options:
                     stream: audit
+            kpi:
+                dsn: '%env(REDIS_URL)%'
+                options:
+                    stream: kpi
 
         routing:
             'App\Domain\ActivityPlanning\Message\ActivityPlanningUpdatedNotification': notifications
             'Symfony\Component\Mercure\Update': notifications
             'App\Domain\PlanPrevention\Message\GeneratePlanPreventionPdfMessage': pdf_generation
             'Symfony\Component\Mailer\Messenger\SendEmailMessage': notifications
+            'App\Domain\PermitTravail\Message\UpdateKpisMessage': kpi
 
 # when@test:
 #    framework:

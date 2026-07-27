@@ -7,6 +7,8 @@ namespace App\Security\Voter;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
+use App\Domain\PermitTravail\Enum\StatutPvReceptionPdf;
+use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
 use App\Domain\User\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
@@ -31,6 +33,8 @@ class PermitTravailVoter extends Voter
     public const SUIVI        = 'PERMIT_TRAVAIL_SUIVI';
     public const LOGS         = 'PERMIT_TRAVAIL_LOGS';
     public const CLOTURER     = 'PERMIT_TRAVAIL_CLOTURER';
+    public const PV_VALIDER   = 'PERMIT_TRAVAIL_PV_VALIDER';
+    public const PV_REFUSER   = 'PERMIT_TRAVAIL_PV_REFUSER';
 
     private const ACTION_KEY_MAP = [
         self::VIEW         => 'permit_travail.view',
@@ -44,13 +48,18 @@ class PermitTravailVoter extends Voter
         self::SUIVI        => 'permit_travail.suivi',
         self::LOGS         => 'permit_travail.logs',
         self::CLOTURER     => 'permit_travail.cloturer',
+        self::PV_VALIDER   => 'permit_travail.pv_valider',
+        self::PV_REFUSER   => 'permit_travail.pv_refuser',
     ];
 
-    public function __construct(private readonly PermissionChecker $permissionChecker) {}
+    public function __construct(
+        private readonly PermissionChecker $permissionChecker,
+        private readonly PvReceptionPdfRepository $pvRepository,
+    ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE, self::SUIVI, self::LOGS, self::CLOTURER], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE, self::SUIVI, self::LOGS, self::CLOTURER, self::PV_VALIDER, self::PV_REFUSER], true)) {
             return false;
         }
 
@@ -179,6 +188,43 @@ class PermitTravailVoter extends Voter
             return true;
         }
 
+        if ($attribute === self::PV_VALIDER) {
+            if (!$subject instanceof PermitTravail) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            if ($subject->getStatut() !== StatutPermitTravail::CLOTURE) {
+                throw new AccessDeniedException('permit_travail.statut_not_cloture');
+            }
+
+            $pv = $this->pvRepository->findByPermitTravailId((string) $subject->getId());
+            if ($pv === null || $pv->getStatut() !== StatutPvReceptionPdf::GENERE) {
+                throw new AccessDeniedException('permit_travail.pv_not_genere');
+            }
+
+            if (empty($canBypass)) {
+                $this->checkChefProjetOwnership($subject, $user);
+            }
+
+            return true;
+        }
+
+        if ($attribute === self::PV_REFUSER) {
+            if (!$subject instanceof PermitTravail) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            if ($subject->getStatut() !== StatutPermitTravail::CLOTURE) {
+                throw new AccessDeniedException('permit_travail.statut_not_cloture');
+            }
+
+            if (empty($canBypass)) {
+                $this->checkChefProjetOwnership($subject, $user);
+            }
+
+            return true;
+        }
+
         return false;
     }
 
@@ -207,6 +253,14 @@ class PermitTravailVoter extends Voter
     {
         if ($permit->getStatut() !== StatutPermitTravail::SOUMIS) {
             throw new AccessDeniedException('permit_travail.statut_not_soumis');
+        }
+    }
+
+    private function checkChefProjetOwnership(PermitTravail $permit, User $user): void
+    {
+        $chefProjet = $permit->getPlanPrevention()?->getChefProjet();
+        if ($chefProjet === null || $chefProjet->getUserIdentifier() !== $user->getUserIdentifier()) {
+            throw new AccessDeniedException('error.voter.access_denied');
         }
     }
 }

@@ -14,4 +14,6 @@ enum StatutPermitTravail: string
     case VALIDE_HSE = 'VALIDE_HSE';
     case REFUSE_HSE = 'REFUSE_HSE';
     case CLOTURE    = 'CLOTURE';
+    case PV_VALIDE  = 'PV_VALIDE';
+    case PV_REFUSE  = 'PV_REFUSE';
 }

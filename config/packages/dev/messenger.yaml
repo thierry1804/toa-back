@@ -5,3 +5,5 @@ framework:
                 dsn: 'in-memory://'
             pdf_generation:
                 dsn: 'sync://'
+            kpi:
+                dsn: 'sync://'

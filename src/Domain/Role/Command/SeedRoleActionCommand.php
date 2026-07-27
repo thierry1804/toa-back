@@ -186,6 +186,26 @@ class SeedRoleActionCommand extends Command
             'module'         => 'permit_travail',
             'ownershipField' => 'created_by',
         ],
+        // validation CDP
+        [
+            'key'            => 'permit_travail.pv_valider',
+            'label'          => 'Valider le PV de réception (Chef de Projet)',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'plan_prevention.chef_projet',
+        ],
+        [
+            'key'            => 'permit_travail.pv_refuser',
+            'label'          => 'Refuser le PV de réception (Chef de Projet)',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'plan_prevention.chef_projet',
+        ],
+        // dashboard
+        [
+            'key'            => 'dashboard.kpis.view',
+            'label'          => 'Tableau de bord KPIs HSE',
+            'module'         => 'dashboard',
+            'ownershipField' => null,
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -290,6 +310,16 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.cloturer', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'permit_travail.cloturer', 'bypass' => true],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.cloturer', 'bypass' => false],
+        // permit_travail.pv_valider
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.pv_valider', 'bypass' => true],
+        ['role' => 'ROLE_CHEF_PROJET',  'key' => 'permit_travail.pv_valider', 'bypass' => false],
+        // permit_travail.pv_refuser
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.pv_refuser', 'bypass' => true],
+        ['role' => 'ROLE_CHEF_PROJET',  'key' => 'permit_travail.pv_refuser', 'bypass' => false],
+        // dashboard.kpis.view
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'dashboard.kpis.view', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'dashboard.kpis.view', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'dashboard.kpis.view', 'bypass' => true],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)
