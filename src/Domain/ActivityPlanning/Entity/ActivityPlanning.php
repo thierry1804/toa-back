@@ -76,12 +76,6 @@ class ActivityPlanning
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
     private ?string $providerEmail = null;
 
-    #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank(message: 'project_description_required')]
-    #[Assert\NotNull(message: 'project_description_required')]
-    private ?string $projectDescription = null;
-
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
     #[Assert\NotBlank(message: 'activity_site_code_required')]
@@ -90,21 +84,9 @@ class ActivityPlanning
 
     #[ORM\Column(length: 255)]
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank(message: 'site_number_required')]
-    #[Assert\NotNull(message: 'site_number_required')]
-    private ?string $siteNumber = null;
-
-    #[ORM\Column(length: 255)]
-    #[Groups(['activity_planning:read', 'activity_planning:write'])]
     #[Assert\NotBlank(message: 'site_name_required')]
     #[Assert\NotNull(message: 'site_name_required')]
     private ?string $siteName = null;
-
-    #[ORM\Column(length: 255)]
-    #[Groups(['activity_planning:read', 'activity_planning:write'])]
-    #[Assert\NotBlank(message: 'region_required')]
-    #[Assert\NotNull(message: 'region_required')]
-    private ?string $region = null;
 
     // Kept in DB for historical data but no longer required or exposed in write operations.
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
@@ -152,6 +134,16 @@ class ActivityPlanning
     #[Groups(['activity_planning:read'])]
     private Collection $auditLogs;
 
+    #[ORM\OneToMany(
+        targetEntity: SectionPlanifiee::class,
+        mappedBy: 'planning',
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
+    #[ORM\OrderBy(['ordre' => 'ASC'])]
+    #[Groups(['activity_planning:read', 'activity_planning:write'])]
+    private Collection $sections;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['activity_planning:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -168,6 +160,7 @@ class ActivityPlanning
     public function __construct()
     {
         $this->auditLogs = new ArrayCollection();
+        $this->sections  = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -211,18 +204,6 @@ class ActivityPlanning
         return $this;
     }
 
-    public function getProjectDescription(): ?string
-    {
-        return $this->projectDescription;
-    }
-
-    public function setProjectDescription(string $projectDescription): static
-    {
-        $this->projectDescription = $projectDescription;
-
-        return $this;
-    }
-
     public function getSiteCode(): ?string
     {
         return $this->siteCode;
@@ -235,18 +216,6 @@ class ActivityPlanning
         return $this;
     }
 
-    public function getSiteNumber(): ?string
-    {
-        return $this->siteNumber;
-    }
-
-    public function setSiteNumber(string $siteNumber): static
-    {
-        $this->siteNumber = $siteNumber;
-
-        return $this;
-    }
-
     public function getSiteName(): ?string
     {
         return $this->siteName;
@@ -255,18 +224,6 @@ class ActivityPlanning
     public function setSiteName(string $siteName): static
     {
         $this->siteName = $siteName;
-
-        return $this;
-    }
-
-    public function getRegion(): ?string
-    {
-        return $this->region;
-    }
-
-    public function setRegion(string $region): static
-    {
-        $this->region = $region;
 
         return $this;
     }
@@ -372,6 +329,28 @@ class ActivityPlanning
         return $this->auditLogs;
     }
 
+    public function getSections(): Collection
+    {
+        return $this->sections;
+    }
+
+    public function addSection(SectionPlanifiee $section): static
+    {
+        if (!$this->sections->contains($section)) {
+            $this->sections->add($section);
+            $section->setPlanning($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSection(SectionPlanifiee $section): static
+    {
+        $this->sections->removeElement($section);
+
+        return $this;
+    }
+
     public function addAuditLog(ActivityPlanningAudit $auditLog): static
     {
         if (!$this->auditLogs->contains($auditLog)) {
@@ -415,15 +394,13 @@ class ActivityPlanning
 
         if ($this->isLocked()) {
             $fields = array_merge($fields, [
-                'process', 'siteCode', 'siteNumber', 'siteName', 'region',
+                'process', 'siteCode', 'siteName',
                 'expectedStartDate', 'expectedEndDate',
             ]);
         }
 
         if ($this->permitValidated) {
-            $fields = array_merge($fields, [
-                'provider', 'projectDescription',
-            ]);
+            $fields[] = 'provider';
         }
 
         return array_unique($fields);
@@ -436,11 +413,8 @@ class ActivityPlanning
             'process' => $this->process,
             'provider' => $this->provider,
             'providerEmail' => $this->providerEmail,
-            'projectDescription' => $this->projectDescription,
             'siteCode' => $this->siteCode,
-            'siteNumber' => $this->siteNumber,
             'siteName' => $this->siteName,
-            'region' => $this->region,
             'theoreticalStartDate' => $this->theoreticalStartDate?->format('c'),
             'expectedStartDate' => $this->expectedStartDate?->format('c'),
             'expectedEndDate' => $this->expectedEndDate?->format('c'),

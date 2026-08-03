@@ -22,8 +22,8 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
     ];
 
     private const ALL_FIELDS = [
-        'process', 'provider', 'providerEmail', 'projectDescription',
-        'siteCode', 'siteNumber', 'siteName', 'region',
+        'process', 'provider', 'providerEmail',
+        'siteCode', 'siteName',
         'expectedStartDate', 'expectedEndDate',
         'status', 'permitReference', 'permitValidated',
     ];
@@ -80,6 +80,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
             }
         }
 
+        $this->replaceSections($existing, $data);
         $this->applyActualDates($existing, $originalData);
         $this->checkLockedFields($existing, $originalData);
         $this->checkDateConflicts($existing, $originalData);
@@ -91,6 +92,22 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         $this->dispatchNotification($existing, $originalData);
 
         return $result;
+    }
+
+    private function replaceSections(ActivityPlanning $existing, ActivityPlanning $data): void
+    {
+        $newSections = $data->getSections();
+        if ($newSections->isEmpty()) {
+            return;
+        }
+
+        foreach ($existing->getSections()->toArray() as $old) {
+            $existing->removeSection($old);
+        }
+
+        foreach ($newSections as $section) {
+            $existing->addSection($section);
+        }
     }
 
     private function applyActualDates(ActivityPlanning $planning, array $originalData): void
@@ -136,15 +153,13 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 
         if ($wasLocked) {
             $lockedFields = [
-                'process', 'siteCode', 'siteNumber', 'siteName', 'region',
+                'process', 'siteCode', 'siteName',
                 'expectedStartDate', 'expectedEndDate',
             ];
         }
 
         if ($originalPermitValidated) {
-            $lockedFields = array_merge($lockedFields, [
-                'provider', 'projectDescription',
-            ]);
+            $lockedFields[] = 'provider';
         }
 
         $changedLocked = [];
@@ -218,8 +233,8 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
     {
         $changes = [];
         $trackedFields = [
-            'process', 'provider', 'projectDescription',
-            'siteCode', 'siteNumber', 'siteName', 'region',
+            'process', 'provider',
+            'siteCode', 'siteName',
             'expectedStartDate', 'expectedEndDate',
             'status',
         ];

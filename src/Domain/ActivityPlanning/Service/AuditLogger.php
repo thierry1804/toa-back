@@ -9,8 +9,8 @@ use Doctrine\ORM\EntityManagerInterface;
 class AuditLogger
 {
     private const TRACKED_FIELDS = [
-        'process', 'provider', 'providerEmail', 'projectDescription',
-        'siteCode', 'siteNumber', 'siteName', 'region',
+        'process', 'provider', 'providerEmail',
+        'siteCode', 'siteName',
         'theoreticalStartDate', 'expectedStartDate', 'expectedEndDate',
         'status', 'permitReference', 'permitValidated',
     ];
