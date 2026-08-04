@@ -142,6 +142,40 @@ class SeedMenuCommand extends Command
             'route'    => '/roles',
             'position' => 8,
         ],
+        [
+            'name'     => 'Référentiel',
+            'icon'     => 'MapPin',
+            'route'    => 'referentiel',
+            'position' => 9,
+            'roles'    => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_HSE'         => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_CHEF_PROJET' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+            ],
+        ],
+        [
+            'name'        => 'Gestion de sites',
+            'icon'        => 'Map',
+            'route'       => '/referentiel/sites',
+            'position'    => 1,
+            'parentRoute' => 'referentiel',
+            'roles'       => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_HSE'         => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_CHEF_PROJET' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+            ],
+        ],
+        [
+            'name'        => 'Gestion de liste',
+            'icon'        => 'List',
+            'route'       => '/referentiel/listes',
+            'position'    => 2,
+            'parentRoute' => 'referentiel',
+            'roles'       => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_HSE'         => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+            ],
+        ],
     ];
 
     public function __construct(

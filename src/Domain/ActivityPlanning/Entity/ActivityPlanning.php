@@ -125,6 +125,15 @@ class ActivityPlanning
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
     private bool $permitValidated = false;
 
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['activity_planning:read', 'activity_planning:write'])]
+    private ?string $typeIntervention = null;
+
+    /** @var list<array{codeSite: string, nomSite: string}>|null */
+    #[ORM\Column(type: 'json', nullable: true)]
+    #[Groups(['activity_planning:read', 'activity_planning:write'])]
+    private ?array $sites = null;
+
     #[ORM\OneToMany(
         targetEntity: ActivityPlanningAudit::class,
         mappedBy: 'planning',
@@ -324,6 +333,30 @@ class ActivityPlanning
         return $this;
     }
 
+    public function getTypeIntervention(): ?string
+    {
+        return $this->typeIntervention;
+    }
+
+    public function setTypeIntervention(?string $typeIntervention): static
+    {
+        $this->typeIntervention = $typeIntervention;
+
+        return $this;
+    }
+
+    public function getSites(): ?array
+    {
+        return $this->sites;
+    }
+
+    public function setSites(?array $sites): static
+    {
+        $this->sites = $sites;
+
+        return $this;
+    }
+
     public function getAuditLogs(): Collection
     {
         return $this->auditLogs;
@@ -396,6 +429,7 @@ class ActivityPlanning
             $fields = array_merge($fields, [
                 'process', 'siteCode', 'siteName',
                 'expectedStartDate', 'expectedEndDate',
+                'typeIntervention', 'sites',
             ]);
         }
 
@@ -423,6 +457,8 @@ class ActivityPlanning
             'status' => $this->status,
             'permitReference' => $this->permitReference,
             'permitValidated' => $this->permitValidated,
+            'typeIntervention' => $this->typeIntervention,
+            'sites' => $this->sites,
         ];
     }
 

@@ -26,6 +26,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         'siteCode', 'siteName',
         'expectedStartDate', 'expectedEndDate',
         'status', 'permitReference', 'permitValidated',
+        'typeIntervention',
     ];
 
     public function __construct(
@@ -78,6 +79,12 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
             if ($newStr !== $oldStr) {
                 $existing->$setter($newValue);
             }
+        }
+
+        // sites is a JSON array — compare serialized form
+        $newSites = $data->getSites();
+        if ($newSites !== null && json_encode($newSites) !== json_encode($existing->getSites())) {
+            $existing->setSites($newSites);
         }
 
         $this->replaceSections($existing, $data);
@@ -155,6 +162,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
             $lockedFields = [
                 'process', 'siteCode', 'siteName',
                 'expectedStartDate', 'expectedEndDate',
+                'typeIntervention',
             ];
         }
 

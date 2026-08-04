@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\PlanPrevention\Entity;
 
+use App\Domain\Referentiel\Entity\Site;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -72,6 +73,11 @@ class SitePrevention
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['site_prevention:read', 'plan_prevention:read'])]
     private ?string $district = null;
+
+    #[ORM\ManyToOne(targetEntity: Site::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['site_prevention:read', 'plan_prevention:read'])]
+    private ?Site $site = null;
 
     public function getId(): ?Uuid
     {
@@ -230,6 +236,18 @@ class SitePrevention
     public function setDistrict(?string $district): static
     {
         $this->district = $district;
+
+        return $this;
+    }
+
+    public function getSite(): ?Site
+    {
+        return $this->site;
+    }
+
+    public function setSite(?Site $site): static
+    {
+        $this->site = $site;
 
         return $this;
     }
