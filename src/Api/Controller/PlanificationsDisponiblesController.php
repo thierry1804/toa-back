@@ -58,6 +58,7 @@ class PlanificationsDisponiblesController extends AbstractController
                 'status'               => $p->getStatus(),
                 'permitReference'      => $p->getPermitReference(),
                 'permitValidated'      => $p->isPermitValidated(),
+                'sites'                => $p->getSites() ?? [],
                 'createdAt'            => $p->getCreatedAt()?->format(\DateTimeInterface::ATOM),
                 'updatedAt'            => $p->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
                 'createdBy'            => $p->getCreatedBy() !== null ? [

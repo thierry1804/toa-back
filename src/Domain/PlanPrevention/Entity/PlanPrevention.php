@@ -146,6 +146,10 @@ class PlanPrevention
     #[Assert\NotNull(message: 'date_fin_required')]
     private ?\DateTimeImmutable $dateFin = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
+    private ?string $referenceActivite = null;
+
     #[ORM\Column(length: 50, enumType: StatutPlanPrevention::class)]
     #[Groups(['plan_prevention:read'])]
     private StatutPlanPrevention $statut = StatutPlanPrevention::BROUILLON;
@@ -315,6 +319,18 @@ class PlanPrevention
     public function setDateFin(\DateTimeImmutable $dateFin): static
     {
         $this->dateFin = $dateFin;
+
+        return $this;
+    }
+
+    public function getReferenceActivite(): ?string
+    {
+        return $this->referenceActivite;
+    }
+
+    public function setReferenceActivite(?string $referenceActivite): static
+    {
+        $this->referenceActivite = $referenceActivite;
 
         return $this;
     }
