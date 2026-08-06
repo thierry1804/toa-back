@@ -147,7 +147,7 @@ class PlanPrevention
     private ?\DateTimeImmutable $dateFin = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
+    #[Groups(['plan_prevention:read'])]
     private ?string $referenceActivite = null;
 
     #[ORM\Column(length: 50, enumType: StatutPlanPrevention::class)]
@@ -235,6 +235,20 @@ class PlanPrevention
     #[ORM\Column(type: Types::JSON, nullable: true)]
     #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
     private array $equipements = [];
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
+    private ?int $planificationId = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    #[Groups(['plan_prevention:read'])]
+    private ?string $typeIntervention = null;
+
+    #[Groups(['plan_prevention:read'])]
+    private array $planificationSites = [];
+
+    #[Groups(['plan_prevention:read'])]
+    private array $planificationSections = [];
 
     public function __construct()
     {
@@ -456,6 +470,54 @@ class PlanPrevention
     public function setEquipements(array $equipements): static
     {
         $this->equipements = $equipements;
+
+        return $this;
+    }
+
+    public function getPlanificationId(): ?int
+    {
+        return $this->planificationId;
+    }
+
+    public function setPlanificationId(?int $planificationId): static
+    {
+        $this->planificationId = $planificationId;
+
+        return $this;
+    }
+
+    public function getTypeIntervention(): ?string
+    {
+        return $this->typeIntervention;
+    }
+
+    public function setTypeIntervention(?string $typeIntervention): static
+    {
+        $this->typeIntervention = $typeIntervention;
+
+        return $this;
+    }
+
+    public function getPlanificationSites(): array
+    {
+        return $this->planificationSites;
+    }
+
+    public function setPlanificationSites(array $sites): static
+    {
+        $this->planificationSites = $sites;
+
+        return $this;
+    }
+
+    public function getPlanificationSections(): array
+    {
+        return $this->planificationSections;
+    }
+
+    public function setPlanificationSections(array $sections): static
+    {
+        $this->planificationSections = $sections;
 
         return $this;
     }

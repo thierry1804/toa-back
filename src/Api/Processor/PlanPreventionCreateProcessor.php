@@ -6,6 +6,7 @@ namespace App\Api\Processor;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\User\Entity\User;
@@ -38,8 +39,16 @@ final class PlanPreventionCreateProcessor implements ProcessorInterface
         }
 
         $data->setReference($this->generateReference());
+        $data->setReferenceActivite($this->generateReferenceActivite());
         $data->setStatut(StatutPlanPrevention::BROUILLON);
         $data->setCreatedBy($user);
+
+        if ($data->getPlanificationId() !== null) {
+            $planification = $this->entityManager->find(ActivityPlanning::class, $data->getPlanificationId());
+            if ($planification !== null) {
+                $data->setTypeIntervention($planification->getTypeIntervention());
+            }
+        }
 
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
     }
@@ -58,6 +67,22 @@ final class PlanPreventionCreateProcessor implements ProcessorInterface
         $next = (($result === null || $result === false) ? 0 : (int) $result) + 1;
 
         return sprintf('%d/PPHSSES-TOA-%04d', $year, $next);
+    }
+
+    private function generateReferenceActivite(): string
+    {
+        $year = (int) date('Y');
+
+        $result = $this->entityManager->getConnection()->fetchOne(
+            "SELECT MAX(CAST(SUBSTRING(reference_activite FROM 'ACT-\d{4}-(\d{4})') AS INTEGER))
+             FROM plan_prevention
+             WHERE reference_activite LIKE :pattern",
+            ['pattern' => 'ACT-' . $year . '-%'],
+        );
+
+        $next = (($result === null || $result === false) ? 0 : (int) $result) + 1;
+
+        return sprintf('ACT-%d-%04d', $year, $next);
     }
 
     private function validateDates(PlanPrevention $data): void

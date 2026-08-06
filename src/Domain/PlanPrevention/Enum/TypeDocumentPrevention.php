@@ -11,4 +11,5 @@ enum TypeDocumentPrevention: string
     case LISTE_INTERVENANTS  = 'LISTE_INTERVENANTS';
     case ATTESTATION_HSE     = 'ATTESTATION_HSE';
     case FICHE_CONFORMITE    = 'FICHE_CONFORMITE';
+    case LISTE_VEHICULES     = 'LISTE_VEHICULES';
 }

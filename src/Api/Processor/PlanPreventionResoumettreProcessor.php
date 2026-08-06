@@ -28,6 +28,7 @@ final class PlanPreventionResoumettreProcessor implements ProcessorInterface
         TypeDocumentPrevention::LISTE_INTERVENANTS,
         TypeDocumentPrevention::ATTESTATION_HSE,
         TypeDocumentPrevention::FICHE_CONFORMITE,
+        TypeDocumentPrevention::LISTE_VEHICULES,
     ];
 
     public function __construct(

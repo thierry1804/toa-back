@@ -104,6 +104,14 @@ class RisquePrevention
     #[Assert\NotNull(message: 'mesures_preventives_required')]
     private ?string $mesuresPreventives = null;
 
+    #[ORM\Column(length: 36, nullable: true)]
+    #[Groups(['risque_prevention:read', 'risque_prevention:write', 'plan_prevention:read'])]
+    private ?string $tachePlanifieeId = null;
+
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    #[Groups(['risque_prevention:read', 'risque_prevention:write', 'plan_prevention:read'])]
+    private ?int $risqueResiduel = null;
+
     public function getId(): ?Uuid
     {
         return $this->id;
@@ -170,6 +178,30 @@ class RisquePrevention
     public function setMesuresPreventives(string $mesuresPreventives): static
     {
         $this->mesuresPreventives = $mesuresPreventives;
+
+        return $this;
+    }
+
+    public function getTachePlanifieeId(): ?string
+    {
+        return $this->tachePlanifieeId;
+    }
+
+    public function setTachePlanifieeId(?string $tachePlanifieeId): static
+    {
+        $this->tachePlanifieeId = $tachePlanifieeId;
+
+        return $this;
+    }
+
+    public function getRisqueResiduel(): ?int
+    {
+        return $this->risqueResiduel;
+    }
+
+    public function setRisqueResiduel(?int $risqueResiduel): static
+    {
+        $this->risqueResiduel = $risqueResiduel;
 
         return $this;
     }
