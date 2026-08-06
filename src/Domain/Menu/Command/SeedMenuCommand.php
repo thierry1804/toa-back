@@ -176,6 +176,17 @@ class SeedMenuCommand extends Command
                 'ROLE_HSE'         => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
             ],
         ],
+        [
+            'name'        => 'Liste des installations et équipements',
+            'icon'        => 'Wrench',
+            'route'       => '/referentiel/installations',
+            'position'    => 3,
+            'parentRoute' => 'referentiel',
+            'roles'       => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_HSE'         => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+            ],
+        ],
     ];
 
     public function __construct(

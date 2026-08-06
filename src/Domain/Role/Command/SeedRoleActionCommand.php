@@ -206,6 +206,31 @@ class SeedRoleActionCommand extends Command
             'module'         => 'dashboard',
             'ownershipField' => null,
         ],
+        // installation_equipement
+        [
+            'key'            => 'installation_equipement.view',
+            'label'          => 'Consulter les installations et équipements',
+            'module'         => 'referentiel',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'installation_equipement.create',
+            'label'          => 'Créer une installation/équipement',
+            'module'         => 'referentiel',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'installation_equipement.edit',
+            'label'          => 'Modifier une installation/équipement',
+            'module'         => 'referentiel',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'installation_equipement.delete',
+            'label'          => 'Supprimer une installation/équipement',
+            'module'         => 'referentiel',
+            'ownershipField' => null,
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -320,6 +345,18 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'dashboard.kpis.view', 'bypass' => true],
         ['role' => 'ROLE_ADMIN',        'key' => 'dashboard.kpis.view', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'dashboard.kpis.view', 'bypass' => true],
+        // installation_equipement.view
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'installation_equipement.view',   'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'installation_equipement.view',   'bypass' => true],
+        // installation_equipement.create
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'installation_equipement.create', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'installation_equipement.create', 'bypass' => true],
+        // installation_equipement.edit
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'installation_equipement.edit',   'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'installation_equipement.edit',   'bypass' => true],
+        // installation_equipement.delete
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'installation_equipement.delete', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'installation_equipement.delete', 'bypass' => true],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)
