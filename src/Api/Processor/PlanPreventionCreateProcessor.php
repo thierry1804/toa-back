@@ -47,6 +47,12 @@ final class PlanPreventionCreateProcessor implements ProcessorInterface
             $planification = $this->entityManager->find(ActivityPlanning::class, $data->getPlanificationId());
             if ($planification !== null) {
                 $data->setTypeIntervention($planification->getTypeIntervention());
+
+                $rawSites = $planification->getSites() ?? [];
+                if (empty($rawSites) && $planification->getSiteCode() !== null) {
+                    $rawSites = [['codeSite' => $planification->getSiteCode(), 'nomSite' => $planification->getSiteName() ?? '']];
+                }
+                $data->setPlanificationSites($rawSites);
             }
         }
 

@@ -28,7 +28,11 @@ final class PlanPreventionPostLoadListener
             return;
         }
 
-        $plan->setPlanificationSites($planification->getSites() ?? []);
+        $rawSites = $planification->getSites() ?? [];
+        if (empty($rawSites) && $planification->getSiteCode() !== null) {
+            $rawSites = [['codeSite' => $planification->getSiteCode(), 'nomSite' => $planification->getSiteName() ?? '']];
+        }
+        $plan->setPlanificationSites($rawSites);
 
         $sections = array_values(array_map(
             static fn(SectionPlanifiee $section): array => [
