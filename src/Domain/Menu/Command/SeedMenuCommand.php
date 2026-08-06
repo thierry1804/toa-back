@@ -166,7 +166,7 @@ class SeedMenuCommand extends Command
             ],
         ],
         [
-            'name'        => 'Gestion de liste',
+            'name'        => 'Gestion de risques',
             'icon'        => 'List',
             'route'       => '/referentiel/listes',
             'position'    => 2,
