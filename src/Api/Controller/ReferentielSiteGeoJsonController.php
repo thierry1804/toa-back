@@ -25,6 +25,7 @@ class ReferentielSiteGeoJsonController extends AbstractController
         $rows = $this->siteRepository->createQueryBuilder('s')
             ->select(
                 's.id',
+                's.codeSite',
                 's.nomSite',
                 's.longitude',
                 's.latitude',
@@ -47,6 +48,7 @@ class ReferentielSiteGeoJsonController extends AbstractController
                 ],
                 'properties' => [
                     'id'  => $s['id'],
+                    'cs'  => $s['codeSite'],
                     'n'   => $s['nomSite'],
                     'a'   => $s['altitude'],
                     'c'   => $s['couleurMarqueur'],
