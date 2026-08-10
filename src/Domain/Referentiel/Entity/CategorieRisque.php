@@ -63,6 +63,10 @@ class CategorieRisque
     #[Assert\Length(max: 255, maxMessage: 'nom_too_long')]
     private ?string $nom = null;
 
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Groups(['categorie_risque:read', 'categorie_risque:write'])]
+    private ?string $typePermis = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['categorie_risque:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -84,6 +88,18 @@ class CategorieRisque
     public function setNom(string $nom): static
     {
         $this->nom = $nom;
+
+        return $this;
+    }
+
+    public function getTypePermis(): ?string
+    {
+        return $this->typePermis;
+    }
+
+    public function setTypePermis(?string $typePermis): static
+    {
+        $this->typePermis = $typePermis;
 
         return $this;
     }
