@@ -17,6 +17,7 @@ use App\Api\Processor\SignatureUploadProcessor;
 use App\Api\Provider\PrestataireProvider;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\User\Validator\EntrepriseNameCoherence;
 use App\Domain\User\Validator\UniqueEmail;
 
@@ -100,6 +101,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['user:read', 'user:write', 'intervention:read'])]
     private ?string $entrepriseName = null;
+
+    #[ORM\ManyToOne(targetEntity: Entreprise::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['user:read', 'user:write', 'plan_prevention:read', 'permit_travail:read', 'intervention:read', 'activity_planning:read'])]
+    private ?Entreprise $entreprise = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
@@ -271,6 +277,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEntrepriseName(?string $entrepriseName): static
     {
         $this->entrepriseName = $entrepriseName;
+
+        return $this;
+    }
+
+    public function getEntreprise(): ?Entreprise
+    {
+        return $this->entreprise;
+    }
+
+    public function setEntreprise(?Entreprise $entreprise): static
+    {
+        $this->entreprise = $entreprise;
 
         return $this;
     }

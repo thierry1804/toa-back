@@ -14,6 +14,7 @@ use ApiPlatform\Metadata\Put;
 use App\Api\Processor\ActivityPlanningCreateProcessor;
 use App\Api\Processor\ActivityPlanningUpdateProcessor;
 use App\Domain\ActivityPlanning\Validator\CoherentDates;
+use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\User\Entity\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -165,6 +166,11 @@ class ActivityPlanning
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['activity_planning:read'])]
     private ?User $createdBy = null;
+
+    #[ORM\ManyToOne(targetEntity: Entreprise::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['activity_planning:read', 'activity_planning:write'])]
+    private ?Entreprise $entreprise = null;
 
     public function __construct()
     {
@@ -412,6 +418,18 @@ class ActivityPlanning
     public function setCreatedBy(?User $createdBy): static
     {
         $this->createdBy = $createdBy;
+
+        return $this;
+    }
+
+    public function getEntreprise(): ?Entreprise
+    {
+        return $this->entreprise;
+    }
+
+    public function setEntreprise(?Entreprise $entreprise): static
+    {
+        $this->entreprise = $entreprise;
 
         return $this;
     }

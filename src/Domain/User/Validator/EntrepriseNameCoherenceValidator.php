@@ -21,20 +21,22 @@ class EntrepriseNameCoherenceValidator extends ConstraintValidator
         }
 
         $isPrestataire = in_array('ROLE_PRESTATAIRE', $value->getRoles(), true);
+        $isHse         = in_array('ROLE_HSE', $value->getRoles(), true);
+        $canHaveEntreprise = $isPrestataire || $isHse;
 
-        if ($value->getEntrepriseName() !== null && !$isPrestataire) {
+        if ($value->getEntrepriseName() !== null && !$canHaveEntreprise) {
             $this->context->buildViolation($constraint->message)
                 ->atPath('entrepriseName')
                 ->addViolation();
         }
 
-        if ($value->getNumeroRegistreCommerce() !== null && !$isPrestataire) {
+        if ($value->getNumeroRegistreCommerce() !== null && !$canHaveEntreprise) {
             $this->context->buildViolation($constraint->message)
                 ->atPath('numeroRegistreCommerce')
                 ->addViolation();
         }
 
-        if ($value->getSiegeSocial() !== null && !$isPrestataire) {
+        if ($value->getSiegeSocial() !== null && !$canHaveEntreprise) {
             $this->context->buildViolation($constraint->message)
                 ->atPath('siegeSocial')
                 ->addViolation();
