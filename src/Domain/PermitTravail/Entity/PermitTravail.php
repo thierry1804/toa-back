@@ -171,6 +171,22 @@ class PermitTravail
     #[Groups(['permit_travail:read'])]
     private ?\DateTimeImmutable $engagementAccepteAt = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    private ?string $dangers = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    private ?string $evaluationPreliminaire = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    private ?string $moyensMaitrise = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    private ?string $evaluationFinale = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['permit_travail:read'])]
     private ?\DateTimeImmutable $soumisAt = null;
@@ -366,6 +382,54 @@ class PermitTravail
     public function setEngagementAccepteAt(?\DateTimeImmutable $engagementAccepteAt): static
     {
         $this->engagementAccepteAt = $engagementAccepteAt;
+
+        return $this;
+    }
+
+    public function getDangers(): ?string
+    {
+        return $this->dangers;
+    }
+
+    public function setDangers(?string $dangers): static
+    {
+        $this->dangers = $dangers;
+
+        return $this;
+    }
+
+    public function getEvaluationPreliminaire(): ?string
+    {
+        return $this->evaluationPreliminaire;
+    }
+
+    public function setEvaluationPreliminaire(?string $evaluationPreliminaire): static
+    {
+        $this->evaluationPreliminaire = $evaluationPreliminaire;
+
+        return $this;
+    }
+
+    public function getMoyensMaitrise(): ?string
+    {
+        return $this->moyensMaitrise;
+    }
+
+    public function setMoyensMaitrise(?string $moyensMaitrise): static
+    {
+        $this->moyensMaitrise = $moyensMaitrise;
+
+        return $this;
+    }
+
+    public function getEvaluationFinale(): ?string
+    {
+        return $this->evaluationFinale;
+    }
+
+    public function setEvaluationFinale(?string $evaluationFinale): static
+    {
+        $this->evaluationFinale = $evaluationFinale;
 
         return $this;
     }
