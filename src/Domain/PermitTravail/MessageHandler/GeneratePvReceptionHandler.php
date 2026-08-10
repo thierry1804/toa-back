@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\PermitTravail\MessageHandler;
 
-use App\Domain\PermitTravail\Entity\CloturePerm;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ActionPermitTravailLog;
 use App\Domain\PermitTravail\Enum\StatutPvReceptionPdf;

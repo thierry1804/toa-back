@@ -3,7 +3,6 @@
 namespace App\Api\OpenApi;
 
 use ApiPlatform\OpenApi\Factory\OpenApiFactoryInterface;
-use ApiPlatform\OpenApi\Model;
 use ApiPlatform\OpenApi\OpenApi;
 
 /**

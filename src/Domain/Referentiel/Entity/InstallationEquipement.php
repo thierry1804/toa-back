@@ -12,7 +12,6 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Api\Processor\InstallationEquipementSoftDeleteProcessor;
 use App\Domain\Referentiel\Repository\InstallationEquipementRepository;
-use App\Security\Voter\InstallationEquipementVoter;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;

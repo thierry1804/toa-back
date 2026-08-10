@@ -4,7 +4,6 @@ namespace App\Domain\ActivityPlanning\Service;
 
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 class PlanningMailer
 {
