@@ -70,6 +70,22 @@ class Site
     #[Groups(['site:read'])]
     private ?string $situation = null;
 
+    #[ORM\Column(name: 'type_site', length: 100, nullable: true)]
+    #[Groups(['site:read', 'import_kmz_site:read'])]
+    private ?string $typeSite = null;
+
+    #[ORM\Column(name: 'zone', length: 100, nullable: true)]
+    #[Groups(['site:read', 'import_kmz_site:read'])]
+    private ?string $zone = null;
+
+    #[ORM\Column(name: 'type_pylone', length: 100, nullable: true)]
+    #[Groups(['site:read', 'import_kmz_site:read'])]
+    private ?string $typePylone = null;
+
+    #[ORM\Column(name: 'hauteur_pylone', type: Types::FLOAT, nullable: true)]
+    #[Groups(['site:read', 'import_kmz_site:read'])]
+    private ?float $hauteurPylone = null;
+
     #[ORM\Column(name: 'source_kmz', type: Types::BOOLEAN)]
     #[Groups(['site:read'])]
     private bool $sourceKmz = false;
@@ -239,6 +255,54 @@ class Site
     public function setSituation(?string $situation): static
     {
         $this->situation = $situation;
+
+        return $this;
+    }
+
+    public function getTypeSite(): ?string
+    {
+        return $this->typeSite;
+    }
+
+    public function setTypeSite(?string $typeSite): static
+    {
+        $this->typeSite = $typeSite;
+
+        return $this;
+    }
+
+    public function getZone(): ?string
+    {
+        return $this->zone;
+    }
+
+    public function setZone(?string $zone): static
+    {
+        $this->zone = $zone;
+
+        return $this;
+    }
+
+    public function getTypePylone(): ?string
+    {
+        return $this->typePylone;
+    }
+
+    public function setTypePylone(?string $typePylone): static
+    {
+        $this->typePylone = $typePylone;
+
+        return $this;
+    }
+
+    public function getHauteurPylone(): ?float
+    {
+        return $this->hauteurPylone;
+    }
+
+    public function setHauteurPylone(?float $hauteurPylone): static
+    {
+        $this->hauteurPylone = $hauteurPylone;
 
         return $this;
     }

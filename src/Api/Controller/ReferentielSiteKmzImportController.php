@@ -69,6 +69,10 @@ class ReferentielSiteKmzImportController extends AbstractController
                 $existing->setLongitude($placemark['longitude']);
                 $existing->setAltitude($placemark['altitude']);
                 $existing->setCouleurMarqueur($placemark['couleurMarqueur']);
+                $existing->setTypeSite($placemark['typeSite']);
+                $existing->setZone($placemark['zone']);
+                $existing->setTypePylone($placemark['typePylone']);
+                $existing->setHauteurPylone($placemark['hauteurPylone']);
                 $existing->setImportKmz($import);
                 $existing->setUpdatedAt(new \DateTime());
                 $sites[] = $existing;
@@ -84,6 +88,10 @@ class ReferentielSiteKmzImportController extends AbstractController
                 $site->setFokontany($placemark['fokontany']);
                 $site->setCommune($placemark['commune']);
                 $site->setDistrict($placemark['district']);
+                $site->setTypeSite($placemark['typeSite']);
+                $site->setZone($placemark['zone']);
+                $site->setTypePylone($placemark['typePylone']);
+                $site->setHauteurPylone($placemark['hauteurPylone']);
                 $site->setSourceKmz(true);
                 $site->setImportKmz($import);
                 $this->entityManager->persist($site);
@@ -117,6 +125,10 @@ class ReferentielSiteKmzImportController extends AbstractController
                 'commune'         => $s->getCommune(),
                 'district'        => $s->getDistrict(),
                 'couleurMarqueur' => $s->getCouleurMarqueur(),
+                'typeSite'        => $s->getTypeSite(),
+                'zone'            => $s->getZone(),
+                'typePylone'      => $s->getTypePylone(),
+                'hauteurPylone'   => $s->getHauteurPylone(),
             ], $sites),
         ]);
     }
@@ -240,16 +252,29 @@ class ReferentielSiteKmzImportController extends AbstractController
                 'fokontany'       => $extendedData['fokontany'],
                 'commune'         => $extendedData['commune'],
                 'district'        => $extendedData['district'],
+                'typeSite'        => $extendedData['typeSite'],
+                'zone'            => $extendedData['zone'],
+                'typePylone'      => $extendedData['typePylone'],
+                'hauteurPylone'   => $extendedData['hauteurPylone'],
             ];
         }
 
         return ['placemarks' => $results, 'nbIgnores' => $nbIgnores];
     }
 
-    /** @return array{codeSite: string|null, fokontany: string|null, commune: string|null, district: string|null} */
+    /** @return array{codeSite: string|null, fokontany: string|null, commune: string|null, district: string|null, typeSite: string|null, zone: string|null, typePylone: string|null, hauteurPylone: float|null} */
     private function extractExtendedData(\SimpleXMLElement $placemark): array
     {
-        $result = ['codeSite' => null, 'fokontany' => null, 'commune' => null, 'district' => null];
+        $result = [
+            'codeSite'      => null,
+            'fokontany'     => null,
+            'commune'       => null,
+            'district'      => null,
+            'typeSite'      => null,
+            'zone'          => null,
+            'typePylone'    => null,
+            'hauteurPylone' => null,
+        ];
 
         if (!isset($placemark->ExtendedData)) {
             return $result;
@@ -266,11 +291,16 @@ class ReferentielSiteKmzImportController extends AbstractController
                 continue;
             }
             match ($key) {
-                'code_site', 'codesite', 'code' => $result['codeSite']  = $val,
-                'fokontany'                      => $result['fokontany'] = $val,
-                'commune'                        => $result['commune']   = $val,
-                'district'                       => $result['district']  = $val,
-                default                          => null,
+                'code_site', 'codesite', 'code'      => $result['codeSite']      = $val,
+                'fokontany'                           => $result['fokontany']     = $val,
+                'commune'                             => $result['commune']       = $val,
+                'district'                            => $result['district']      = $val,
+                'type_site', 'typesite', 'type'       => $result['typeSite']      = $val,
+                'zone'                                => $result['zone']          = $val,
+                'type_pylone', 'typepylone', 'pylone' => $result['typePylone']    = $val,
+                'hauteur_pylone', 'hauteurpylone',
+                'hauteur'                             => $result['hauteurPylone'] = (float) preg_replace('/[^0-9.]/', '', $val) ?: null,
+                default                               => null,
             };
         }
 
