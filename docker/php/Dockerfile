@@ -22,6 +22,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         gd
  
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 RUN git config --global --add safe.directory '*'
 
