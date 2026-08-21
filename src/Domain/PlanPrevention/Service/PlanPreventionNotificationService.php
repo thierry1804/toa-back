@@ -21,6 +21,45 @@ class PlanPreventionNotificationService
     ) {
     }
 
+    /** Notify the chef de projet assigned to the plan when the prestataire submits it, so they can examine it */
+    public function notifierChefProjet(PlanPrevention $plan): void
+    {
+        $chefProjet = $plan->getChefProjet();
+
+        if (!$chefProjet instanceof User) {
+            $this->logger->warning('[PlanPrevention] notifierChefProjet: aucun chef de projet assigné au plan', [
+                'plan_reference' => $plan->getReference(),
+            ]);
+
+            return;
+        }
+
+        try {
+            $email = (new TemplatedEmail())
+                ->from($this->fromAddress)
+                ->to((string) $chefProjet->getEmail())
+                ->subject(sprintf('[TOA] Plan de Prévention #%s soumis — Examen requis', $plan->getReference()))
+                ->htmlTemplate('email/plan_prevention/soumis.html.twig')
+                ->context([
+                    'plan'      => $plan,
+                    'recipient' => $chefProjet,
+                ]);
+
+            $this->mailer->send($email);
+
+            $this->logger->info('[PlanPrevention] Notification de soumission envoyée au chef de projet', [
+                'plan_reference' => $plan->getReference(),
+                'recipient'      => $chefProjet->getEmail(),
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[PlanPrevention] Échec envoi notification de soumission au chef de projet', [
+                'plan_reference' => $plan->getReference(),
+                'recipient'      => $chefProjet->getEmail(),
+                'error'          => $e->getMessage(),
+            ]);
+        }
+    }
+
     /** Notify the HSE team attached to the plan's prestataire when it is (re)submitted */
     public function notifierHse(PlanPrevention $plan, int $numeroVersion): void
     {
@@ -85,10 +124,11 @@ class PlanPreventionNotificationService
                     ->from($this->fromAddress)
                     ->to((string) $hseUser->getEmail())
                     ->subject(sprintf('[TOA] Plan de Prévention #%s à valider', $plan->getReference()))
-                    ->htmlTemplate('email/plan_prevention/soumis.html.twig')
+                    ->htmlTemplate('email/plan_prevention/a_valider.html.twig')
                     ->context([
-                        'plan'      => $plan,
-                        'recipient' => $hseUser,
+                        'plan'         => $plan,
+                        'recipient'    => $hseUser,
+                        'examinateur'  => $chefProjet,
                     ]);
 
                 $this->mailer->send($email);

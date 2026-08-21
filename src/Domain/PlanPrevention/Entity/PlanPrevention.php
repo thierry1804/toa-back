@@ -246,6 +246,10 @@ class PlanPrevention
     #[Groups(['plan_prevention:read'])]
     private ?string $typeIntervention = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['plan_prevention:read'])]
+    private ?string $process = null;
+
     #[Groups(['plan_prevention:read'])]
     private array $planificationSites = [];
 
@@ -496,6 +500,18 @@ class PlanPrevention
     public function setTypeIntervention(?string $typeIntervention): static
     {
         $this->typeIntervention = $typeIntervention;
+
+        return $this;
+    }
+
+    public function getProcess(): ?string
+    {
+        return $this->process;
+    }
+
+    public function setProcess(?string $process): static
+    {
+        $this->process = $process;
 
         return $this;
     }

@@ -10,6 +10,9 @@ use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Api\Processor\RisquePreventionProcessor;
+use App\Domain\Referentiel\Entity\CategorieRisque;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -112,6 +115,20 @@ class RisquePrevention
     #[Groups(['risque_prevention:read', 'risque_prevention:write', 'plan_prevention:read'])]
     private ?int $risqueResiduel = null;
 
+    /**
+     * Catégories/sous-catégories de risque sélectionnées (référentiel structuré).
+     * `description` reste la représentation texte libre affichée/imprimée.
+     */
+    #[ORM\ManyToMany(targetEntity: CategorieRisque::class)]
+    #[ORM\JoinTable(name: 'risque_prevention_categorie_risque')]
+    #[Groups(['risque_prevention:read', 'risque_prevention:write', 'plan_prevention:read'])]
+    private Collection $categoriesRisque;
+
+    public function __construct()
+    {
+        $this->categoriesRisque = new ArrayCollection();
+    }
+
     public function getId(): ?Uuid
     {
         return $this->id;
@@ -202,6 +219,22 @@ class RisquePrevention
     public function setRisqueResiduel(?int $risqueResiduel): static
     {
         $this->risqueResiduel = $risqueResiduel;
+
+        return $this;
+    }
+
+    /** @return Collection<int, CategorieRisque> */
+    public function getCategoriesRisque(): Collection
+    {
+        return $this->categoriesRisque;
+    }
+
+    /** @param iterable<CategorieRisque> $categoriesRisque */
+    public function setCategoriesRisque(iterable $categoriesRisque): static
+    {
+        $this->categoriesRisque = $categoriesRisque instanceof Collection
+            ? $categoriesRisque
+            : new ArrayCollection(is_array($categoriesRisque) ? $categoriesRisque : iterator_to_array($categoriesRisque));
 
         return $this;
     }

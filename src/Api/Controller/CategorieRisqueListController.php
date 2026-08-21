@@ -49,10 +49,12 @@ class CategorieRisqueListController extends AbstractController
             ->getResult();
 
         $data = array_map(static fn ($cat): array => [
-            'id'        => (string) $cat->getId(),
-            'nom'       => $cat->getNom(),
-            'createdAt' => $cat->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'updatedAt' => $cat->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
+            'id'         => (string) $cat->getId(),
+            'nom'        => $cat->getNom(),
+            'parentId'   => $cat->getParent()?->getId() !== null ? (string) $cat->getParent()->getId() : null,
+            'parentNom'  => $cat->getParent()?->getNom(),
+            'createdAt'  => $cat->getCreatedAt()->format(\DateTimeInterface::ATOM),
+            'updatedAt'  => $cat->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
         ], $items);
 
         return $this->json([

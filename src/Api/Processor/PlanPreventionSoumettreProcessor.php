@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -28,6 +29,7 @@ final class PlanPreventionSoumettreProcessor implements ProcessorInterface
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private readonly ProcessorInterface $persistProcessor,
         private readonly EntityManagerInterface $entityManager,
+        private readonly PlanPreventionNotificationService $notificationService,
     ) {
     }
 
@@ -56,7 +58,11 @@ final class PlanPreventionSoumettreProcessor implements ProcessorInterface
 
         $plan->setStatut(StatutPlanPrevention::SOUMIS);
 
-        return $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
+        $result = $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
+
+        $this->notificationService->notifierChefProjet($plan);
+
+        return $result;
     }
 
     /** @return TypeDocumentPrevention[] */
