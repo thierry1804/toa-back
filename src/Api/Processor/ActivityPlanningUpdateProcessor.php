@@ -9,6 +9,7 @@ use App\Domain\ActivityPlanning\Message\ActivityPlanningUpdatedNotification;
 use App\Domain\ActivityPlanning\Service\AuditLogger;
 use App\Domain\ActivityPlanning\Service\ConflictDetector;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -37,6 +38,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         private AuditLogger $auditLogger,
         private TokenStorageInterface $tokenStorage,
         private MessageBusInterface $messageBus,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -281,7 +283,11 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
                 process: $planning->getProcess() ?? '',
                 changes: $changes,
             ));
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logger->error('[Planning] Échec dispatch notification de modification', [
+                'planningId' => $planning->getId(),
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

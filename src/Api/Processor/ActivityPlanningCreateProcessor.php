@@ -7,9 +7,14 @@ namespace App\Api\Processor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
+use App\Domain\ActivityPlanning\Message\ActivityPlanningCreatedNotification;
+use App\Domain\ActivityPlanning\Service\ConflictDetector;
 use App\Domain\User\Entity\User;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 final class ActivityPlanningCreateProcessor implements ProcessorInterface
@@ -18,6 +23,9 @@ final class ActivityPlanningCreateProcessor implements ProcessorInterface
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private readonly ProcessorInterface $persistProcessor,
         private readonly TokenStorageInterface $tokenStorage,
+        private readonly ConflictDetector $conflictDetector,
+        private readonly MessageBusInterface $messageBus,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -32,8 +40,35 @@ final class ActivityPlanningCreateProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('user_not_authenticated');
         }
 
+        if ($this->conflictDetector->hasConflict($data)) {
+            throw new ConflictHttpException('conflict_with_active_interventions');
+        }
+
         $data->setCreatedBy($user);
 
-        return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+        $result = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+
+        $this->dispatchCreationNotification($data);
+
+        return $result;
+    }
+
+    private function dispatchCreationNotification(ActivityPlanning $planning): void
+    {
+        try {
+            $this->messageBus->dispatch(new ActivityPlanningCreatedNotification(
+                planningId: $planning->getId() ?? 0,
+                providerEmail: $planning->getProviderEmail() ?? '',
+                providerName: $planning->getProvider() ?? '',
+                process: $planning->getProcess() ?? '',
+                siteCode: $planning->getSiteCode() ?? '',
+                siteName: $planning->getSiteName() ?? '',
+            ));
+        } catch (\Throwable $e) {
+            $this->logger->error('[Planning] Échec dispatch notification de création', [
+                'planningId' => $planning->getId(),
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

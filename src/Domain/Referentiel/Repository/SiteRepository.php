@@ -58,7 +58,7 @@ class SiteRepository extends ServiceEntityRepository
 
         return $this->createQueryBuilder('s')
             ->select('s.codeSite', 's.nomSite')
-            ->where('s.codeSite LIKE :q OR s.nomSite LIKE :q')
+            ->where('LOWER(s.codeSite) LIKE LOWER(:q) OR LOWER(s.nomSite) LIKE LOWER(:q)')
             ->setParameter('q', '%' . $escaped . '%')
             ->orderBy('s.codeSite', 'ASC')
             ->setMaxResults(min($limit, 20))
