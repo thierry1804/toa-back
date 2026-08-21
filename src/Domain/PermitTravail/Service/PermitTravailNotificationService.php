@@ -155,12 +155,29 @@ class PermitTravailNotificationService
         );
     }
 
+    /**
+     * Resolves the HSE team scoped to the entreprise of the permit's creator
+     * (the prestataire). Returns an empty array if the creator has no
+     * entreprise — there is then no specific team to target.
+     *
+     * @return User[]
+     */
+    private function findHseTeamFor(PermitTravail $permit): array
+    {
+        $entrepriseId = $permit->getCreatedBy()?->getEntreprise()?->getId();
+        if ($entrepriseId === null) {
+            return [];
+        }
+
+        return $this->userRepository->findByRoleAndEntreprise('ROLE_HSE', $entrepriseId);
+    }
+
     public function notifierHseResoumission(PermitTravail $permit, int $numeroVersion): void
     {
-        $hseUsers = $this->userRepository->findByRole('ROLE_HSE');
+        $hseUsers = $this->findHseTeamFor($permit);
 
         if (empty($hseUsers)) {
-            $this->logger->info('[PermitTravail] notifierHseResoumission: aucun utilisateur ROLE_HSE trouvé', [
+            $this->logger->info('[PermitTravail] notifierHseResoumission: aucun utilisateur ROLE_HSE trouvé pour l\'entreprise du prestataire', [
                 'permit_reference' => $permit->getReference(),
                 'numero_version'   => $numeroVersion,
             ]);
@@ -245,10 +262,10 @@ class PermitTravailNotificationService
 
     public function notifierHseArchivage(PermitTravail $permit, \DateTimeImmutable $dateValidation): void
     {
-        $hseUsers = $this->userRepository->findByRole('ROLE_HSE');
+        $hseUsers = $this->findHseTeamFor($permit);
 
         if (empty($hseUsers)) {
-            $this->logger->info('[PermitTravail] notifierHseArchivage: aucun utilisateur ROLE_HSE trouvé', [
+            $this->logger->info('[PermitTravail] notifierHseArchivage: aucun utilisateur ROLE_HSE trouvé pour l\'entreprise du prestataire', [
                 'permit_reference' => $permit->getReference(),
             ]);
 

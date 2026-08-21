@@ -21,13 +21,13 @@ class PlanPreventionNotificationService
     ) {
     }
 
-    /** Notify all HSE users when a plan is (re)submitted */
+    /** Notify the HSE team attached to the plan's prestataire when it is (re)submitted */
     public function notifierHse(PlanPrevention $plan, int $numeroVersion): void
     {
-        $hseUsers = $this->userRepository->findByRole('ROLE_HSE');
+        $hseUsers = $this->findHseTeamFor($plan);
 
         if (empty($hseUsers)) {
-            $this->logger->info('[PlanPrevention] notifierHse: aucun utilisateur ROLE_HSE trouvé', [
+            $this->logger->info('[PlanPrevention] notifierHse: aucun utilisateur ROLE_HSE trouvé pour l\'entreprise du prestataire', [
                 'plan_reference' => $plan->getReference(),
                 'numero_version' => $numeroVersion,
             ]);
@@ -66,13 +66,13 @@ class PlanPreventionNotificationService
         }
     }
 
-    /** Notify all HSE users after plan has been examined (requires HSE validation) */
+    /** Notify the HSE team attached to the plan's prestataire after it has been examined (requires HSE validation) */
     public function notifyHseUsers(PlanPrevention $plan, User $chefProjet): void
     {
-        $hseUsers = $this->userRepository->findByRole('ROLE_HSE');
+        $hseUsers = $this->findHseTeamFor($plan);
 
         if (empty($hseUsers)) {
-            $this->logger->info('[PlanPrevention] Notification: aucun utilisateur ROLE_HSE trouvé', [
+            $this->logger->info('[PlanPrevention] Notification: aucun utilisateur ROLE_HSE trouvé pour l\'entreprise du prestataire', [
                 'plan_reference' => $plan->getReference(),
             ]);
 
@@ -105,6 +105,23 @@ class PlanPreventionNotificationService
                 ]);
             }
         }
+    }
+
+    /**
+     * Resolves the HSE team scoped to the entreprise of the plan's creator
+     * (the prestataire). Returns an empty array if the creator has no
+     * entreprise — there is then no specific team to target.
+     *
+     * @return User[]
+     */
+    private function findHseTeamFor(PlanPrevention $plan): array
+    {
+        $entrepriseId = $plan->getCreatedBy()?->getEntreprise()?->getId();
+        if ($entrepriseId === null) {
+            return [];
+        }
+
+        return $this->userRepository->findByRoleAndEntreprise('ROLE_HSE', $entrepriseId);
     }
 
     /** Notify the prestataire when their plan is refused */

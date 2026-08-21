@@ -29,6 +29,29 @@ class UserRepository extends ServiceEntityRepository
         return $this->findBy(['id' => $ids], ['name' => 'ASC', 'firstname' => 'ASC']);
     }
 
+    /**
+     * Same as findByRole() but scoped to a single entreprise — used to notify
+     * only the HSE members attached to the prestataire concerned by a dossier,
+     * instead of every ROLE_HSE user.
+     *
+     * @return User[]
+     */
+    public function findByRoleAndEntreprise(string $role, string $entrepriseId): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = 'SELECT id FROM "user" WHERE roles::text LIKE :role AND entreprise_id = :entrepriseId';
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue('role', '%"' . $role . '"%');
+        $stmt->bindValue('entrepriseId', $entrepriseId);
+        $ids = array_column($stmt->executeQuery()->fetchAllAssociative(), 'id');
+
+        if (empty($ids)) {
+            return [];
+        }
+
+        return $this->findBy(['id' => $ids], ['name' => 'ASC', 'firstname' => 'ASC']);
+    }
+
     /** @return User[] */
     public function findByEmailExcludingId(array $criteria): array
     {

@@ -44,6 +44,9 @@ class SeedMenuCommand extends Command
             'roles' => [
                 'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
                 'ROLE_CHEF_PROJET' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_ADMIN'       => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_HSE'         => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_DIRECTION'   => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
             ],
         ],
         [
@@ -187,6 +190,18 @@ class SeedMenuCommand extends Command
                 'ROLE_HSE'         => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
             ],
         ],
+        [
+            'name'        => 'Entreprises',
+            'icon'        => 'Building2',
+            'route'       => '/referentiel/entreprises',
+            'position'    => 4,
+            'parentRoute' => 'referentiel',
+            'roles'       => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_HSE'         => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+                'ROLE_CHEF_PROJET' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+            ],
+        ],
     ];
 
     public function __construct(
@@ -212,6 +227,7 @@ class SeedMenuCommand extends Command
         }
 
         $menuRepo = $this->entityManager->getRepository(Menu::class);
+        $accessRepo = $this->entityManager->getRepository(MenuAccess::class);
 
         $created = 0;
         $skipped = 0;
@@ -227,6 +243,30 @@ class SeedMenuCommand extends Command
                         $io->writeln(sprintf('  ✓ <info>%s</info> parent corrigé → %s', $definition['name'], $definition['parentRoute']));
                     }
                 }
+
+                // Reconcile MenuAccess: add rows for roles present in the definition but
+                // missing in DB (e.g. a role added to this array after the menu was first
+                // seeded). Never touches rows that already exist, so manual customization
+                // made via the Menu Manager UI is preserved.
+                if (!($definition['public'] ?? false)) {
+                    foreach (($definition['roles'] ?? []) as $roleName => $permissions) {
+                        $hasAccess = $accessRepo->findOneBy(['menu' => $existing, 'role' => $roleName]);
+                        if ($hasAccess !== null) {
+                            continue;
+                        }
+                        $access = new MenuAccess();
+                        $access->setMenu($existing);
+                        $access->setRole($roleName);
+                        $access->setCanView($permissions['view'] ?? true);
+                        $access->setCanCreate($permissions['create'] ?? true);
+                        $access->setCanEdit($permissions['edit'] ?? true);
+                        $access->setCanDelete($permissions['delete'] ?? true);
+                        $this->entityManager->persist($access);
+                        $this->entityManager->flush();
+                        $io->writeln(sprintf('  ✓ <info>%s</info> accès ajouté → %s', $definition['name'], $roleName));
+                    }
+                }
+
                 $io->note(sprintf('Menu "%s" existe déjà, ignoré.', $definition['name']));
                 ++$skipped;
                 continue;

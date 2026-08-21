@@ -167,6 +167,38 @@ class SeedRoleActionCommand extends Command
             'module'         => 'suivi_journalier',
             'ownershipField' => 'created_by',
         ],
+        // take5_record
+        [
+            'key'            => 'take5_record.create',
+            'label'          => 'Créer un Take 5',
+            'module'         => 'take5_record',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'take5_record.view',
+            'label'          => 'Consulter les Take 5',
+            'module'         => 'take5_record',
+            'ownershipField' => 'created_by',
+        ],
+        // controle_journalier
+        [
+            'key'            => 'controle_journalier.create',
+            'label'          => 'Créer un contrôle journalier (commencement des travaux)',
+            'module'         => 'controle_journalier',
+            'ownershipField' => null,
+        ],
+        [
+            'key'            => 'controle_journalier.view',
+            'label'          => 'Consulter les contrôles journaliers',
+            'module'         => 'controle_journalier',
+            'ownershipField' => 'created_by',
+        ],
+        [
+            'key'            => 'controle_journalier.edit',
+            'label'          => 'Compléter la clôture d\'un contrôle journalier (jour J uniquement)',
+            'module'         => 'controle_journalier',
+            'ownershipField' => 'created_by',
+        ],
         [
             'key'            => 'intervention.suivi.dashboard',
             'label'          => 'Tableau de bord suivi avancements interventions (HSE/Chef de Projet)',
@@ -231,6 +263,12 @@ class SeedRoleActionCommand extends Command
             'module'         => 'referentiel',
             'ownershipField' => null,
         ],
+        [
+            'key'            => 'user.upload_signature',
+            'label'          => 'Uploader la signature électronique d\'un utilisateur',
+            'module'         => 'user',
+            'ownershipField' => 'self',
+        ],
     ];
 
     private const ROLE_ACTIONS = [
@@ -261,6 +299,7 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.view',   'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'permit_travail.view',   'bypass' => true],
         ['role' => 'ROLE_CHEF_PROJET',  'key' => 'permit_travail.view',   'bypass' => true],
+        ['role' => 'ROLE_COLLABORATEUR', 'key' => 'permit_travail.view',  'bypass' => true],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.view',   'bypass' => false],
         // permit_travail.create
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.create', 'bypass' => true],
@@ -323,6 +362,25 @@ class SeedRoleActionCommand extends Command
         // suivi_journalier.delete_document
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'suivi_journalier.delete_document', 'bypass' => true],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'suivi_journalier.delete_document', 'bypass' => false],
+        // take5_record.create
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'take5_record.create', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'take5_record.create', 'bypass' => false],
+        // take5_record.view
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'take5_record.view', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'take5_record.view', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'take5_record.view', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'take5_record.view', 'bypass' => false],
+        // controle_journalier.create
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'controle_journalier.create', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'controle_journalier.create', 'bypass' => false],
+        // controle_journalier.view
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'controle_journalier.view', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'controle_journalier.view', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'controle_journalier.view', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'controle_journalier.view', 'bypass' => false],
+        // controle_journalier.edit
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'controle_journalier.edit', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'controle_journalier.edit', 'bypass' => false],
         // intervention.suivi.dashboard
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'intervention.suivi.dashboard', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'intervention.suivi.dashboard', 'bypass' => true],
@@ -357,6 +415,11 @@ class SeedRoleActionCommand extends Command
         // installation_equipement.delete
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'installation_equipement.delete', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'installation_equipement.delete', 'bypass' => true],
+        // user.upload_signature
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'user.upload_signature', 'bypass' => true],
+        ['role' => 'ROLE_ADMIN',        'key' => 'user.upload_signature', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'user.upload_signature', 'bypass' => false],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'user.upload_signature', 'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)
