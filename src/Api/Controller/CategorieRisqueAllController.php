@@ -22,7 +22,8 @@ class CategorieRisqueAllController extends AbstractController
     public function __invoke(): JsonResponse
     {
         $items = $this->categorieRisqueRepository->createQueryBuilder('c')
-            ->select('c.id', 'c.nom', 'c.typePermis', 'IDENTITY(c.parent) AS parentId')
+            ->leftJoin('c.parent', 'p')
+            ->select('c.id', 'c.nom', 'c.typePermis', 'c.createdAt', 'c.updatedAt', 'IDENTITY(c.parent) AS parentId', 'p.nom AS parentNom')
             ->orderBy('c.nom', 'ASC')
             ->getQuery()
             ->getArrayResult();
@@ -32,6 +33,9 @@ class CategorieRisqueAllController extends AbstractController
             'nom'        => $row['nom'],
             'typePermis' => $row['typePermis'],
             'parentId'   => $row['parentId'] !== null ? (string) $row['parentId'] : null,
+            'parentNom'  => $row['parentNom'],
+            'createdAt'  => $row['createdAt']->format(\DateTimeInterface::ATOM),
+            'updatedAt'  => $row['updatedAt']?->format(\DateTimeInterface::ATOM),
         ], $items);
 
         return $this->json(['member' => $data, 'totalItems' => count($data)]);
