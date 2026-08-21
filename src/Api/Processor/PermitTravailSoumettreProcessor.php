@@ -10,38 +10,20 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
-use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
+use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 final class PermitTravailSoumettreProcessor implements ProcessorInterface
 {
-    /** @var array<string, TypeDocumentPermitTravail[]> */
-    private const DOCUMENT_MATRIX = [
-        TypePermitTravail::GENERAL->value => [
-            TypeDocumentPermitTravail::ATTESTATION_ENTREPRISE,
-            TypeDocumentPermitTravail::LISTE_INTERVENANTS,
-            TypeDocumentPermitTravail::PLAN_PREVENTION_REF,
-        ],
-        TypePermitTravail::ELECTRIQUE->value => [
-            TypeDocumentPermitTravail::HABILITATION_ELECTRIQUE,
-            TypeDocumentPermitTravail::CONSIGNATION_FICHE,
-            TypeDocumentPermitTravail::ATTESTATION_BASSE_TENSION,
-        ],
-        TypePermitTravail::HAUTEUR->value => [
-            TypeDocumentPermitTravail::CERTIFICAT_TRAVAIL_HAUTEUR,
-            TypeDocumentPermitTravail::EPI_FICHE,
-            TypeDocumentPermitTravail::PLAN_SAUVETAGE,
-        ],
-    ];
-
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private readonly ProcessorInterface $persistProcessor,
         private readonly EntityManagerInterface $entityManager,
         private readonly PermitTravailGroupeRepository $groupeRepository,
+        private readonly PermitDocumentRequirementResolver $documentRequirementResolver,
     ) {
     }
 
@@ -90,17 +72,7 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
     /** @return TypeDocumentPermitTravail[] */
     private function findMissingDocumentTypes(PermitTravail $permit): array
     {
-        $required = self::DOCUMENT_MATRIX[$permit->getType()?->value ?? ''] ?? [];
-
-        $presentTypes = array_map(
-            static fn($doc) => $doc->getType(),
-            $permit->getDocuments()->toArray(),
-        );
-
-        return array_values(array_filter(
-            $required,
-            static fn(TypeDocumentPermitTravail $req) => !in_array($req, $presentTypes, true),
-        ));
+        return $this->documentRequirementResolver->findMissingDocumentTypes($permit);
     }
 
     private function checkNouveauSitePair(PermitTravail $permit): void

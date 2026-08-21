@@ -10,8 +10,8 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Entity\VersionPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
-use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\VersionPermitTravailRepository;
+use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\User\Entity\User;
@@ -23,25 +23,6 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 final class PermitTravailResoumettreProcessor implements ProcessorInterface
 {
-    /** @var array<string, TypeDocumentPermitTravail[]> */
-    private const DOCUMENT_MATRIX = [
-        TypePermitTravail::GENERAL->value => [
-            TypeDocumentPermitTravail::ATTESTATION_ENTREPRISE,
-            TypeDocumentPermitTravail::LISTE_INTERVENANTS,
-            TypeDocumentPermitTravail::PLAN_PREVENTION_REF,
-        ],
-        TypePermitTravail::ELECTRIQUE->value => [
-            TypeDocumentPermitTravail::HABILITATION_ELECTRIQUE,
-            TypeDocumentPermitTravail::CONSIGNATION_FICHE,
-            TypeDocumentPermitTravail::ATTESTATION_BASSE_TENSION,
-        ],
-        TypePermitTravail::HAUTEUR->value => [
-            TypeDocumentPermitTravail::CERTIFICAT_TRAVAIL_HAUTEUR,
-            TypeDocumentPermitTravail::EPI_FICHE,
-            TypeDocumentPermitTravail::PLAN_SAUVETAGE,
-        ],
-    ];
-
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private readonly ProcessorInterface $persistProcessor,
@@ -50,6 +31,7 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
         private readonly VersionPermitTravailRepository $versionRepository,
         private readonly PermitTravailNotificationService $notificationService,
         private readonly RequestStack $requestStack,
+        private readonly PermitDocumentRequirementResolver $documentRequirementResolver,
     ) {
     }
 
@@ -129,17 +111,7 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
     /** @return TypeDocumentPermitTravail[] */
     private function findMissingDocumentTypes(PermitTravail $permit): array
     {
-        $required = self::DOCUMENT_MATRIX[$permit->getType()?->value ?? ''] ?? [];
-
-        $presentTypes = array_map(
-            static fn($doc) => $doc->getType(),
-            $permit->getDocuments()->toArray(),
-        );
-
-        return array_values(array_filter(
-            $required,
-            static fn(TypeDocumentPermitTravail $req) => !in_array($req, $presentTypes, true),
-        ));
+        return $this->documentRequirementResolver->findMissingDocumentTypes($permit);
     }
 
     private function buildSnapshot(PermitTravail $permit): array

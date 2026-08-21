@@ -52,15 +52,20 @@ final class PermitTravailCreateProcessor implements ProcessorInterface
             }
         }
 
+        // NOUVEAU_SITE: valider la paire GENERAL + ELECTRIQUE|HAUTEUR avant de
+        // persister quoi que ce soit — sinon une demande bloquée laisserait un
+        // permis orphelin en BROUILLON sans groupe associé.
+        $isNouveauSite = $data->getProcessus() === ProcessusPermitTravail::NOUVEAU_SITE;
+        $groupe = $isNouveauSite ? $this->validateNouveauSiteGroupe($data) : null;
+
         $data->setReference($this->generateReference());
         $data->setStatut(StatutPermitTravail::BROUILLON);
         $data->setCreatedBy($user);
 
         $result = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
 
-        // NOUVEAU_SITE: create or link groupe (GENERAL + ELECTRIQUE|HAUTEUR pair)
-        if ($data->getProcessus() === ProcessusPermitTravail::NOUVEAU_SITE) {
-            $this->handleNouveauSiteGroupe($data, $user);
+        if ($isNouveauSite) {
+            $this->attachNouveauSiteGroupe($data, $user, $groupe);
         }
 
         return $result;
@@ -82,57 +87,45 @@ final class PermitTravailCreateProcessor implements ProcessorInterface
         return sprintf('%d/PTW-TOA-%04d', $year, $next);
     }
 
-    private function handleNouveauSiteGroupe(PermitTravail $permit, User $user): void
+    private function validateNouveauSiteGroupe(PermitTravail $permit): ?PermitTravailGroupe
     {
-        $type = $permit->getType();
-
         $groupe = $this->groupeRepository->findByCodeSiteAndPlan(
             $permit->getCodeSite(),
             $permit->getPlanPrevention(),
         );
 
-        if ($groupe === null) {
-            if ($type === TypePermitTravail::GENERAL) {
-                // User explicitly creating GENERAL first
-                $groupe = new PermitTravailGroupe();
-                $groupe->setCodeSite($permit->getCodeSite());
-                $groupe->setPlanPrevention($permit->getPlanPrevention());
-                $groupe->setPermitGeneral($permit);
-                $groupe->setCreatedBy($user);
-                $this->entityManager->persist($groupe);
-            } else {
-                // User creating ELECTRIQUE/HAUTEUR first — auto-create GENERAL companion
-                $generalPermit = new PermitTravail();
-                $generalPermit->setType(TypePermitTravail::GENERAL);
-                $generalPermit->setProcessus($permit->getProcessus());
-                $generalPermit->setCodeSite($permit->getCodeSite());
-                $generalPermit->setPlanPrevention($permit->getPlanPrevention());
-                $generalPermit->setDescriptionTravaux($permit->getDescriptionTravaux());
-                $generalPermit->setDateDebutPrevue($permit->getDateDebutPrevue());
-                $generalPermit->setDateFinPrevue($permit->getDateFinPrevue());
-                $generalPermit->setReference($this->generateReference());
-                $generalPermit->setStatut(StatutPermitTravail::BROUILLON);
-                $generalPermit->setCreatedBy($user);
-                $this->entityManager->persist($generalPermit);
-                $this->entityManager->flush();
-
-                $groupe = new PermitTravailGroupe();
-                $groupe->setCodeSite($permit->getCodeSite());
-                $groupe->setPlanPrevention($permit->getPlanPrevention());
-                $groupe->setPermitGeneral($generalPermit);
-                $groupe->setPermitSpecialise($permit);
-                $groupe->setCreatedBy($user);
-                $this->entityManager->persist($groupe);
-            }
-        } elseif ($groupe->getPermitSpecialise() === null) {
-            // Second permit — must be ELECTRIQUE or HAUTEUR
-            if (!in_array($type, [TypePermitTravail::ELECTRIQUE, TypePermitTravail::HAUTEUR], true)) {
-                throw new UnprocessableEntityHttpException('permit_travail.nouveau_site_specialise_required');
+        if ($permit->getType() === TypePermitTravail::GENERAL) {
+            if ($groupe !== null) {
+                throw new UnprocessableEntityHttpException('permit_travail.general_deja_existant');
             }
 
-            $groupe->setPermitSpecialise($permit);
-        } else {
+            return null;
+        }
+
+        // ELECTRIQUE/HAUTEUR : le permis Général doit obligatoirement avoir
+        // été demandé au préalable sur ce couple site/plan.
+        if ($groupe === null || $groupe->getPermitGeneral() === null) {
+            throw new UnprocessableEntityHttpException('permit_travail.general_required_first');
+        }
+
+        if ($groupe->getPermitSpecialise() !== null) {
             throw new UnprocessableEntityHttpException('permit_travail.groupe_complet');
+        }
+
+        return $groupe;
+    }
+
+    private function attachNouveauSiteGroupe(PermitTravail $permit, User $user, ?PermitTravailGroupe $groupe): void
+    {
+        if ($groupe === null) {
+            $groupe = new PermitTravailGroupe();
+            $groupe->setCodeSite($permit->getCodeSite());
+            $groupe->setPlanPrevention($permit->getPlanPrevention());
+            $groupe->setPermitGeneral($permit);
+            $groupe->setCreatedBy($user);
+            $this->entityManager->persist($groupe);
+        } else {
+            $groupe->setPermitSpecialise($permit);
         }
 
         $this->entityManager->flush();

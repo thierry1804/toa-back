@@ -515,6 +515,12 @@ class PermitTravail
     }
 
     #[Groups(['permit_travail:read'])]
+    public function getPlanProcess(): ?string
+    {
+        return $this->planPrevention?->getProcess();
+    }
+
+    #[Groups(['permit_travail:read'])]
     public function getInterventionId(): ?string
     {
         return $this->intervention?->getId()?->toRfc4122();

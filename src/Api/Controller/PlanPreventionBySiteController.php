@@ -6,6 +6,7 @@ namespace App\Api\Controller;
 
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
+use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,6 +22,7 @@ class PlanPreventionBySiteController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
+        private readonly PermitTravailGroupeRepository $groupeRepository,
     ) {
     }
 
@@ -49,19 +51,32 @@ class PlanPreventionBySiteController extends AbstractController
                 continue;
             }
 
-            $existingPermits = $this->entityManager->getRepository(PermitTravail::class)
-                ->findBy(['codeSite' => $codeSite, 'planPrevention' => $plan]);
+            $isNouveauSite = $plan->getTypeIntervention() === 'NOUVEAU_SITE';
+            $groupe = $isNouveauSite
+                ? $this->groupeRepository->findByCodeSiteAndPlan($codeSite, $plan)
+                : null;
 
-            $hasActivePermit = false;
-            foreach ($existingPermits as $permit) {
-                if (!in_array($permit->getStatut(), $terminalStatuts, true)) {
-                    $hasActivePermit = true;
-                    break;
+            if ($isNouveauSite) {
+                // Nouveau site : le plan reste sélectionnable tant que la paire
+                // Général + H/E n'est pas complète (2 permis obligatoires).
+                if ($groupe !== null && $groupe->getPermitSpecialise() !== null) {
+                    continue;
                 }
-            }
+            } else {
+                $existingPermits = $this->entityManager->getRepository(PermitTravail::class)
+                    ->findBy(['codeSite' => $codeSite, 'planPrevention' => $plan]);
 
-            if ($hasActivePermit) {
-                continue;
+                $hasActivePermit = false;
+                foreach ($existingPermits as $permit) {
+                    if (!in_array($permit->getStatut(), $terminalStatuts, true)) {
+                        $hasActivePermit = true;
+                        break;
+                    }
+                }
+
+                if ($hasActivePermit) {
+                    continue;
+                }
             }
 
             $resolvedSites = $plan->getPlanificationSites();
@@ -76,6 +91,8 @@ class PlanPreventionBySiteController extends AbstractController
                 'dateDebut'         => $plan->getDateDebut()?->format('Y-m-d'),
                 'dateFin'           => $plan->getDateFin()?->format('Y-m-d'),
                 'typeIntervention'  => $plan->getTypeIntervention(),
+                'process'           => $plan->getProcess(),
+                'permitGeneralId'   => $groupe?->getPermitGeneral()?->getId()?->toRfc4122(),
                 'planificationSites' => $resolvedSites,
                 'risques'           => array_map(
                     static fn ($r): array => [
@@ -94,6 +111,7 @@ class PlanPreventionBySiteController extends AbstractController
                 'codeSite'          => $plan->getCodeSite(),
                 'localite'          => $plan->getLocalite(),
                 'installations'     => $plan->getInstallations(),
+                'equipements'       => $plan->getEquipements(),
             ];
         }
 
