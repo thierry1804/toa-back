@@ -12,7 +12,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
-use App\Api\Processor\UserPasswordHasherProcessor;
+use App\Api\Processor\PrestataireUserScopeProcessor;
 use App\Api\Processor\SignatureUploadProcessor;
 use App\Api\Provider\PrestataireProvider;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -29,10 +29,10 @@ use App\Domain\User\Validator\UniqueEmail;
             provider: PrestataireProvider::class,
             paginationEnabled: false,
         ),
-        new Post(security: "is_granted('USER_CREATE')", processor: UserPasswordHasherProcessor::class, validationContext: ['groups' => ['Default', 'user:create']]),
+        new Post(security: "is_granted('USER_CREATE')", processor: PrestataireUserScopeProcessor::class, validationContext: ['groups' => ['Default', 'user:create']]),
         new Get(security: "is_granted('USER_VIEW', object)"),
-        new Put(security: "is_granted('USER_EDIT', object)", processor: UserPasswordHasherProcessor::class),
-        new Patch(security: "is_granted('USER_EDIT', object)", processor: UserPasswordHasherProcessor::class),
+        new Put(security: "is_granted('USER_EDIT', object)", processor: PrestataireUserScopeProcessor::class),
+        new Patch(security: "is_granted('USER_EDIT', object)", processor: PrestataireUserScopeProcessor::class),
         new Delete(security: "is_granted('USER_DELETE', object)"),
         new Post(
             uriTemplate: '/users/{id}/signature',
