@@ -60,6 +60,24 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $this->assertSame('Gérant', $result->getQualiteRepresentant());
     }
 
+    public function testCreateAllowsHseAndAgentTerrainRoles(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        foreach (['ROLE_HSE', 'ROLE_AGENT_TERRAIN'] as $role) {
+            $newUser = new User();
+            $newUser->setRoles([$role]);
+            $newUser->setEntreprise($ownEntreprise);
+
+            $result = $this->processor->process($newUser, new Post());
+
+            $this->assertContains($role, $result->getRoles());
+            $this->assertSame($ownEntreprise, $result->getEntreprise());
+        }
+    }
+
     public function testEditingTeammateIgnoresSubmittedRoleAndEntreprise(): void
     {
         $ownEntreprise = $this->buildEntreprise();

@@ -420,6 +420,28 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_ADMIN',        'key' => 'user.upload_signature', 'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'user.upload_signature', 'bypass' => false],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'user.upload_signature', 'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'user.upload_signature', 'bypass' => false],
+        // ROLE_AGENT_TERRAIN : mêmes droits de travail terrain qu'un
+        // prestataire (permis, interventions, suivis), sans la gestion du
+        // dossier (submit/resoumettre plan de prévention, import KMZ,
+        // clôture de permis) qui reste réservée au compte prestataire
+        // propriétaire de l'entreprise.
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.view',              'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.create',            'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.edit',              'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.create',              'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.view',                'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.edit',                'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.valider_evaluation',  'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'suivi_journalier.create',          'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'suivi_journalier.view',            'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'suivi_journalier.edit',            'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'suivi_journalier.delete_document', 'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'take5_record.create',              'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'take5_record.view',                'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'controle_journalier.create',       'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'controle_journalier.view',         'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'controle_journalier.edit',         'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)

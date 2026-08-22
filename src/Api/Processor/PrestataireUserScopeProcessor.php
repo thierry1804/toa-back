@@ -24,6 +24,12 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  */
 final class PrestataireUserScopeProcessor implements ProcessorInterface
 {
+    /**
+     * Rôles qu'un prestataire scoped peut attribuer à un membre de son
+     * équipe. Toute autre valeur soumise retombe sur ROLE_PRESTATAIRE.
+     */
+    private const ASSIGNABLE_ROLES = ['ROLE_PRESTATAIRE', 'ROLE_HSE', 'ROLE_AGENT_TERRAIN'];
+
     public function __construct(
         #[Autowire(service: UserPasswordHasherProcessor::class)]
         private readonly ProcessorInterface $inner,
@@ -54,7 +60,7 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
                 return;
             }
 
-            $data->setRoles(['ROLE_PRESTATAIRE']);
+            $data->setRoles([$this->resolveAssignableRole($data)]);
             $data->setEntreprise($actor->getEntreprise());
             $this->pinDisplayFieldsToActor($data, $actor);
 
@@ -91,12 +97,19 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
 
         // Editing a teammate: UserVoter already confirmed they share the
         // actor's entreprise before we get here — keep them pinned there
-        // and prevent role escalation.
-        $data->setRoles(['ROLE_PRESTATAIRE']);
+        // and restrict the role to the assignable set.
+        $data->setRoles([$this->resolveAssignableRole($data)]);
         if ($actor->getEntreprise() !== null) {
             $data->setEntreprise($actor->getEntreprise());
             $this->pinDisplayFieldsToActor($data, $actor);
         }
+    }
+
+    private function resolveAssignableRole(User $data): string
+    {
+        $submitted = $data->getRoles()[0] ?? null;
+
+        return in_array($submitted, self::ASSIGNABLE_ROLES, true) ? $submitted : 'ROLE_PRESTATAIRE';
     }
 
     /**

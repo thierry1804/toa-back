@@ -60,6 +60,7 @@ class SeedMenuCommand extends Command
                 'ROLE_HSE'          => ['view' => true,  'create' => false, 'edit' => true,  'delete' => true],
                 'ROLE_CHEF_PROJET'  => ['view' => true,  'create' => false, 'edit' => true,  'delete' => false],
                 'ROLE_PRESTATAIRE'  => ['view' => true,  'create' => true,  'edit' => false, 'delete' => false],
+                'ROLE_AGENT_TERRAIN' => ['view' => true, 'create' => true,  'edit' => false, 'delete' => false],
             ],
         ],
         [
@@ -73,6 +74,7 @@ class SeedMenuCommand extends Command
                 'ROLE_CHEF_PROJET' => ['view' => true, 'create' => false, 'edit' => true, 'delete' => false],
                 'ROLE_COLLABORATEUR' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
                 'ROLE_PRESTATAIRE' => ['view' => true, 'create' => true, 'edit' => false, 'delete' => false],
+                'ROLE_AGENT_TERRAIN' => ['view' => true, 'create' => true, 'edit' => false, 'delete' => false],
             ],
         ],
         [
@@ -95,6 +97,7 @@ class SeedMenuCommand extends Command
             'roles' => [
                 'ROLE_SUPER_ADMIN'  => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
                 'ROLE_PRESTATAIRE'  => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'ROLE_AGENT_TERRAIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
             ],
         ],
         [
@@ -106,6 +109,7 @@ class SeedMenuCommand extends Command
             'roles'       => [
                 'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
                 'ROLE_PRESTATAIRE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_AGENT_TERRAIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
             ],
         ],
         [

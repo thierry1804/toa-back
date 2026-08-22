@@ -20,9 +20,10 @@ class EntrepriseNameCoherenceValidator extends ConstraintValidator
             throw new UnexpectedValueException($value, User::class);
         }
 
-        $isPrestataire = in_array('ROLE_PRESTATAIRE', $value->getRoles(), true);
-        $isHse         = in_array('ROLE_HSE', $value->getRoles(), true);
-        $canHaveEntreprise = $isPrestataire || $isHse;
+        $isPrestataire   = in_array('ROLE_PRESTATAIRE', $value->getRoles(), true);
+        $isHse           = in_array('ROLE_HSE', $value->getRoles(), true);
+        $isAgentTerrain  = in_array('ROLE_AGENT_TERRAIN', $value->getRoles(), true);
+        $canHaveEntreprise = $isPrestataire || $isHse || $isAgentTerrain;
 
         if ($value->getEntrepriseName() !== null && !$canHaveEntreprise) {
             $this->context->buildViolation($constraint->message)
