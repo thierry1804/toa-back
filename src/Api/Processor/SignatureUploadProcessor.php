@@ -57,7 +57,14 @@ final class SignatureUploadProcessor implements ProcessorInterface
         $roleActions = $this->permissionChecker->getRoleActions($currentUser->getRoles(), 'user.upload_signature');
         $canBypass   = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
 
-        if (empty($canBypass) && $currentUser->getId() !== $targetUser->getId()) {
+        $isSelf = $currentUser->getId() === $targetUser->getId();
+        // A prestataire scoped to an entreprise manages their own team (see
+        // PrestataireUserScopeProcessor) — that includes setting up a
+        // teammate's signature, not just their own.
+        $canActForTeammate = $this->isPrestataireScoped($currentUser)
+            && $this->usersShareEntreprise($currentUser, $targetUser);
+
+        if (empty($canBypass) && !$isSelf && !$canActForTeammate) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
@@ -96,5 +103,26 @@ final class SignatureUploadProcessor implements ProcessorInterface
         $this->entityManager->flush();
 
         return $targetUser;
+    }
+
+    private function isPrestataireScoped(User $user): bool
+    {
+        $roles = $user->getRoles();
+
+        return in_array('ROLE_PRESTATAIRE', $roles, true)
+            && !in_array('ROLE_ADMIN', $roles, true)
+            && !in_array('ROLE_SUPER_ADMIN', $roles, true);
+    }
+
+    private function usersShareEntreprise(User $a, User $b): bool
+    {
+        $entA = $a->getEntreprise();
+        $entB = $b->getEntreprise();
+
+        if ($entA === null || $entB === null || $entA->getId() === null || $entB->getId() === null) {
+            return false;
+        }
+
+        return $entA->getId()->equals($entB->getId());
     }
 }
