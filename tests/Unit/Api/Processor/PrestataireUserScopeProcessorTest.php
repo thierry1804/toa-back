@@ -41,34 +41,59 @@ class PrestataireUserScopeProcessorTest extends TestCase
     {
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $actor->setEntrepriseName('Ma Boite');
+        $actor->setQualiteRepresentant('Gérant');
         $this->setActor($actor);
 
         $otherEntreprise = $this->buildEntreprise();
         $newUser = new User();
         $newUser->setRoles(['ROLE_SUPER_ADMIN']);
         $newUser->setEntreprise($otherEntreprise);
+        $newUser->setEntrepriseName('Boite Rivale');
+        $newUser->setQualiteRepresentant('PDG');
 
         $result = $this->processor->process($newUser, new Post());
 
         $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
         $this->assertSame($ownEntreprise, $result->getEntreprise());
+        $this->assertSame('Ma Boite', $result->getEntrepriseName());
+        $this->assertSame('Gérant', $result->getQualiteRepresentant());
     }
 
     public function testEditingTeammateIgnoresSubmittedRoleAndEntreprise(): void
     {
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $actor->setEntrepriseName('Ma Boite');
         $this->setActor($actor);
 
         $otherEntreprise = $this->buildEntreprise();
         $teammate = $this->buildPrestataire($ownEntreprise, id: 2);
         $teammate->setRoles(['ROLE_SUPER_ADMIN']);
         $teammate->setEntreprise($otherEntreprise);
+        $teammate->setEntrepriseName('Boite Rivale');
 
         $result = $this->processor->process($teammate, new Patch(), ['id' => 2]);
 
         $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
         $this->assertSame($ownEntreprise, $result->getEntreprise());
+        $this->assertSame('Ma Boite', $result->getEntrepriseName());
+    }
+
+    public function testSelfEditCanUpdateOwnDisplayFieldsWhenLinkingEntreprise(): void
+    {
+        $actor = $this->buildPrestataire(null, id: 1);
+        $this->setActor($actor);
+        $this->userRepository->method('findBy')->willReturn([]);
+
+        $ownEntreprise = $this->buildEntreprise();
+        $self = $this->buildPrestataire(null, id: 1);
+        $self->setEntreprise($ownEntreprise);
+        $self->setEntrepriseName('Ma Nouvelle Boite');
+
+        $result = $this->processor->process($self, new Patch(), ['id' => 1]);
+
+        $this->assertSame('Ma Nouvelle Boite', $result->getEntrepriseName());
     }
 
     public function testSelfEditCannotEscalateRole(): void

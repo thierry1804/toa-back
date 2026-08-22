@@ -56,6 +56,7 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
 
             $data->setRoles(['ROLE_PRESTATAIRE']);
             $data->setEntreprise($actor->getEntreprise());
+            $this->pinDisplayFieldsToActor($data, $actor);
 
             return;
         }
@@ -94,7 +95,22 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
         $data->setRoles(['ROLE_PRESTATAIRE']);
         if ($actor->getEntreprise() !== null) {
             $data->setEntreprise($actor->getEntreprise());
+            $this->pinDisplayFieldsToActor($data, $actor);
         }
+    }
+
+    /**
+     * entrepriseName/numeroRegistreCommerce/siegeSocial/qualiteRepresentant
+     * are plain display strings (no FK), but were otherwise left free for a
+     * prestataire to set to anything on a teammate's account. Pin them to
+     * the actor's own values, same as the entreprise relation itself.
+     */
+    private function pinDisplayFieldsToActor(User $data, User $actor): void
+    {
+        $data->setEntrepriseName($actor->getEntrepriseName());
+        $data->setNumeroRegistreCommerce($actor->getNumeroRegistreCommerce());
+        $data->setSiegeSocial($actor->getSiegeSocial());
+        $data->setQualiteRepresentant($actor->getQualiteRepresentant());
     }
 
     private function isEntrepriseAlreadyClaimed(mixed $entrepriseId, User $actor): bool
