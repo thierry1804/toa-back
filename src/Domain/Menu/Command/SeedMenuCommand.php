@@ -134,7 +134,7 @@ class SeedMenuCommand extends Command
                 'ROLE_HSE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
                 'ROLE_CHEF_PROJET' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
                 'ROLE_COLLABORATEUR' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-                'ROLE_PRESTATAIRE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_PRESTATAIRE' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
             ],
         ],
         [

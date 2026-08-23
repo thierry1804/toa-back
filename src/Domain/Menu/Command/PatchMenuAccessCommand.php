@@ -27,6 +27,9 @@ class PatchMenuAccessCommand extends Command
             'ROLE_CHEF_PROJET' => ['view' => true,  'create' => false, 'edit' => false, 'delete' => false],
             'ROLE_PRESTATAIRE' => ['view' => true,  'create' => true,  'edit' => false, 'delete' => false],
         ],
+        '/users' => [
+            'ROLE_PRESTATAIRE' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+        ],
     ];
 
     public function __construct(private EntityManagerInterface $em) {

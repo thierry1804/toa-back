@@ -24,11 +24,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[UniqueEntrepriseNom]
 #[ApiResource(
     operations: [
-        new GetCollection(security: "is_granted('ROLE_USER')"),
-        new Get(security: "is_granted('ROLE_USER')"),
-        new Post(security: "is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN')"),
-        new Patch(security: "is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN')"),
-        new Delete(security: "is_granted('ROLE_ADMIN') or is_granted('ROLE_SUPER_ADMIN')"),
+        new GetCollection(security: "is_granted('ENTREPRISE_VIEW')"),
+        new Get(security: "is_granted('ENTREPRISE_VIEW', object)"),
+        new Post(security: "is_granted('ENTREPRISE_CREATE')"),
+        new Patch(security: "is_granted('ENTREPRISE_EDIT', object)"),
+        new Delete(security: "is_granted('ENTREPRISE_DELETE', object)"),
     ],
     normalizationContext: ['groups' => ['entreprise:read']],
     denormalizationContext: ['groups' => ['entreprise:write']],
