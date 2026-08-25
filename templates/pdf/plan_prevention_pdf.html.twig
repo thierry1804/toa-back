@@ -398,7 +398,7 @@
         </tr>
       </thead>
       <tbody>
-        {% set docTypes = ['PLAN_URGENCE','FDS','LISTE_INTERVENANTS','ATTESTATION_HSE','FICHE_CONFORMITE'] %}
+        {% set docTypes = ['PLAN_URGENCE','FDS','LISTE_INTERVENANTS','ATTESTATION_HSE','FICHE_CONFORMITE','LISTE_VEHICULES'] %}
         {% for type in docTypes %}
           {% set found = null %}
           {% for doc in plan.documents %}
