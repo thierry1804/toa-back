@@ -231,18 +231,6 @@
         <div class="info-value">{{ plan.chefProjet.firstname }} {{ plan.chefProjet.name }}</div>
       </div>
       {% endif %}
-      {% set lastExamen = null %}
-      {% for e in plan.examens %}{% set lastExamen = e %}{% endfor %}
-      {% if lastExamen %}
-      <div class="info-row">
-        <div class="info-label">Vérifié par</div>
-        <div class="info-value">{{ lastExamen.examinePar.firstname }} {{ lastExamen.examinePar.name }}</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Date de vérification</div>
-        <div class="info-value">{{ lastExamen.examineAt|date('d/m/Y à H:i') }}</div>
-      </div>
-      {% endif %}
       {% set statutLabels = {
         'BROUILLON': 'Brouillon',
         'SOUMIS': 'Soumis',
@@ -335,8 +323,10 @@
     <table>
       <thead>
         <tr>
-          <th style="width:45%;">Description</th>
-          <th style="width:55%;">Conditions d'utilisation</th>
+          <th style="width:30%;">Description</th>
+          <th style="width:30%;">Conditions d'utilisation</th>
+          <th style="width:20%;">Vérifié par</th>
+          <th style="width:20%;">Date de vérification</th>
         </tr>
       </thead>
       <tbody>
@@ -344,6 +334,8 @@
         <tr>
           <td>{{ equipement.description ?? '—' }}</td>
           <td style="white-space:pre-wrap;">{{ equipement.conditionsUtilisation ?? '—' }}</td>
+          <td>{{ equipement.verifiePar ?? '—' }}</td>
+          <td>{{ equipement.dateVerification ?? '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
