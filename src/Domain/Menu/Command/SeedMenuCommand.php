@@ -150,6 +150,13 @@ class SeedMenuCommand extends Command
             'position' => 8,
         ],
         [
+            'name'        => 'Matrice des permissions',
+            'icon'        => 'List',
+            'route'       => '/roles-management',
+            'position'    => 1,
+            'parentRoute' => '/roles',
+        ],
+        [
             'name'     => 'Référentiel',
             'icon'     => 'MapPin',
             'route'    => 'referentiel',
