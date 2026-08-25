@@ -21,6 +21,23 @@ final class PermitDocumentRequirementResolver
     private const NOUVEAU_SITE = 'NOUVEAU_SITE';
     private const AUTRES       = 'AUTRES';
 
+    /**
+     * Documents de clôture, exigés à la clôture manuelle d'un permis —
+     * cf. tableau de la recette interne, étape "Fin" / "Validation Fin".
+     *
+     * @var array<string, TypeDocumentPermitTravail[]>
+     */
+    private const CLOTURE_MATRIX = [
+        self::NOUVEAU_SITE => [
+            TypeDocumentPermitTravail::PV_CLOTURE_ENVIRONNEMENT,
+            TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
+        ],
+        self::AUTRES => [
+            TypeDocumentPermitTravail::PHOTO_PROPRETE_SITE,
+            TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
+        ],
+    ];
+
     /** @var array<string, array<string, array<int, TypeDocumentPermitTravail[]>>> */
     private const MATRIX = [
         self::NOUVEAU_SITE => [
@@ -96,17 +113,40 @@ final class PermitDocumentRequirementResolver
     /** @return TypeDocumentPermitTravail[] */
     public function getRequiredDocumentTypes(PermitTravail $permit): array
     {
-        $bucket = $permit->getPlanProcess() === 'Nouveau site' ? self::NOUVEAU_SITE : self::AUTRES;
         $isRenouvellement = $permit->getProcessus() === ProcessusPermitTravail::RENOUVELLEMENT ? 1 : 0;
 
-        return self::MATRIX[$bucket][$permit->getType()?->value ?? ''][$isRenouvellement] ?? [];
+        return self::MATRIX[$this->bucket($permit)][$permit->getType()?->value ?? ''][$isRenouvellement] ?? [];
     }
 
     /** @return TypeDocumentPermitTravail[] */
     public function findMissingDocumentTypes(PermitTravail $permit): array
     {
-        $required = $this->getRequiredDocumentTypes($permit);
+        return $this->findMissing($permit, $this->getRequiredDocumentTypes($permit));
+    }
 
+    /** @return TypeDocumentPermitTravail[] */
+    public function getRequiredClotureDocumentTypes(PermitTravail $permit): array
+    {
+        return self::CLOTURE_MATRIX[$this->bucket($permit)];
+    }
+
+    /** @return TypeDocumentPermitTravail[] */
+    public function findMissingClotureDocumentTypes(PermitTravail $permit): array
+    {
+        return $this->findMissing($permit, $this->getRequiredClotureDocumentTypes($permit));
+    }
+
+    private function bucket(PermitTravail $permit): string
+    {
+        return $permit->getPlanProcess() === 'Nouveau site' ? self::NOUVEAU_SITE : self::AUTRES;
+    }
+
+    /**
+     * @param TypeDocumentPermitTravail[] $required
+     * @return TypeDocumentPermitTravail[]
+     */
+    private function findMissing(PermitTravail $permit, array $required): array
+    {
         $presentTypes = array_map(
             static fn ($doc) => $doc->getType(),
             $permit->getDocuments()->toArray(),

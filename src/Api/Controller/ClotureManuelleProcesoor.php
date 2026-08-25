@@ -12,6 +12,7 @@ use App\Domain\PermitTravail\Enum\StatutPvReceptionPdf;
 use App\Domain\PermitTravail\Enum\TypeCloturePerm;
 use App\Domain\PermitTravail\Message\GeneratePvReceptionMessage;
 use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
+use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,6 +36,7 @@ class ClotureManuelleProcesoor extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly PvReceptionPdfRepository $pvRepository,
         private readonly MessageBusInterface $messageBus,
+        private readonly PermitDocumentRequirementResolver $documentRequirementResolver,
     ) {}
 
     public function __invoke(string $permitId, Request $request): JsonResponse
@@ -48,6 +50,14 @@ class ClotureManuelleProcesoor extends AbstractController
 
         if ($permit->getStatut() === StatutPermitTravail::CLOTURE) {
             throw new UnprocessableEntityHttpException('permit_travail.deja_cloture');
+        }
+
+        $missingTypes = $this->documentRequirementResolver->findMissingClotureDocumentTypes($permit);
+        if (!empty($missingTypes)) {
+            $missingLabels = array_map(static fn ($t) => $t->value, $missingTypes);
+            throw new UnprocessableEntityHttpException(
+                sprintf('documents_manquants: %s', implode(', ', $missingLabels)),
+            );
         }
 
         $body        = json_decode($request->getContent(), true) ?? [];

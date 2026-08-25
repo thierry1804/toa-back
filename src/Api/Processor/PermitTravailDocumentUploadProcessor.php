@@ -27,6 +27,14 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
     private const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg'];
     private const MAX_SIZE_BYTES     = 10 * 1024 * 1024; // 10 MB
 
+    // Documents de clôture : seuls ceux-là peuvent être déposés une fois le
+    // permis sorti du brouillon, au moment de sa clôture manuelle.
+    private const CLOTURE_DOCUMENT_TYPES = [
+        TypeDocumentPermitTravail::PV_CLOTURE_ENVIRONNEMENT,
+        TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
+        TypeDocumentPermitTravail::PHOTO_PROPRETE_SITE,
+    ];
+
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private readonly ProcessorInterface $persistProcessor,
@@ -77,7 +85,10 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('permit_travail.not_found');
         }
 
-        if ($permit->getStatut() !== StatutPermitTravail::BROUILLON) {
+        $isClotureUpload = in_array($type, self::CLOTURE_DOCUMENT_TYPES, true)
+            && in_array($permit->getStatut(), [StatutPermitTravail::VALIDE_HSE, StatutPermitTravail::EN_COURS], true);
+
+        if ($permit->getStatut() !== StatutPermitTravail::BROUILLON && !$isClotureUpload) {
             throw new AccessDeniedException('permit_travail.statut_not_brouillon');
         }
 
