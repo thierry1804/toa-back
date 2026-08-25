@@ -23,8 +23,8 @@ class PatchMenuAccessCommand extends Command
         '/prevention' => [
             'ROLE_SUPER_ADMIN' => ['view' => true,  'create' => true,  'edit' => true,  'delete' => true],
             'ROLE_ADMIN'       => ['view' => true,  'create' => true,  'edit' => true,  'delete' => true],
-            'ROLE_HSE'         => ['view' => true,  'create' => false, 'edit' => false, 'delete' => false],
-            'ROLE_CHEF_PROJET' => ['view' => true,  'create' => false, 'edit' => false, 'delete' => false],
+            'ROLE_HSE'         => ['view' => true,  'create' => false, 'edit' => true,  'delete' => true],
+            'ROLE_CHEF_PROJET' => ['view' => true,  'create' => false, 'edit' => true,  'delete' => false],
             'ROLE_PRESTATAIRE' => ['view' => true,  'create' => true,  'edit' => false, 'delete' => false],
         ],
         '/users' => [
