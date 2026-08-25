@@ -36,13 +36,13 @@ class UserRepository extends ServiceEntityRepository
      *
      * @return User[]
      */
-    public function findByRoleAndEntreprise(string $role, string $entrepriseId): array
+    public function findByRoleAndEntreprise(string $role, string|\Stringable $entrepriseId): array
     {
         $conn = $this->getEntityManager()->getConnection();
         $sql = 'SELECT id FROM "user" WHERE roles::text LIKE :role AND entreprise_id = :entrepriseId';
         $stmt = $conn->prepare($sql);
         $stmt->bindValue('role', '%"' . $role . '"%');
-        $stmt->bindValue('entrepriseId', $entrepriseId);
+        $stmt->bindValue('entrepriseId', (string) $entrepriseId);
         $ids = array_column($stmt->executeQuery()->fetchAllAssociative(), 'id');
 
         if (empty($ids)) {
