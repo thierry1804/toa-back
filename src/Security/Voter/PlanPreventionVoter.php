@@ -166,7 +166,7 @@ class PlanPreventionVoter extends Voter
     private function checkOwnershipForPrestataire(PlanPrevention $plan, array $roles, User $user): void
     {
         // HSE, ADMIN, SUPER_ADMIN, CHEF_PROJET bypass ownership.
-        if (in_array('ROLE_HSE', $roles, true)) {
+        if (in_array('ROLE_HSE', $roles, true) || in_array('ROLE_CHEF_PROJET', $roles, true)) {
             return;
         }
         if ($this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'EDIT')) {
