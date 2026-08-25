@@ -514,10 +514,14 @@ class PermitTravail
         return $this->planPrevention?->getId()?->toRfc4122();
     }
 
+    // Nom conservé pour la compatibilité de l'API ; renvoie en réalité le
+    // typeIntervention du plan de prévention (Nouveau site vs les 4 autres
+    // processus regroupés), qui est le champ pertinent pour
+    // PermitDocumentRequirementResolver — pas le nom libre du projet.
     #[Groups(['permit_travail:read'])]
     public function getPlanProcess(): ?string
     {
-        return $this->planPrevention?->getProcess();
+        return $this->planPrevention?->getTypeIntervention();
     }
 
     #[Groups(['permit_travail:read'])]

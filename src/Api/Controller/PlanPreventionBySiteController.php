@@ -51,7 +51,7 @@ class PlanPreventionBySiteController extends AbstractController
                 continue;
             }
 
-            $isNouveauSite = $plan->getTypeIntervention() === 'NOUVEAU_SITE';
+            $isNouveauSite = $plan->getTypeIntervention() === 'Nouveau site';
             $groupe = $isNouveauSite
                 ? $this->groupeRepository->findByCodeSiteAndPlan($codeSite, $plan)
                 : null;
