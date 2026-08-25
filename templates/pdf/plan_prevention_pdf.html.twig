@@ -201,6 +201,12 @@
         <div class="info-label">Activité planifiée</div>
         <div class="info-value" style="white-space:pre-wrap;">{{ plan.activitePlanifiee }}</div>
       </div>
+      {% if plan.typeIntervention %}
+      <div class="info-row">
+        <div class="info-label">Processus</div>
+        <div class="info-value">{{ plan.typeIntervention }}</div>
+      </div>
+      {% endif %}
       <div class="info-row">
         <div class="info-label">Date de début</div>
         <div class="info-value">{{ plan.dateDebut|date('d/m/Y') }}</div>
@@ -237,9 +243,21 @@
         <div class="info-value">{{ lastExamen.examineAt|date('d/m/Y à H:i') }}</div>
       </div>
       {% endif %}
+      {% set statutLabels = {
+        'BROUILLON': 'Brouillon',
+        'SOUMIS': 'Soumis',
+        'VALIDE': 'Validé',
+        'REJETE': 'Rejeté',
+        'EN_ATTENTE': 'En attente',
+        'ENVOYE': 'Envoyé',
+        'EN_COURS_DE_VALIDATION': 'En cours de validation',
+        'EXAMINE': 'Examiné',
+        'VALIDE_HSE': 'Validé HSE',
+        'REFUSE_HSE': 'Refusé HSE',
+      } %}
       <div class="info-row">
         <div class="info-label">Statut</div>
-        <div class="info-value" style="font-weight:700;color:#006633;">{{ plan.statut.value }}</div>
+        <div class="info-value" style="font-weight:700;color:#006633;">{{ statutLabels[plan.statut.value] ?? plan.statut.value }}</div>
       </div>
       {% set currentVersion = null %}
       {% for v in plan.versions %}{% set currentVersion = v %}{% endfor %}
