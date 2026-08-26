@@ -17,16 +17,16 @@ use Symfony\Component\Mailer\Transport\Smtp\SmtpTransport;
 use Symfony\Component\Mailer\Transport\Smtp\Stream\SocketStream;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Endpoint de diagnostic : envoie un email de test en direct (hors file
  * Messenger) afin de retourner immédiatement le résultat réel de la
  * transaction SMTP — commandes/réponses du serveur incluses — que l'envoi
  * réussisse ou échoue.
+ *
+ * Public, sans authentification (voir access_control dans security.yaml).
  */
 #[Route('/api/system/mail-test', name: 'system_mail_test', methods: ['POST'])]
-#[IsGranted('ROLE_SUPER_ADMIN')]
 final class SystemMailTestController extends AbstractController
 {
     // Borne l'attente réseau pour que l'endpoint réponde toujours avec un
