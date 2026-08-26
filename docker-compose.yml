@@ -31,6 +31,7 @@ services:
         build: ./docker/php
         container_name: toa_worker_notifications
         command: php bin/console messenger:consume notifications --limit=500 -vv
+        restart: unless-stopped
         volumes:
             - .:/var/www/toa-api
         networks:
@@ -53,6 +54,7 @@ services:
         build: ./docker/php
         container_name: toa_worker_pdf
         command: php bin/console messenger:consume pdf_generation --limit=100 -vv
+        restart: unless-stopped
         volumes:
             - .:/var/www/toa-api
         networks:
@@ -75,6 +77,7 @@ services:
         build: ./docker/php
         container_name: toa_scheduler
         command: php bin/console scheduler:run
+        restart: unless-stopped
         volumes:
             - .:/var/www/toa-api
         networks:
