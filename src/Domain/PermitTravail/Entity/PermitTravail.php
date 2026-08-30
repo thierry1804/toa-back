@@ -7,11 +7,14 @@ namespace App\Domain\PermitTravail\Entity;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model\Operation as OpenApiOperation;
 use App\Api\Processor\PermitTravailCreateProcessor;
+use App\Api\Processor\PermitTravailDeleteProcessor;
 use App\Api\Processor\PermitTravailRefuserProcessor;
 use App\Api\Processor\PermitTravailResoumettreProcessor;
 use App\Api\Processor\PermitTravailSoumettreProcessor;
@@ -59,6 +62,26 @@ use Symfony\Component\Validator\Constraints as Assert;
             uriTemplate: '/permits-travail/{id}',
             requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'],
             security: "is_granted('PERMIT_TRAVAIL_EDIT', object)",
+        ),
+        new Delete(
+            uriTemplate: '/permits-travail/{id}',
+            requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'],
+            security: "is_granted('PERMIT_TRAVAIL_DELETE', object)",
+            processor: PermitTravailDeleteProcessor::class,
+            description: 'Supprime un permis de travail en BROUILLON appartenant à l\'utilisateur connecté. '
+                . 'Pour un processus "Nouveau site", le permis Général et son compagnon Électrique/Hauteur '
+                . '(s\'il existe) sont supprimés ensemble ; la suppression est refusée (409) si l\'un des deux '
+                . 'n\'est plus en BROUILLON, ou (403) s\'il appartient à un autre utilisateur.',
+            openapi: new OpenApiOperation(
+                summary: 'Supprime un permis de travail en brouillon',
+                description: 'Supprime un permis de travail, uniquement si son statut est BROUILLON et que '
+                    . 'l\'utilisateur connecté en est le créateur (sauf rôle avec bypass, ex. HSE/admin). '
+                    . 'Pour un processus "Nouveau site", le permis Général et son compagnon '
+                    . 'Électrique/Hauteur sont supprimés ensemble dans une même transaction : si le '
+                    . 'compagnon n\'est plus en BROUILLON, la requête échoue en 409 ; s\'il appartient à un '
+                    . 'autre utilisateur, elle échoue en 403. Les documents associés (fichiers et lignes en '
+                    . 'base) sont supprimés avec le(s) permis.',
+            ),
         ),
         new Post(
             uriTemplate: '/permits-travail/{id}/soumettre',
@@ -199,6 +222,10 @@ class PermitTravail
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['permit_travail:read'])]
     private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['permit_travail:read'])]
+    private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\OneToMany(
         targetEntity: PermitTravailDocument::class,
@@ -463,6 +490,11 @@ class PermitTravail
         return $this->createdAt;
     }
 
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
     public function getDocuments(): Collection
     {
         return $this->documents;
@@ -578,5 +610,11 @@ class PermitTravail
         if (null === $this->createdAt) {
             $this->createdAt = new \DateTimeImmutable();
         }
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }

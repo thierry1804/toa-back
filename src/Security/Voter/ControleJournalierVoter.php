@@ -68,11 +68,7 @@ class ControleJournalierVoter extends Voter
                 return true;
             }
 
-            $uid = $user->getUserIdentifier();
-            $isCreator = $subject->getCreatedBy()?->getUserIdentifier() === $uid;
-            $isInterventionCreator = $subject->getIntervention()?->getCreatedBy()?->getUserIdentifier() === $uid;
-
-            if (!$isCreator && !$isInterventionCreator) {
+            if (!$this->hasOwnership($subject, $user)) {
                 throw new AccessDeniedException('error.voter.access_denied');
             }
 
@@ -92,6 +88,8 @@ class ControleJournalierVoter extends Voter
                 return true;
             }
 
+            // Modifier reste strictement réservé au créateur de CE contrôle
+            // (contrairement à VIEW, pas d'élargissement à l'équipe/entreprise).
             $uid = $user->getUserIdentifier();
             if ($subject->getCreatedBy()?->getUserIdentifier() !== $uid) {
                 throw new AccessDeniedException('error.voter.access_denied');
@@ -107,5 +105,31 @@ class ControleJournalierVoter extends Voter
         }
 
         return false;
+    }
+
+    /**
+     * Vrai si l'utilisateur est le créateur du contrôle ou de l'intervention liée,
+     * ou s'il appartient à la même entreprise que l'un des deux (équipe).
+     */
+    private function hasOwnership(ControleJournalier $controle, User $user): bool
+    {
+        $uid                   = $user->getUserIdentifier();
+        $isCreator             = $controle->getCreatedBy()?->getUserIdentifier() === $uid;
+        $isInterventionCreator = $controle->getIntervention()?->getCreatedBy()?->getUserIdentifier() === $uid;
+
+        if ($isCreator || $isInterventionCreator) {
+            return true;
+        }
+
+        $entreprise = $user->getEntreprise();
+        if ($entreprise === null) {
+            return false;
+        }
+
+        $creatorEntreprise             = $controle->getCreatedBy()?->getEntreprise();
+        $interventionCreatorEntreprise = $controle->getIntervention()?->getCreatedBy()?->getEntreprise();
+
+        return $creatorEntreprise?->getId() === $entreprise->getId()
+            || $interventionCreatorEntreprise?->getId() === $entreprise->getId();
     }
 }

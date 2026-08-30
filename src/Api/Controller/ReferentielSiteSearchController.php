@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Api\Controller;
 
 use App\Domain\Referentiel\Repository\SiteRepository;
-use App\Security\Voter\ReferentielSiteVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,7 +12,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/referentiel/sites/search', name: 'referentiel_site_search', methods: ['GET'])]
-#[IsGranted(ReferentielSiteVoter::VIEW)]
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
 class ReferentielSiteSearchController extends AbstractController
 {
     public function __construct(

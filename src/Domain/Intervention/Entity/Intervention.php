@@ -82,6 +82,10 @@ class Intervention
     #[Groups(['intervention:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['intervention:read'])]
+    private ?\DateTimeImmutable $updatedAt = null;
+
     #[ORM\OneToMany(
         targetEntity: EvaluationRisque::class,
         mappedBy: 'intervention',
@@ -159,6 +163,11 @@ class Intervention
         return $this->createdAt;
     }
 
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
     public function getEvaluations(): Collection
     {
         return $this->evaluations;
@@ -185,5 +194,11 @@ class Intervention
         if (null === $this->createdAt) {
             $this->createdAt = new \DateTimeImmutable();
         }
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }

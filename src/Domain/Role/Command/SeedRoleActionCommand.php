@@ -231,6 +231,12 @@ class SeedRoleActionCommand extends Command
             'module'         => 'permit_travail',
             'ownershipField' => 'plan_prevention.chef_projet',
         ],
+        [
+            'key'            => 'permit_travail.delete',
+            'label'          => 'Supprimer un permis de travail (statut BROUILLON)',
+            'module'         => 'permit_travail',
+            'ownershipField' => 'created_by',
+        ],
         // dashboard
         [
             'key'            => 'dashboard.kpis.view',
@@ -399,6 +405,10 @@ class SeedRoleActionCommand extends Command
         // permit_travail.pv_refuser
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.pv_refuser', 'bypass' => true],
         ['role' => 'ROLE_CHEF_PROJET',  'key' => 'permit_travail.pv_refuser', 'bypass' => false],
+        // permit_travail.delete
+        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.delete', 'bypass' => true],
+        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.delete', 'bypass' => true],
+        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.delete', 'bypass' => false],
         // dashboard.kpis.view
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'dashboard.kpis.view', 'bypass' => true],
         ['role' => 'ROLE_ADMIN',        'key' => 'dashboard.kpis.view', 'bypass' => true],
@@ -429,6 +439,7 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.view',              'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.create',            'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.edit',              'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.delete',            'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.create',              'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.view',                'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.edit',                'bypass' => false],

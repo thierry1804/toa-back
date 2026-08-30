@@ -75,11 +75,7 @@ class InterventionVoter extends Voter
                 return true;
             }
 
-            $uid = $user->getUserIdentifier();
-            $isCreator       = $subject->getCreatedBy()?->getUserIdentifier() === $uid;
-            $isPermitCreator = $subject->getPermitTravail()?->getCreatedBy()?->getUserIdentifier() === $uid;
-
-            if (!$isCreator && !$isPermitCreator) {
+            if (!$this->hasOwnership($subject, $user)) {
                 throw new AccessDeniedException('error.voter.access_denied');
             }
 
@@ -123,11 +119,34 @@ class InterventionVoter extends Voter
 
     private function checkOwnership(Intervention $intervention, User $user, array $canBypass): void
     {
-        if (
-            empty($canBypass)
-            && $intervention->getCreatedBy()?->getUserIdentifier() !== $user->getUserIdentifier()
-        ) {
+        if (empty($canBypass) && !$this->hasOwnership($intervention, $user)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
+    }
+
+    /**
+     * Vrai si l'utilisateur est le créateur de l'intervention ou du permis lié,
+     * ou s'il appartient à la même entreprise que l'un des deux (équipe).
+     */
+    private function hasOwnership(Intervention $intervention, User $user): bool
+    {
+        $uid             = $user->getUserIdentifier();
+        $isCreator       = $intervention->getCreatedBy()?->getUserIdentifier() === $uid;
+        $isPermitCreator = $intervention->getPermitTravail()?->getCreatedBy()?->getUserIdentifier() === $uid;
+
+        if ($isCreator || $isPermitCreator) {
+            return true;
+        }
+
+        $entreprise = $user->getEntreprise();
+        if ($entreprise === null) {
+            return false;
+        }
+
+        $creatorEntreprise       = $intervention->getCreatedBy()?->getEntreprise();
+        $permitCreatorEntreprise = $intervention->getPermitTravail()?->getCreatedBy()?->getEntreprise();
+
+        return $creatorEntreprise?->getId() === $entreprise->getId()
+            || $permitCreatorEntreprise?->getId() === $entreprise->getId();
     }
 }

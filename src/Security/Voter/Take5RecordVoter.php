@@ -66,11 +66,7 @@ class Take5RecordVoter extends Voter
                 return true;
             }
 
-            $uid = $user->getUserIdentifier();
-            $isCreator = $subject->getCreatedBy()?->getUserIdentifier() === $uid;
-            $isInterventionCreator = $subject->getIntervention()?->getCreatedBy()?->getUserIdentifier() === $uid;
-
-            if (!$isCreator && !$isInterventionCreator) {
+            if (!$this->hasOwnership($subject, $user)) {
                 throw new AccessDeniedException('error.voter.access_denied');
             }
 
@@ -78,5 +74,31 @@ class Take5RecordVoter extends Voter
         }
 
         return false;
+    }
+
+    /**
+     * Vrai si l'utilisateur est le créateur du Take5 ou de l'intervention liée,
+     * ou s'il appartient à la même entreprise que l'un des deux (équipe).
+     */
+    private function hasOwnership(Take5Record $take5, User $user): bool
+    {
+        $uid                   = $user->getUserIdentifier();
+        $isCreator             = $take5->getCreatedBy()?->getUserIdentifier() === $uid;
+        $isInterventionCreator = $take5->getIntervention()?->getCreatedBy()?->getUserIdentifier() === $uid;
+
+        if ($isCreator || $isInterventionCreator) {
+            return true;
+        }
+
+        $entreprise = $user->getEntreprise();
+        if ($entreprise === null) {
+            return false;
+        }
+
+        $creatorEntreprise             = $take5->getCreatedBy()?->getEntreprise();
+        $interventionCreatorEntreprise = $take5->getIntervention()?->getCreatedBy()?->getEntreprise();
+
+        return $creatorEntreprise?->getId() === $entreprise->getId()
+            || $interventionCreatorEntreprise?->getId() === $entreprise->getId();
     }
 }

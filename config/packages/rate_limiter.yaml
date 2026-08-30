@@ -1,0 +1,6 @@
+framework:
+    rate_limiter:
+        offline_snapshot:
+            policy: fixed_window
+            limit: 1
+            interval: '5 minutes'
