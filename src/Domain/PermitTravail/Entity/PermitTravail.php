@@ -163,6 +163,10 @@ class PermitTravail
     #[Groups(['permit_travail:read', 'permit_travail:write', 'intervention:read'])]
     private ?\DateTimeImmutable $dateFinPrevue = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['permit_travail:read'])]
+    private ?\DateTimeImmutable $notificationExpirationEnvoyeeAt = null;
+
     #[ORM\Column]
     #[Groups(['permit_travail:read', 'permit_travail:write'])]
     private bool $engagementAccepte = false;
@@ -171,21 +175,16 @@ class PermitTravail
     #[Groups(['permit_travail:read'])]
     private ?\DateTimeImmutable $engagementAccepteAt = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    /**
+     * Liste des dangers évalués pour ce permis (formulaire en champs
+     * répéteurs) : chaque entrée porte son propre couple danger / moyens de
+     * maîtrise avec ses évaluations préliminaire et finale.
+     *
+     * @var list<array{dangers: ?string, moyensMaitrise: ?string, evaluationPreliminaire: ?string, evaluationFinale: ?string}>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
     #[Groups(['permit_travail:read', 'permit_travail:write'])]
-    private ?string $dangers = null;
-
-    #[ORM\Column(length: 10, nullable: true)]
-    #[Groups(['permit_travail:read', 'permit_travail:write'])]
-    private ?string $evaluationPreliminaire = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['permit_travail:read', 'permit_travail:write'])]
-    private ?string $moyensMaitrise = null;
-
-    #[ORM\Column(length: 10, nullable: true)]
-    #[Groups(['permit_travail:read', 'permit_travail:write'])]
-    private ?string $evaluationFinale = null;
+    private ?array $dangers = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['permit_travail:read'])]
@@ -362,6 +361,18 @@ class PermitTravail
         return $this;
     }
 
+    public function getNotificationExpirationEnvoyeeAt(): ?\DateTimeImmutable
+    {
+        return $this->notificationExpirationEnvoyeeAt;
+    }
+
+    public function setNotificationExpirationEnvoyeeAt(?\DateTimeImmutable $notificationExpirationEnvoyeeAt): static
+    {
+        $this->notificationExpirationEnvoyeeAt = $notificationExpirationEnvoyeeAt;
+
+        return $this;
+    }
+
     public function isEngagementAccepte(): bool
     {
         return $this->engagementAccepte;
@@ -386,50 +397,16 @@ class PermitTravail
         return $this;
     }
 
-    public function getDangers(): ?string
+    /** @return list<array{dangers: ?string, moyensMaitrise: ?string, evaluationPreliminaire: ?string, evaluationFinale: ?string}> */
+    public function getDangers(): array
     {
-        return $this->dangers;
+        return $this->dangers ?? [];
     }
 
-    public function setDangers(?string $dangers): static
+    /** @param list<array{dangers: ?string, moyensMaitrise: ?string, evaluationPreliminaire: ?string, evaluationFinale: ?string}>|null $dangers */
+    public function setDangers(?array $dangers): static
     {
         $this->dangers = $dangers;
-
-        return $this;
-    }
-
-    public function getEvaluationPreliminaire(): ?string
-    {
-        return $this->evaluationPreliminaire;
-    }
-
-    public function setEvaluationPreliminaire(?string $evaluationPreliminaire): static
-    {
-        $this->evaluationPreliminaire = $evaluationPreliminaire;
-
-        return $this;
-    }
-
-    public function getMoyensMaitrise(): ?string
-    {
-        return $this->moyensMaitrise;
-    }
-
-    public function setMoyensMaitrise(?string $moyensMaitrise): static
-    {
-        $this->moyensMaitrise = $moyensMaitrise;
-
-        return $this;
-    }
-
-    public function getEvaluationFinale(): ?string
-    {
-        return $this->evaluationFinale;
-    }
-
-    public function setEvaluationFinale(?string $evaluationFinale): static
-    {
-        $this->evaluationFinale = $evaluationFinale;
 
         return $this;
     }
