@@ -12,6 +12,7 @@ use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
+use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -24,6 +25,7 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
         private readonly EntityManagerInterface $entityManager,
         private readonly PermitTravailGroupeRepository $groupeRepository,
         private readonly PermitDocumentRequirementResolver $documentRequirementResolver,
+        private readonly PermitTravailNotificationService $notificationService,
     ) {
     }
 
@@ -55,8 +57,9 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
         }
 
         // NOUVEAU_SITE: both GENERAL + specialise must be submitted together
+        $companion = null;
         if ($permit->getProcessus() === ProcessusPermitTravail::NOUVEAU_SITE) {
-            $this->checkNouveauSitePair($permit);
+            $companion = $this->checkNouveauSitePair($permit);
         }
 
         $permit->setStatut(StatutPermitTravail::SOUMIS);
@@ -66,7 +69,14 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
             $permit->setEngagementAccepteAt(new \DateTimeImmutable());
         }
 
-        return $this->persistProcessor->process($permit, $operation, $uriVariables, $context);
+        $result = $this->persistProcessor->process($permit, $operation, $uriVariables, $context);
+
+        $this->notificationService->notifierSoumission($permit);
+        if ($companion !== null) {
+            $this->notificationService->notifierSoumission($companion);
+        }
+
+        return $result;
     }
 
     /** @return TypeDocumentPermitTravail[] */
@@ -75,7 +85,7 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
         return $this->documentRequirementResolver->findMissingDocumentTypes($permit);
     }
 
-    private function checkNouveauSitePair(PermitTravail $permit): void
+    private function checkNouveauSitePair(PermitTravail $permit): ?PermitTravail
     {
         $groupe = $this->groupeRepository->findByCodeSiteAndPlan(
             $permit->getCodeSite(),
@@ -111,6 +121,10 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
             if ($other->getEngagementAccepteAt() === null) {
                 $other->setEngagementAccepteAt(new \DateTimeImmutable());
             }
+
+            return $other;
         }
+
+        return null;
     }
 }

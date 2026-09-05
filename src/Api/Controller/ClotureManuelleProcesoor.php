@@ -13,6 +13,7 @@ use App\Domain\PermitTravail\Enum\TypeCloturePerm;
 use App\Domain\PermitTravail\Message\GeneratePvReceptionMessage;
 use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
+use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -37,6 +38,7 @@ class ClotureManuelleProcesoor extends AbstractController
         private readonly PvReceptionPdfRepository $pvRepository,
         private readonly MessageBusInterface $messageBus,
         private readonly PermitDocumentRequirementResolver $documentRequirementResolver,
+        private readonly PermitTravailNotificationService $notificationService,
     ) {}
 
     public function __invoke(string $permitId, Request $request): JsonResponse
@@ -108,6 +110,8 @@ class ClotureManuelleProcesoor extends AbstractController
             jobId: $jobId,
             requesterId: $user->getId(),
         ));
+
+        $this->notificationService->notifierClotureChefProjet($permit);
 
         return new JsonResponse(
             ['jobId' => $jobId, 'statut' => 'EN_COURS', 'message' => 'permit_travail.cloture_initiated'],

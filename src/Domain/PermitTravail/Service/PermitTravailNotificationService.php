@@ -91,6 +91,177 @@ class PermitTravailNotificationService
         }
     }
 
+    /**
+     * Notifie l'équipe HSE (entreprise du prestataire) qu'un permis vient
+     * d'être soumis pour la première fois (BROUILLON -> SOUMIS).
+     */
+    public function notifierSoumission(PermitTravail $permit): void
+    {
+        $hseUsers = $this->findHseTeamFor($permit);
+
+        if (empty($hseUsers)) {
+            $this->logger->info('[PermitTravail] notifierSoumission: aucun utilisateur ROLE_HSE trouvé pour l\'entreprise du prestataire', [
+                'permit_reference' => $permit->getReference(),
+            ]);
+
+            return;
+        }
+
+        foreach ($hseUsers as $hseUser) {
+            try {
+                $email = (new Email())
+                    ->from($this->fromAddress)
+                    ->to((string) $hseUser->getEmail())
+                    ->subject(sprintf('[TOA] Permis %s soumis pour validation', $permit->getReference()))
+                    ->text($this->buildSoumissionText($permit, $hseUser))
+                    ->html($this->buildSoumissionHtml($permit, $hseUser));
+
+                $this->mailer->send($email);
+
+                $this->logger->info('[PermitTravail] Notification soumission envoyée', [
+                    'permit_reference' => $permit->getReference(),
+                    'recipient'        => $hseUser->getEmail(),
+                ]);
+            } catch (\Throwable $e) {
+                $this->logger->error('[PermitTravail] Échec envoi notification soumission', [
+                    'permit_reference' => $permit->getReference(),
+                    'recipient'        => $hseUser->getEmail(),
+                    'error'            => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    private function buildSoumissionText(PermitTravail $permit, User $recipient): string
+    {
+        return sprintf(
+            "Bonjour %s %s,\n\n"
+            . "Le Permis de Travail suivant a été soumis par le prestataire et requiert votre décision :\n\n"
+            . "  Référence : %s\n"
+            . "  Type      : %s\n"
+            . "  Site      : %s\n\n"
+            . "Cordialement,\nL'équipe TOA",
+            $recipient->getFirstname(),
+            $recipient->getName(),
+            $permit->getReference(),
+            $permit->getType()?->value,
+            $permit->getCodeSite(),
+        );
+    }
+
+    private function buildSoumissionHtml(PermitTravail $permit, User $recipient): string
+    {
+        return sprintf(
+            '<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 style="color: #2980b9;">Permis de Travail soumis</h2>
+    <p>Bonjour <strong>%s %s</strong>,</p>
+    <p>Le Permis de Travail suivant a été soumis par le prestataire et requiert votre décision :</p>
+    <table style="border-collapse: collapse; width: 100%%;">
+        <tr><td style="padding: 4px 8px;"><strong>Référence</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+        <tr><td style="padding: 4px 8px;"><strong>Type</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+        <tr><td style="padding: 4px 8px;"><strong>Site</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+    </table>
+    <hr>
+    <p style="color: #666; font-size: 0.9em;">Cordialement,<br>L\'équipe TOA</p>
+</body>
+</html>',
+            htmlspecialchars((string) $recipient->getFirstname()),
+            htmlspecialchars((string) $recipient->getName()),
+            htmlspecialchars((string) $permit->getReference()),
+            htmlspecialchars((string) $permit->getType()?->value),
+            htmlspecialchars((string) $permit->getCodeSite()),
+        );
+    }
+
+    /**
+     * Notifie le chef de projet TOA (rattaché au plan de prévention du
+     * permis) qu'un permis vient d'être clôturé par le prestataire, avec
+     * les documents de clôture à vérifier.
+     */
+    public function notifierClotureChefProjet(PermitTravail $permit): void
+    {
+        $chefProjet = $permit->getPlanPrevention()?->getChefProjet();
+
+        if (!$chefProjet instanceof User) {
+            $this->logger->warning('[PermitTravail] notifierClotureChefProjet: chef de projet introuvable', [
+                'permit_reference' => $permit->getReference(),
+            ]);
+
+            return;
+        }
+
+        try {
+            $email = (new Email())
+                ->from($this->fromAddress)
+                ->to((string) $chefProjet->getEmail())
+                ->subject(sprintf('[TOA] Permis de Travail #%s clôturé — vérification requise', $permit->getReference()))
+                ->text($this->buildClotureText($permit, $chefProjet))
+                ->html($this->buildClotureHtml($permit, $chefProjet));
+
+            $this->mailer->send($email);
+
+            $this->logger->info('[PermitTravail] Notification clôture chef de projet envoyée', [
+                'permit_reference' => $permit->getReference(),
+                'recipient'        => $chefProjet->getEmail(),
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[PermitTravail] Échec envoi notification clôture chef de projet', [
+                'permit_reference' => $permit->getReference(),
+                'recipient'        => $chefProjet->getEmail(),
+                'error'            => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function buildClotureText(PermitTravail $permit, User $chefProjet): string
+    {
+        return sprintf(
+            "Bonjour %s %s,\n\n"
+            . "Le Permis de Travail suivant a été clôturé par le prestataire, avec ses documents de clôture :\n\n"
+            . "  Référence : %s\n"
+            . "  Site      : %s\n"
+            . "  Type      : %s\n\n"
+            . "Merci de vérifier les documents de clôture dans la fiche du permis.\n\n"
+            . "Cordialement,\nL'équipe TOA",
+            $chefProjet->getFirstname(),
+            $chefProjet->getName(),
+            $permit->getReference(),
+            $permit->getCodeSite(),
+            $permit->getType()?->value,
+        );
+    }
+
+    private function buildClotureHtml(PermitTravail $permit, User $chefProjet): string
+    {
+        return sprintf(
+            '<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 style="color: #27ae60;">Permis de Travail clôturé</h2>
+    <p>Bonjour <strong>%s %s</strong>,</p>
+    <p>Le Permis de Travail suivant a été clôturé par le prestataire, avec ses documents de clôture :</p>
+    <table style="border-collapse: collapse; width: 100%%;">
+        <tr><td style="padding: 4px 8px;"><strong>Référence</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+        <tr><td style="padding: 4px 8px;"><strong>Site</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+        <tr><td style="padding: 4px 8px;"><strong>Type</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+    </table>
+    <p>Merci de vérifier les documents de clôture dans la fiche du permis.</p>
+    <hr>
+    <p style="color: #666; font-size: 0.9em;">Cordialement,<br>L\'équipe TOA</p>
+</body>
+</html>',
+            htmlspecialchars((string) $chefProjet->getFirstname()),
+            htmlspecialchars((string) $chefProjet->getName()),
+            htmlspecialchars((string) $permit->getReference()),
+            htmlspecialchars((string) $permit->getCodeSite()),
+            htmlspecialchars((string) $permit->getType()?->value),
+        );
+    }
+
     private function buildValidationText(PermitTravail $permit, User $prestataire): string
     {
         return sprintf(
@@ -433,6 +604,93 @@ class PermitTravailNotificationService
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
             nl2br(htmlspecialchars($commentaire)),
+        );
+    }
+
+    public function notifierExpirationProchaine(PermitTravail $permit): void
+    {
+        $prestataire = $permit->getCreatedBy();
+
+        if (!$prestataire instanceof User) {
+            $this->logger->warning('[PermitTravail] notifierExpirationProchaine: prestataire introuvable', [
+                'permit_reference' => $permit->getReference(),
+            ]);
+
+            return;
+        }
+
+        $dateFinPrevue = $permit->getDateFinPrevue();
+
+        try {
+            $email = (new Email())
+                ->from($this->fromAddress)
+                ->to((string) $prestataire->getEmail())
+                ->subject(sprintf('[TOA] Permis de Travail #%s bientôt expiré', $permit->getReference()))
+                ->text($this->buildExpirationText($permit, $prestataire, $dateFinPrevue))
+                ->html($this->buildExpirationHtml($permit, $prestataire, $dateFinPrevue));
+
+            $this->mailer->send($email);
+
+            $this->logger->info('[PermitTravail] Notification expiration prochaine envoyée', [
+                'permit_reference' => $permit->getReference(),
+                'recipient'        => $prestataire->getEmail(),
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[PermitTravail] Échec envoi notification expiration prochaine', [
+                'permit_reference' => $permit->getReference(),
+                'recipient'        => $prestataire->getEmail(),
+                'error'            => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function buildExpirationText(PermitTravail $permit, User $prestataire, ?\DateTimeImmutable $dateFinPrevue): string
+    {
+        return sprintf(
+            "Bonjour %s %s,\n\n"
+            . "Votre Permis de Travail arrive bientôt à échéance :\n\n"
+            . "  Référence      : %s\n"
+            . "  Site           : %s\n"
+            . "  Type           : %s\n"
+            . "  Date fin prévue : %s\n\n"
+            . "Merci de vous assurer que les travaux seront clôturés à temps ou de demander une prolongation si nécessaire.\n\n"
+            . "Cordialement,\nL'équipe TOA",
+            $prestataire->getFirstname(),
+            $prestataire->getName(),
+            $permit->getReference(),
+            $permit->getCodeSite(),
+            $permit->getType()?->value,
+            $dateFinPrevue?->format('d/m/Y H:i') ?? '—',
+        );
+    }
+
+    private function buildExpirationHtml(PermitTravail $permit, User $prestataire, ?\DateTimeImmutable $dateFinPrevue): string
+    {
+        return sprintf(
+            '<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2 style="color: #e67e22;">Permis de Travail bientôt expiré</h2>
+    <p>Bonjour <strong>%s %s</strong>,</p>
+    <p>Votre Permis de Travail arrive bientôt à échéance :</p>
+    <table style="border-collapse: collapse; width: 100%%;">
+        <tr><td style="padding: 4px 8px;"><strong>Référence</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+        <tr><td style="padding: 4px 8px;"><strong>Site</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+        <tr><td style="padding: 4px 8px;"><strong>Type</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+        <tr><td style="padding: 4px 8px;"><strong>Date fin prévue</strong></td><td style="padding: 4px 8px;">%s</td></tr>
+    </table>
+    <p>Merci de vous assurer que les travaux seront clôturés à temps ou de demander une prolongation si nécessaire.</p>
+    <hr>
+    <p style="color: #666; font-size: 0.9em;">Cordialement,<br>L\'équipe TOA</p>
+</body>
+</html>',
+            htmlspecialchars((string) $prestataire->getFirstname()),
+            htmlspecialchars((string) $prestataire->getName()),
+            htmlspecialchars((string) $permit->getReference()),
+            htmlspecialchars((string) $permit->getCodeSite()),
+            htmlspecialchars((string) $permit->getType()?->value),
+            htmlspecialchars($dateFinPrevue?->format('d/m/Y H:i') ?? '—'),
         );
     }
 
