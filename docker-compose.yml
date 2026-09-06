@@ -10,6 +10,8 @@ services:
             postgres:
                 condition: service_healthy
         environment:
+            APP_ENV: prod
+            APP_DEBUG: "0"
             DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
@@ -38,6 +40,8 @@ services:
             - toa_net
         depends_on: [php, redis]
         environment:
+            APP_ENV: prod
+            APP_DEBUG: "0"
             DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
@@ -61,6 +65,8 @@ services:
             - toa_net
         depends_on: [php, redis]
         environment:
+            APP_ENV: prod
+            APP_DEBUG: "0"
             DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
@@ -84,6 +90,8 @@ services:
             - toa_net
         depends_on: [php, redis]
         environment:
+            APP_ENV: prod
+            APP_DEBUG: "0"
             DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
