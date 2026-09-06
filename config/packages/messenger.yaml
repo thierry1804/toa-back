@@ -4,6 +4,7 @@ framework:
         # failure_transport: failed
 
         transports:
+            scheduler_default: 'schedule://default'
             notifications:
                 dsn: '%env(REDIS_URL)%'
                 options:

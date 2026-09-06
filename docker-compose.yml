@@ -76,7 +76,7 @@ services:
     scheduler:
         build: ./docker/php
         container_name: toa_scheduler
-        command: php bin/console scheduler:run
+        command: php bin/console messenger:consume scheduler_default --time-limit=3600 -vv
         restart: unless-stopped
         volumes:
             - .:/var/www/toa-api

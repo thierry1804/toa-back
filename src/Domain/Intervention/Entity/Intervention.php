@@ -101,10 +101,30 @@ class Intervention
     )]
     private Collection $suivis;
 
+    #[ORM\OneToMany(
+        targetEntity: ControleJournalier::class,
+        mappedBy: 'intervention',
+        cascade: ['remove'],
+        orphanRemoval: true,
+        fetch: 'EXTRA_LAZY',
+    )]
+    private Collection $controlesJournaliers;
+
+    #[ORM\OneToMany(
+        targetEntity: Take5Record::class,
+        mappedBy: 'intervention',
+        cascade: ['remove'],
+        orphanRemoval: true,
+        fetch: 'EXTRA_LAZY',
+    )]
+    private Collection $take5Records;
+
     public function __construct()
     {
         $this->evaluations = new ArrayCollection();
         $this->suivis = new ArrayCollection();
+        $this->controlesJournaliers = new ArrayCollection();
+        $this->take5Records = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
@@ -167,6 +187,16 @@ class Intervention
     public function getSuivis(): Collection
     {
         return $this->suivis;
+    }
+
+    public function getControlesJournaliers(): Collection
+    {
+        return $this->controlesJournaliers;
+    }
+
+    public function getTake5Records(): Collection
+    {
+        return $this->take5Records;
     }
 
     public function addEvaluation(EvaluationRisque $evaluation): static
