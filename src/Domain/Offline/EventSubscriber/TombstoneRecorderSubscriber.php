@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Domain\Offline\EventSubscriber;
 
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
+use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\Intervention\Entity\Intervention;
 use App\Domain\Offline\Entity\TombstoneRecord;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\Referentiel\Entity\CategorieRisque;
 use App\Domain\Referentiel\Entity\Site;
+use App\Domain\User\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Event\PreRemoveEventArgs;
@@ -39,6 +41,8 @@ class TombstoneRecorderSubscriber
         ActivityPlanning::class => 'activity_planning',
         Site::class             => 'site',
         CategorieRisque::class  => 'categorie_risque',
+        User::class             => 'user',
+        Entreprise::class       => 'entreprise',
     ];
 
     /** @var list<array{type: string, id: string}> */

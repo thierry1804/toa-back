@@ -92,8 +92,9 @@ class OfflineSnapshotController extends AbstractController
 
         if ($wantReferentiel) {
             $payload['referentiel'] = [
-                'categoriesRisque'        => $this->dataProvider->categoriesRisque(),
+                'categoriesRisque'         => $this->dataProvider->categoriesRisque(),
                 'installationsEquipements' => $this->dataProvider->installationsEquipements(),
+                'sitesGeoJson'             => $this->dataProvider->sitesGeoJson(),
             ];
         }
 

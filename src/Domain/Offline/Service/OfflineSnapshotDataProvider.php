@@ -6,6 +6,7 @@ namespace App\Domain\Offline\Service;
 
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
+use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\Intervention\Entity\Intervention;
 use App\Domain\Offline\Repository\TombstoneRecordRepository;
 use App\Domain\PermitTravail\Entity\PermitTravail;
@@ -13,10 +14,13 @@ use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\Referentiel\Repository\CategorieRisqueRepository;
 use App\Domain\Referentiel\Repository\InstallationEquipementRepository;
 use App\Domain\Referentiel\Repository\SiteRepository;
+use App\Domain\User\Entity\User;
 use App\Doctrine\Extension\ActivityPlanningExtension;
 use App\Doctrine\Extension\CurrentUserExtension;
+use App\Doctrine\Extension\EntrepriseCollectionExtension;
 use App\Doctrine\Extension\InterventionExtension;
 use App\Doctrine\Extension\PlanPreventionExtension;
+use App\Doctrine\Extension\UserCollectionExtension;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -38,6 +42,8 @@ class OfflineSnapshotDataProvider
         'permitsTravail'    => PermitTravail::class,
         'interventions'     => Intervention::class,
         'activityPlannings' => ActivityPlanning::class,
+        'users'             => User::class,
+        'entreprises'       => Entreprise::class,
     ];
 
     /** @var array<string, string> attribut de voter passé à Security::isGranted(), identique au GetCollection de la ressource */
@@ -46,6 +52,8 @@ class OfflineSnapshotDataProvider
         'permitsTravail'    => 'PERMIT_TRAVAIL_VIEW',
         'interventions'     => 'INTERVENTION_VIEW',
         'activityPlannings' => 'ACTIVITY_PLANNING_VIEW',
+        'users'             => 'USER_VIEW',
+        'entreprises'       => 'ENTREPRISE_VIEW',
     ];
 
     /** @var array<string, string> */
@@ -54,6 +62,8 @@ class OfflineSnapshotDataProvider
         'permitsTravail'    => 'permit_travail:read',
         'interventions'     => 'intervention:read',
         'activityPlannings' => 'activity_planning:read',
+        'users'             => 'user:read',
+        'entreprises'       => 'entreprise:read',
     ];
 
     /** @var array<string, string> */
@@ -62,9 +72,13 @@ class OfflineSnapshotDataProvider
         'permitsTravail'    => 'permit_travail',
         'interventions'     => 'intervention',
         'activityPlannings' => 'activity_planning',
+        'users'             => 'user',
+        'entreprises'       => 'entreprise',
     ];
 
-    public const ENTITY_MODULES = ['plansPrevention', 'permitsTravail', 'interventions', 'activityPlannings'];
+    public const ENTITY_MODULES = [
+        'plansPrevention', 'permitsTravail', 'interventions', 'activityPlannings', 'users', 'entreprises',
+    ];
 
     public const ALWAYS_ON_MODULES = ['sites', 'referentiel'];
 
@@ -75,6 +89,8 @@ class OfflineSnapshotDataProvider
         private readonly CurrentUserExtension $permitTravailExtension,
         private readonly InterventionExtension $interventionExtension,
         private readonly ActivityPlanningExtension $activityPlanningExtension,
+        private readonly UserCollectionExtension $userExtension,
+        private readonly EntrepriseCollectionExtension $entrepriseExtension,
         private readonly TombstoneRecordRepository $tombstoneRepository,
         private readonly CategorieRisqueRepository $categorieRisqueRepository,
         private readonly InstallationEquipementRepository $installationEquipementRepository,
@@ -134,6 +150,8 @@ class OfflineSnapshotDataProvider
             'permitsTravail'    => $this->permitTravailExtension->applyToCollection($queryBuilder, $nameGenerator, $class),
             'interventions'     => $this->interventionExtension->applyToCollection($queryBuilder, $nameGenerator, $class),
             'activityPlannings' => $this->activityPlanningExtension->applyToCollection($queryBuilder, $nameGenerator, $class),
+            'users'             => $this->userExtension->applyToCollection($queryBuilder, $nameGenerator, $class),
+            'entreprises'       => $this->entrepriseExtension->applyToCollection($queryBuilder, $nameGenerator, $class),
         };
 
         if ($since !== null) {
@@ -209,5 +227,53 @@ class OfflineSnapshotDataProvider
             'id'  => (string) $row['id'],
             'nom' => $row['nom'],
         ], $rows);
+    }
+
+    /**
+     * GeoJSON de tous les sites — même requête que ReferentielSiteGeoJsonController,
+     * sans filtre d'ownership (données de référence, comme le module `sites`).
+     *
+     * @return array{type:string,features:list<array<string,mixed>>}
+     */
+    public function sitesGeoJson(): array
+    {
+        $rows = $this->siteRepository->createQueryBuilder('s')
+            ->select(
+                's.id',
+                's.codeSite',
+                's.nomSite',
+                's.longitude',
+                's.latitude',
+                's.altitude',
+                's.couleurMarqueur',
+                's.fokontany',
+                's.commune',
+                's.district',
+            )
+            ->getQuery()
+            ->getArrayResult();
+
+        $features = [];
+        foreach ($rows as $s) {
+            $features[] = [
+                'type'     => 'Feature',
+                'geometry' => [
+                    'type'        => 'Point',
+                    'coordinates' => [$s['longitude'], $s['latitude']],
+                ],
+                'properties' => [
+                    'id'  => (string) $s['id'],
+                    'cs'  => $s['codeSite'],
+                    'n'   => $s['nomSite'],
+                    'a'   => $s['altitude'],
+                    'c'   => $s['couleurMarqueur'],
+                    'fok' => $s['fokontany'],
+                    'com' => $s['commune'],
+                    'dis' => $s['district'],
+                ],
+            ];
+        }
+
+        return ['type' => 'FeatureCollection', 'features' => $features];
     }
 }

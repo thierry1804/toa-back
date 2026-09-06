@@ -107,8 +107,11 @@ class OfflineSnapshotManifestController extends AbstractController
     {
         $categories    = $this->dataProvider->categoriesRisque();
         $installations = $this->dataProvider->installationsEquipements();
-        $count         = count($categories) + count($installations);
-        $bytes         = strlen((string) json_encode($categories)) + strlen((string) json_encode($installations));
+        $geoJson       = $this->dataProvider->sitesGeoJson();
+        $count         = count($categories) + count($installations) + count($geoJson['features']);
+        $bytes         = strlen((string) json_encode($categories))
+            + strlen((string) json_encode($installations))
+            + strlen((string) json_encode($geoJson));
 
         return ['count' => $count, 'estimatedBytes' => $bytes];
     }

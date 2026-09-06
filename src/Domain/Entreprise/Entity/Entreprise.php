@@ -49,15 +49,15 @@ class Entreprise
     private ?string $nom = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['entreprise:read', 'entreprise:write'])]
+    #[Groups(['entreprise:read', 'entreprise:write', 'user:read'])]
     private ?string $numeroRegistreCommerce = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['entreprise:read', 'entreprise:write'])]
+    #[Groups(['entreprise:read', 'entreprise:write', 'user:read'])]
     private ?string $siegeSocial = null;
 
     #[ORM\Column(length: 100, nullable: true)]
-    #[Groups(['entreprise:read', 'entreprise:write'])]
+    #[Groups(['entreprise:read', 'entreprise:write', 'user:read'])]
     #[Assert\Length(max: 100)]
     private ?string $qualiteRepresentant = null;
 

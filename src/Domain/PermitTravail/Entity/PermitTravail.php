@@ -141,7 +141,7 @@ class PermitTravail
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['permit_travail:read'])]
+    #[Groups(['permit_travail:read', 'intervention:read'])]
     private ?Uuid $id = null;
 
     #[ORM\Column(length: 255, unique: true)]

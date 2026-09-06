@@ -24,7 +24,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route(
     '/api/offline/snapshot/{module}',
     name: 'offline_snapshot_module',
-    requirements: ['module' => 'plans-prevention|permits-travail|interventions|activity-plannings|sites|referentiel'],
+    requirements: ['module' => 'plans-prevention|permits-travail|interventions|activity-plannings|sites|referentiel|users|entreprises'],
     methods: ['GET'],
 )]
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
@@ -41,6 +41,8 @@ class OfflineSnapshotModuleController extends AbstractController
         'activity-plannings' => 'activityPlannings',
         'sites'              => 'sites',
         'referentiel'        => 'referentiel',
+        'users'              => 'users',
+        'entreprises'        => 'entreprises',
     ];
 
     public function __construct(

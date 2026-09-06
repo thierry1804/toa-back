@@ -11,12 +11,15 @@ use App\Domain\Offline\Service\OfflineSnapshotDataProvider;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\Referentiel\Repository\CategorieRisqueRepository;
+use App\Domain\User\Entity\User;
 use App\Domain\Referentiel\Repository\InstallationEquipementRepository;
 use App\Domain\Referentiel\Repository\SiteRepository;
 use App\Doctrine\Extension\ActivityPlanningExtension;
 use App\Doctrine\Extension\CurrentUserExtension;
+use App\Doctrine\Extension\EntrepriseCollectionExtension;
 use App\Doctrine\Extension\InterventionExtension;
 use App\Doctrine\Extension\PlanPreventionExtension;
+use App\Doctrine\Extension\UserCollectionExtension;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\QueryBuilder;
@@ -111,6 +114,54 @@ class OfflineSnapshotDataProviderTest extends TestCase
         $this->assertStringContainsString('FROM ' . PermitTravail::class, $queryBuilder->getDQL());
     }
 
+    public function testAccessibleEntityModulesIncludesUsersAndEntreprisesWhenGranted(): void
+    {
+        $security = $this->createMock(Security::class);
+        $security->method('isGranted')->willReturnCallback(
+            fn (string $attribute): bool => match ($attribute) {
+                'USER_VIEW', 'ENTREPRISE_VIEW' => true,
+                default                        => false,
+            },
+        );
+
+        $provider = $this->buildProvider($security);
+
+        $this->assertContains('users', $provider->accessibleEntityModules());
+        $this->assertContains('entreprises', $provider->accessibleEntityModules());
+    }
+
+    public function testScopedQueryBuilderDispatchesUsersToUserCollectionExtension(): void
+    {
+        $userExtension = $this->createMock(UserCollectionExtension::class);
+        $userExtension->expects($this->once())
+            ->method('applyToCollection')
+            ->with($this->isInstanceOf(QueryBuilder::class), $this->anything(), User::class);
+
+        $entrepriseExtension = $this->createMock(EntrepriseCollectionExtension::class);
+        $entrepriseExtension->expects($this->never())->method('applyToCollection');
+
+        $provider = $this->buildProvider($this->createMock(Security::class), userExtension: $userExtension, entrepriseExtension: $entrepriseExtension);
+
+        $queryBuilder = $provider->scopedQueryBuilder('users', null);
+
+        $this->assertStringContainsString('FROM ' . User::class, $queryBuilder->getDQL());
+    }
+
+    public function testTombstoneIdsMapsEntreprisesModuleToEntrepriseType(): void
+    {
+        $since = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
+
+        $tombstoneRepository = $this->createMock(TombstoneRecordRepository::class);
+        $tombstoneRepository->expects($this->once())
+            ->method('findDeletedIdsSince')
+            ->with('entreprise', $since)
+            ->willReturn([]);
+
+        $provider = $this->buildProvider($this->createMock(Security::class), tombstoneRepository: $tombstoneRepository);
+
+        $provider->tombstoneIds('entreprises', $since);
+    }
+
     public function testScopedQueryBuilderAppliesSinceFilterOnUpdatedAt(): void
     {
         $provider = $this->buildProvider($this->createMock(Security::class));
@@ -153,6 +204,8 @@ class OfflineSnapshotDataProviderTest extends TestCase
         ?CurrentUserExtension $permitTravailExtension = null,
         ?InterventionExtension $interventionExtension = null,
         ?ActivityPlanningExtension $activityPlanningExtension = null,
+        ?UserCollectionExtension $userExtension = null,
+        ?EntrepriseCollectionExtension $entrepriseExtension = null,
         ?TombstoneRecordRepository $tombstoneRepository = null,
     ): OfflineSnapshotDataProvider {
         $entityManager = $this->createMock(EntityManagerInterface::class);
@@ -168,6 +221,8 @@ class OfflineSnapshotDataProviderTest extends TestCase
             $permitTravailExtension ?? $this->createMock(CurrentUserExtension::class),
             $interventionExtension ?? $this->createMock(InterventionExtension::class),
             $activityPlanningExtension ?? $this->createMock(ActivityPlanningExtension::class),
+            $userExtension ?? $this->createMock(UserCollectionExtension::class),
+            $entrepriseExtension ?? $this->createMock(EntrepriseCollectionExtension::class),
             $tombstoneRepository ?? $this->createMock(TombstoneRecordRepository::class),
             $this->createMock(CategorieRisqueRepository::class),
             $this->createMock(InstallationEquipementRepository::class),
