@@ -10,6 +10,7 @@ use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPvReceptionPdf;
 use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
 use App\Domain\User\Entity\User;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
@@ -35,6 +36,7 @@ class PermitTravailVoter extends Voter
     public const CLOTURER     = 'PERMIT_TRAVAIL_CLOTURER';
     public const PV_VALIDER   = 'PERMIT_TRAVAIL_PV_VALIDER';
     public const PV_REFUSER   = 'PERMIT_TRAVAIL_PV_REFUSER';
+    public const DELETE       = 'PERMIT_TRAVAIL_DELETE';
 
     private const ACTION_KEY_MAP = [
         self::VIEW         => 'permit_travail.view',
@@ -50,6 +52,7 @@ class PermitTravailVoter extends Voter
         self::CLOTURER     => 'permit_travail.cloturer',
         self::PV_VALIDER   => 'permit_travail.pv_valider',
         self::PV_REFUSER   => 'permit_travail.pv_refuser',
+        self::DELETE       => 'permit_travail.delete',
     ];
 
     public function __construct(
@@ -59,7 +62,7 @@ class PermitTravailVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE, self::SUIVI, self::LOGS, self::CLOTURER, self::PV_VALIDER, self::PV_REFUSER], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::VALIDER_HSE, self::REFUSER_HSE, self::GENERATE_PDF, self::RESOUMETTRE, self::SUIVI, self::LOGS, self::CLOTURER, self::PV_VALIDER, self::PV_REFUSER, self::DELETE], true)) {
             return false;
         }
 
@@ -188,6 +191,24 @@ class PermitTravailVoter extends Voter
             return true;
         }
 
+        if ($attribute === self::DELETE) {
+            if (!$subject instanceof PermitTravail) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            // Suppression strictement réservée au créateur du permis (pas d'élargissement
+            // à l'équipe/entreprise comme pour VIEW/EDIT), sauf bypass explicite (HSE/admin).
+            if (empty($canBypass) && $subject->getCreatedBy()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            if ($subject->getStatut() !== StatutPermitTravail::BROUILLON) {
+                throw new ConflictHttpException('permit_travail.delete_conflict_statut_not_brouillon');
+            }
+
+            return true;
+        }
+
         if ($attribute === self::PV_VALIDER) {
             if (!$subject instanceof PermitTravail) {
                 throw new AccessDeniedException('error.voter.access_denied');
@@ -230,9 +251,27 @@ class PermitTravailVoter extends Voter
 
     private function checkOwnershipForCreatedBy(PermitTravail $permit, User $user): void
     {
-        if ($permit->getCreatedBy()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+        if (!$this->hasOwnership($permit, $user)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
+    }
+
+    /**
+     * Vrai si l'utilisateur est le créateur du permis, ou s'il appartient à
+     * la même entreprise que le créateur (équipe).
+     */
+    private function hasOwnership(PermitTravail $permit, User $user): bool
+    {
+        if ($permit->getCreatedBy()?->getUserIdentifier() === $user->getUserIdentifier()) {
+            return true;
+        }
+
+        $entreprise = $user->getEntreprise();
+        if ($entreprise === null) {
+            return false;
+        }
+
+        return $permit->getCreatedBy()?->getEntreprise()?->getId() === $entreprise->getId();
     }
 
     private function checkBrouillonStatut(PermitTravail $permit): void

@@ -41,17 +41,27 @@ class InterventionExtension implements QueryCollectionExtensionInterface
 
         $root = $queryBuilder->getRootAliases()[0];
 
-        // Prestataire : voir ses interventions (créées par lui) OU liées à son permis
+        // Prestataire/agent terrain : voir les interventions créées par eux, liées à
+        // leur permis, OU appartenant à un collègue de la même entreprise (équipe)
         $queryBuilder
             ->leftJoin(sprintf('%s.createdBy', $root), 'int_creator')
             ->leftJoin(sprintf('%s.permitTravail', $root), 'int_permit')
-            ->leftJoin('int_permit.createdBy', 'permit_creator')
-            ->andWhere(
-                $queryBuilder->expr()->orX(
-                    'int_creator.email = :int_current_user',
-                    'permit_creator.email = :int_current_user',
-                )
-            )
+            ->leftJoin('int_permit.createdBy', 'permit_creator');
+
+        $ownershipConditions = [
+            'int_creator.email = :int_current_user',
+            'permit_creator.email = :int_current_user',
+        ];
+
+        $entreprise = $user->getEntreprise();
+        if ($entreprise !== null) {
+            $ownershipConditions[] = 'int_creator.entreprise = :int_current_entreprise';
+            $ownershipConditions[] = 'permit_creator.entreprise = :int_current_entreprise';
+            $queryBuilder->setParameter('int_current_entreprise', $entreprise->getId());
+        }
+
+        $queryBuilder
+            ->andWhere($queryBuilder->expr()->orX(...$ownershipConditions))
             ->setParameter('int_current_user', $user->getUserIdentifier());
     }
 }

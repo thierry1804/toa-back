@@ -170,6 +170,10 @@ class PlanPrevention
     #[Groups(['plan_prevention:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['plan_prevention:read'])]
+    private ?\DateTimeImmutable $updatedAt = null;
+
     #[ORM\OneToMany(
         targetEntity: RisquePrevention::class,
         mappedBy: 'planPrevention',
@@ -396,6 +400,11 @@ class PlanPrevention
         return $this->createdAt;
     }
 
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
     public function getRisques(): Collection
     {
         return $this->risques;
@@ -546,5 +555,11 @@ class PlanPrevention
         if (null === $this->createdAt) {
             $this->createdAt = new \DateTimeImmutable();
         }
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }

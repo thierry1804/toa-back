@@ -9,3 +9,10 @@
 
 controllers:
     resource: routing.controllers
+
+root_redirect:
+    path: /
+    controller: Symfony\Bundle\FrameworkBundle\Controller\RedirectController
+    defaults:
+        route: api_entrypoint
+        permanent: false

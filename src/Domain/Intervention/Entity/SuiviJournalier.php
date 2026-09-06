@@ -72,7 +72,7 @@ class SuiviJournalier
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['suivi_journalier:read'])]
+    #[Groups(['suivi_journalier:read', 'intervention:read'])]
     private ?Uuid $id = null;
 
     #[ORM\ManyToOne(targetEntity: Intervention::class, inversedBy: 'suivis')]
@@ -82,42 +82,42 @@ class SuiviJournalier
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     #[Context([DateTimeNormalizer::FORMAT_KEY => 'Y-m-d'])]
-    #[Groups(['suivi_journalier:read', 'suivi_journalier:create'])]
+    #[Groups(['suivi_journalier:read', 'suivi_journalier:create', 'intervention:read'])]
     #[Assert\NotNull(message: 'suivi_journalier.date_required')]
     private ?\DateTimeImmutable $date = null;
 
     #[ORM\Column(length: 150)]
-    #[Groups(['suivi_journalier:read', 'suivi_journalier:write'])]
+    #[Groups(['suivi_journalier:read', 'suivi_journalier:write', 'intervention:read'])]
     #[Assert\NotBlank(message: 'suivi_journalier.nom_responsable_required')]
     #[Assert\Length(max: 150, maxMessage: 'suivi_journalier.nom_responsable_too_long')]
     private ?string $nomResponsable = null;
 
     #[ORM\Column]
-    #[Groups(['suivi_journalier:read', 'suivi_journalier:write'])]
+    #[Groups(['suivi_journalier:read', 'suivi_journalier:write', 'intervention:read'])]
     #[Assert\NotNull(message: 'suivi_journalier.realise_required')]
     private ?bool $realise = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['suivi_journalier:read', 'suivi_journalier:write'])]
+    #[Groups(['suivi_journalier:read', 'suivi_journalier:write', 'intervention:read'])]
     private ?string $motifNonRealisation = null;
 
     #[ORM\Column(type: Types::INTEGER)]
-    #[Groups(['suivi_journalier:read', 'suivi_journalier:write'])]
+    #[Groups(['suivi_journalier:read', 'suivi_journalier:write', 'intervention:read'])]
     #[Assert\NotNull(message: 'suivi_journalier.avancement_required')]
     #[Assert\Range(min: 0, max: 100, notInRangeMessage: 'suivi_journalier.avancement_range')]
     private ?int $avancementPourcentage = 0;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['suivi_journalier:read', 'suivi_journalier:write'])]
+    #[Groups(['suivi_journalier:read', 'suivi_journalier:write', 'intervention:read'])]
     private ?string $commentaire = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['suivi_journalier:read'])]
+    #[Groups(['suivi_journalier:read', 'intervention:read'])]
     private ?User $createdBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Groups(['suivi_journalier:read'])]
+    #[Groups(['suivi_journalier:read', 'intervention:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\OneToMany(

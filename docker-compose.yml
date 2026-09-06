@@ -76,12 +76,13 @@ services:
     scheduler:
         build: ./docker/php
         container_name: toa_scheduler
-        command: php bin/console messenger:consume scheduler_default --time-limit=3600 -vv
+        command: php bin/console messenger:consume scheduler_default --time-limit=3600 --limit=500 -vv
         restart: unless-stopped
         volumes:
             - .:/var/www/toa-api
         networks:
             - toa_net
+        depends_on: [php, redis]
         environment:
             DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
@@ -100,9 +101,13 @@ services:
         container_name: toa_nginx
         ports:
             - "8080:80"
+            - "80:80"
+            - "443:443"
         volumes:
             - .:/var/www/toa-api
             - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+            - certbot_conf:/etc/letsencrypt
+            - certbot_webroot:/var/www/certbot
         depends_on:
             php:
                 condition: service_healthy
@@ -130,6 +135,19 @@ services:
         image: redis:7-alpine
         container_name: toa_redis
         command: redis-server --appendonly yes
+        networks:
+            - toa_net
+
+    adminer:
+        image: adminer:latest
+        container_name: toa_adminer
+        environment:
+            ADMINER_DEFAULT_SERVER: postgres
+            ADMINER_DEFAULT_DRIVER: pgsql
+        ports:
+            - "8081:8080"
+        depends_on:
+            - postgres
         networks:
             - toa_net
 
@@ -172,3 +190,5 @@ networks:
 volumes:
     pgdata:
     miniodata:
+    certbot_conf:
+    certbot_webroot:

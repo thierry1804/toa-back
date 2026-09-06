@@ -57,7 +57,7 @@ class Take5Record
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['take5_record:read'])]
+    #[Groups(['take5_record:read', 'intervention:read'])]
     private ?Uuid $id = null;
 
     #[ORM\ManyToOne(targetEntity: Intervention::class, inversedBy: 'take5Records')]
@@ -66,53 +66,53 @@ class Take5Record
     private ?Intervention $intervention = null;
 
     #[ORM\Column(length: 150)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     #[Assert\NotBlank(message: 'take5_record.responsable_nom_required')]
     #[Assert\Length(max: 150, maxMessage: 'take5_record.responsable_nom_too_long')]
     private ?string $responsableNom = null;
 
     #[ORM\Column(type: Types::JSON)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     #[Assert\Count(min: 1, minMessage: 'take5_record.equipe_required')]
     private array $equipe = [];
 
     #[ORM\Column(length: 255)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     #[Assert\NotBlank(message: 'take5_record.localisation_required')]
     private ?string $localisation = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     #[Assert\NotBlank(message: 'take5_record.tache_description_required')]
     private ?string $tacheDescription = null;
 
     #[ORM\Column(type: Types::JSON)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     private array $etape1Arreter = ['complete' => false, 'observations' => ''];
 
     #[ORM\Column(type: Types::JSON)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     private array $etape2Observer = ['complete' => false, 'dangersIdentifies' => [], 'autresDangers' => ''];
 
     #[ORM\Column(type: Types::JSON)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     private array $etape3Analyser = ['complete' => false, 'risquesEvalues' => []];
 
     #[ORM\Column(type: Types::JSON)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     private array $etape4Controler = ['complete' => false, 'mesuresControle' => []];
 
     #[ORM\Column(type: Types::JSON)]
-    #[Groups(['take5_record:read', 'take5_record:write'])]
+    #[Groups(['take5_record:read', 'take5_record:write', 'intervention:read'])]
     private array $etape5Proceder = ['complete' => false, 'securiteConfirmee' => false, 'autorisationProceder' => false];
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['take5_record:read'])]
+    #[Groups(['take5_record:read', 'intervention:read'])]
     private ?User $createdBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Groups(['take5_record:read'])]
+    #[Groups(['take5_record:read', 'intervention:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     public function getId(): ?Uuid

@@ -72,7 +72,7 @@ class ControleJournalier
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['controle_journalier:read'])]
+    #[Groups(['controle_journalier:read', 'intervention:read'])]
     private ?Uuid $id = null;
 
     #[ORM\ManyToOne(targetEntity: Intervention::class, inversedBy: 'controlesJournaliers')]
@@ -82,49 +82,49 @@ class ControleJournalier
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     #[Context([DateTimeNormalizer::FORMAT_KEY => 'Y-m-d'])]
-    #[Groups(['controle_journalier:read', 'controle_journalier:create'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:create', 'intervention:read'])]
     #[Assert\NotNull(message: 'controle_journalier.date_required')]
     private ?\DateTimeImmutable $date = null;
 
     #[ORM\Column(type: Types::JSON)]
-    #[Groups(['controle_journalier:read', 'controle_journalier:create'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:create', 'intervention:read'])]
     #[Assert\Count(min: 1, minMessage: 'controle_journalier.intervenants_required')]
     private array $intervenants = [];
 
     #[ORM\Column]
-    #[Groups(['controle_journalier:read', 'controle_journalier:create'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:create', 'intervention:read'])]
     #[Assert\NotNull(message: 'controle_journalier.confirmation_mesures_required')]
     private ?bool $confirmationMesures = null;
 
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
-    #[Groups(['controle_journalier:read', 'controle_journalier:create'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:create', 'intervention:read'])]
     private ?int $vitesseVent = null;
 
     #[ORM\Column(length: 150)]
-    #[Groups(['controle_journalier:read', 'controle_journalier:create'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:create', 'intervention:read'])]
     #[Assert\NotBlank(message: 'controle_journalier.signature_demandeur_required')]
     private ?string $signatureDemandeur = null;
 
     #[ORM\Column(length: 150)]
-    #[Groups(['controle_journalier:read', 'controle_journalier:create'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:create', 'intervention:read'])]
     #[Assert\NotBlank(message: 'controle_journalier.signature_intervenant_required')]
     private ?string $signatureIntervenant = null;
 
     #[ORM\Column(length: 150, nullable: true)]
-    #[Groups(['controle_journalier:read', 'controle_journalier:cloture'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:cloture', 'intervention:read'])]
     private ?string $signatureClotureDemandeur = null;
 
     #[ORM\Column(length: 150, nullable: true)]
-    #[Groups(['controle_journalier:read', 'controle_journalier:cloture'])]
+    #[Groups(['controle_journalier:read', 'controle_journalier:cloture', 'intervention:read'])]
     private ?string $signatureClotureIntervenant = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['controle_journalier:read'])]
+    #[Groups(['controle_journalier:read', 'intervention:read'])]
     private ?User $createdBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Groups(['controle_journalier:read'])]
+    #[Groups(['controle_journalier:read', 'intervention:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     public function getId(): ?Uuid

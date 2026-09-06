@@ -6,15 +6,22 @@ namespace App\Api\Controller;
 
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPreventionPdf;
+use App\Domain\PlanPrevention\Message\GeneratePlanPreventionPdfMessage;
 use App\Domain\PlanPrevention\Repository\PlanPreventionPdfRepository;
+use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use League\Flysystem\UnableToReadFile;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Uid\Uuid;
 
 class PlanPreventionPdfDownloadController extends AbstractController
 {
@@ -23,6 +30,8 @@ class PlanPreventionPdfDownloadController extends AbstractController
         private readonly PlanPreventionPdfRepository $pdfRepository,
         #[Autowire('@default.storage')]
         private readonly FilesystemOperator $storage,
+        private readonly MessageBusInterface $messageBus,
+        private readonly LoggerInterface $logger,
     ) {}
 
     #[Route(
@@ -30,7 +39,7 @@ class PlanPreventionPdfDownloadController extends AbstractController
         name: 'plan_prevention_pdf_download',
         methods: ['GET'],
     )]
-    public function __invoke(string $planId): StreamedResponse
+    public function __invoke(string $planId): Response
     {
         $plan = $this->entityManager->find(PlanPrevention::class, $planId);
         if (!$plan instanceof PlanPrevention) {
@@ -51,7 +60,36 @@ class PlanPreventionPdfDownloadController extends AbstractController
         try {
             $stream = $this->storage->readStream($filePath);
         } catch (UnableToReadFile) {
-            throw new NotFoundHttpException('plan_prevention_pdf.file_not_found');
+            $this->logger->warning('plan_prevention_pdf.file_missing_regenerating', [
+                'planId'   => $planId,
+                'filePath' => $filePath,
+            ]);
+
+            /** @var User $user */
+            $user = $this->getUser();
+
+            $jobId = Uuid::v4()->toRfc4122();
+            $pdfRecord->setStatut(StatutPlanPreventionPdf::EN_COURS);
+            $pdfRecord->setFilePath(null);
+            $pdfRecord->setGenereAt(null);
+            $pdfRecord->setTailleFichier(null);
+            $pdfRecord->setJobId($jobId);
+            $this->entityManager->flush();
+
+            $this->messageBus->dispatch(new GeneratePlanPreventionPdfMessage(
+                planPreventionId: $planId,
+                jobId: $jobId,
+                requesterId: $user->getId(),
+            ));
+
+            return new JsonResponse(
+                [
+                    'message' => 'plan_prevention_pdf.regenerating',
+                    'jobId'   => $jobId,
+                    'statut'  => 'EN_COURS',
+                ],
+                Response::HTTP_ACCEPTED,
+            );
         }
 
         return new StreamedResponse(static function () use ($stream): void {

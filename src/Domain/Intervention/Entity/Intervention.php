@@ -20,6 +20,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Uid\Uuid;
 use App\Domain\Intervention\Entity\SuiviJournalier;
 
@@ -82,6 +83,10 @@ class Intervention
     #[Groups(['intervention:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['intervention:read'])]
+    private ?\DateTimeImmutable $updatedAt = null;
+
     #[ORM\OneToMany(
         targetEntity: EvaluationRisque::class,
         mappedBy: 'intervention',
@@ -99,6 +104,8 @@ class Intervention
         orphanRemoval: true,
         fetch: 'EXTRA_LAZY',
     )]
+    #[Groups(['intervention:read'])]
+    #[SerializedName('suivisJournaliers')]
     private Collection $suivis;
 
     #[ORM\OneToMany(
@@ -108,6 +115,7 @@ class Intervention
         orphanRemoval: true,
         fetch: 'EXTRA_LAZY',
     )]
+    #[Groups(['intervention:read'])]
     private Collection $controlesJournaliers;
 
     #[ORM\OneToMany(
@@ -117,6 +125,7 @@ class Intervention
         orphanRemoval: true,
         fetch: 'EXTRA_LAZY',
     )]
+    #[Groups(['intervention:read'])]
     private Collection $take5Records;
 
     public function __construct()
@@ -179,6 +188,11 @@ class Intervention
         return $this->createdAt;
     }
 
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
     public function getEvaluations(): Collection
     {
         return $this->evaluations;
@@ -215,5 +229,11 @@ class Intervention
         if (null === $this->createdAt) {
             $this->createdAt = new \DateTimeImmutable();
         }
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAtValue(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }
