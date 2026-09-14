@@ -39,6 +39,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new GetCollection(
             uriTemplate: '/plans-prevention',
             security: "is_granted('PLAN_PREVENTION_VIEW')",
+            order: ['createdAt' => 'DESC'],
         ),
         new Post(
             uriTemplate: '/plans-prevention',
