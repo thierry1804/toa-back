@@ -100,6 +100,7 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
 
         $permit->setStatut(StatutPermitTravail::SOUMIS);
         $permit->setSoumisAt(new \DateTimeImmutable());
+        $permit->setValidatedAt(null);
 
         $result = $this->persistProcessor->process($permit, $operation, $uriVariables, $context);
 

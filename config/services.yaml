@@ -7,6 +7,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    env(FRONTEND_URL): 'http://localhost:5173'
 
 services:
     # default configuration for services in *this* file
@@ -47,10 +48,12 @@ services:
     App\Domain\PlanPrevention\Service\PlanPreventionNotificationService:
         arguments:
             $fromAddress: '%env(MAILER_FROM_ADDRESS)%'
+            $frontendUrl: '%env(FRONTEND_URL)%'
 
     App\Domain\PermitTravail\Service\PermitTravailNotificationService:
         arguments:
             $fromAddress: '%env(MAILER_FROM_ADDRESS)%'
+            $frontendUrl: '%env(FRONTEND_URL)%'
 
     App\Domain\ActivityPlanning\Service\PlanningMailer:
         arguments:

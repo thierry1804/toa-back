@@ -186,8 +186,8 @@
         {% for doc in permit.documents %}
         <tr>
           <td style="font-weight:600;">{{ doc.type.value|replace({'_': ' '}) }}</td>
-          <td>{{ doc.mimeType ?? '—' }}</td>
-          <td>{{ doc.uploadedAt is defined ? doc.uploadedAt|date('d/m/Y H:i') : '—' }}</td>
+          <td>{{ doc.nonApplicable ? 'N/A' : (doc.mimeType ?? '—') }}</td>
+          <td>{{ (doc.capturedAt ?? doc.uploadedAt)|date('d/m/Y H:i') }}</td>
         </tr>
         {% endfor %}
       </tbody>

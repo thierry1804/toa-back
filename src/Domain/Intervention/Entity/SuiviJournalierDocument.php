@@ -93,6 +93,10 @@ class SuiviJournalierDocument
     #[Groups(['suivi_journalier_document:read', 'suivi_journalier:read'])]
     private ?\DateTimeImmutable $uploadedAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['suivi_journalier_document:read', 'suivi_journalier:read'])]
+    private ?\DateTimeImmutable $capturedAt = null;
+
     public function getId(): ?Uuid
     {
         return $this->id;
@@ -154,6 +158,18 @@ class SuiviJournalierDocument
     public function setUploadedAt(\DateTimeImmutable $uploadedAt): static
     {
         $this->uploadedAt = $uploadedAt;
+
+        return $this;
+    }
+
+    public function getCapturedAt(): ?\DateTimeImmutable
+    {
+        return $this->capturedAt;
+    }
+
+    public function setCapturedAt(?\DateTimeImmutable $capturedAt): static
+    {
+        $this->capturedAt = $capturedAt;
 
         return $this;
     }

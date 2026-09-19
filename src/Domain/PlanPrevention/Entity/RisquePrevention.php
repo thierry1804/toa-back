@@ -48,6 +48,7 @@ use Symfony\Component\Validator\Constraints as Assert;
                 'id' => new Link(fromClass: RisquePrevention::class),
             ],
             security: "is_granted('PLAN_PREVENTION_EDIT', object.getPlanPrevention())",
+            processor: RisquePreventionProcessor::class,
             name: 'risque_prevention_update',
         ),
         new Delete(

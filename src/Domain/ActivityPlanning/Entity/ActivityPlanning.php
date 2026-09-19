@@ -151,7 +151,7 @@ class ActivityPlanning
         orphanRemoval: true
     )]
     #[ORM\OrderBy(['ordre' => 'ASC'])]
-    #[Groups(['activity_planning:read', 'activity_planning:write'])]
+    #[Groups(['activity_planning:read'])]
     private Collection $sections;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

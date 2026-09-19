@@ -34,6 +34,8 @@ class ReferentielSiteGeoJsonController extends AbstractController
                 's.fokontany',
                 's.commune',
                 's.district',
+                's.apn',
+                's.api',
             )
             ->getQuery()
             ->getArrayResult();
@@ -55,6 +57,8 @@ class ReferentielSiteGeoJsonController extends AbstractController
                     'fok' => $s['fokontany'],
                     'com' => $s['commune'],
                     'dis' => $s['district'],
+                    'apn' => (bool) ($s['apn'] ?? false),
+                    'api' => (bool) ($s['api'] ?? false),
                 ],
             ];
         }

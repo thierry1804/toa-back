@@ -32,6 +32,8 @@ class ReferentielSiteByCodeController extends AbstractController
         return $this->json([
             'codeSite' => $site->getCodeSite(),
             'nomSite'  => $site->getNomSite(),
+            'apn'      => $site->isApn(),
+            'api'      => $site->isApi(),
         ]);
     }
 }

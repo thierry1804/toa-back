@@ -101,6 +101,15 @@ class DashboardKpisService
             $params,
         )->fetchOne();
 
+        // --- nbPermisTotal (tous statuts) ---
+        [$dconds, $dparams] = $this->dateFilter('pt', 'created_at', $periode, $dateDebut, $dateFin);
+        [$sconds, $sparams] = $this->siteFilter('pt', $codeSite);
+        [$where, $params]   = $this->buildWhere([$dconds, $dparams], [$sconds, $sparams]);
+        $nbPermisTotal = (int) $conn->executeQuery(
+            "SELECT COUNT(pt.id) FROM permit_travail pt {$where}",
+            $params,
+        )->fetchOne();
+
         // --- nbPermisClotures ---
         [$dconds, $dparams] = $this->dateFilter('cp', 'date_cloture_effective', $periode, $dateDebut, $dateFin);
         [$sconds, $sparams] = $this->siteFilter('pt', $codeSite);
@@ -202,24 +211,6 @@ class DashboardKpisService
         )->fetchOne();
         $tempsMoyenValidationPermis = round((float) ($rawPermis ?? 0.0), 2);
 
-        // --- tempsMoyenValidationPv ---
-        [$dconds, $dparams] = $this->dateFilter('d', 'decided_at', $periode, $dateDebut, $dateFin);
-        [$sconds, $sparams] = $this->siteFilter('pt', $codeSite);
-        [$where, $params]   = $this->buildWhere(
-            [$dconds, $dparams],
-            [$sconds, $sparams],
-            [["d.decision = 'VALIDE'"], []],
-        );
-        $rawPv = $conn->executeQuery(
-            "SELECT AVG(EXTRACT(EPOCH FROM (d.decided_at - cp.date_cloture_effective)) / 86400)
-             FROM decision_cdp_pv_reception d
-             JOIN permit_travail pt  ON pt.id  = d.permit_travail_id
-             JOIN cloture_permit cp  ON cp.permit_travail_id = pt.id
-             {$where}",
-            $params,
-        )->fetchOne();
-        $tempsMoyenValidationPv = round((float) ($rawPv ?? 0.0), 2);
-
         // --- avancementMoyen ---
         [$dconds, $dparams] = $this->dateFilter('sj', 'date', $periode, $dateDebut, $dateFin);
         [$sconds, $sparams] = $this->siteFilter('pt', $codeSite);
@@ -262,9 +253,9 @@ class DashboardKpisService
             'tauxIncidents'              => $tauxIncidents,
             'tempsMoyenValidationPlan'   => $tempsMoyenValidationPlan,
             'tempsMoyenValidationPermis' => $tempsMoyenValidationPermis,
-            'tempsMoyenValidationPv'     => $tempsMoyenValidationPv,
             'avancementMoyen'            => $avancementMoyen,
             'nbPermisValides'            => $nbPermisValides,
+            'nbPermisTotal'              => $nbPermisTotal,
             'nbPermisClotures'           => $nbPermisClotures,
             'nbPlansValides'             => $nbPlansValides,
             'tauxCloture'                => $tauxCloture,
@@ -317,7 +308,6 @@ class DashboardKpisService
             'tauxIncidents'              => $k->getTauxIncidents(),
             'tempsMoyenValidationPlan'   => $k->getTempsMoyenValidationPlan(),
             'tempsMoyenValidationPermis' => $k->getTempsMoyenValidationPermis(),
-            'tempsMoyenValidationPv'     => $k->getTempsMoyenValidationPv(),
             'avancementMoyen'            => $k->getAvancementMoyen(),
         ];
     }

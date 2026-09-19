@@ -101,6 +101,7 @@ class OfflineSnapshotDocumentsController extends AbstractController
             ->select('d')
             ->from(DocumentPrevention::class, 'd')
             ->where('d.planPrevention IN (:planIds)')
+            ->andWhere('d.nonApplicable = false')
             ->setParameter('planIds', $planIds);
 
         if ($since !== null) {
@@ -129,6 +130,7 @@ class OfflineSnapshotDocumentsController extends AbstractController
             ->select('d')
             ->from(PermitTravailDocument::class, 'd')
             ->where('d.permitTravail IN (:permitIds)')
+            ->andWhere('d.nonApplicable = false')
             ->setParameter('permitIds', $permitIds);
 
         if ($since !== null) {

@@ -61,6 +61,10 @@ class Entreprise
     #[Assert\Length(max: 100)]
     private ?string $qualiteRepresentant = null;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    #[Groups(['entreprise:read', 'entreprise:write', 'user:read'])]
+    private bool $interne = false;
+
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['entreprise:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -118,6 +122,18 @@ class Entreprise
     public function setQualiteRepresentant(?string $qualiteRepresentant): static
     {
         $this->qualiteRepresentant = $qualiteRepresentant;
+
+        return $this;
+    }
+
+    public function isInterne(): bool
+    {
+        return $this->interne;
+    }
+
+    public function setInterne(bool $interne): static
+    {
+        $this->interne = $interne;
 
         return $this;
     }

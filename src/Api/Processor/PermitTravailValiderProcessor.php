@@ -64,9 +64,11 @@ final class PermitTravailValiderProcessor implements ProcessorInterface
         $decision->setDecision(DecisionHse::VALIDE);
         $decision->setCommentaire($body['commentaire'] ?? null);
         $decision->setSignatureElectronique($signatureElectronique);
-        $decision->setDecidedAt(new \DateTimeImmutable());
+        $now = new \DateTimeImmutable();
+        $decision->setDecidedAt($now);
 
         $permit->setStatut(StatutPermitTravail::VALIDE_HSE);
+        $permit->setValidatedAt($now);
         $permit->addDecisionHse($decision);
 
         $this->entityManager->persist($decision);

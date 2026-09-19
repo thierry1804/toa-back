@@ -11,6 +11,8 @@ use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
+use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -32,6 +34,8 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
         private readonly ProcessorInterface $persistProcessor,
         private readonly EntityManagerInterface $entityManager,
         private readonly TokenStorageInterface $tokenStorage,
+        private readonly PlanPreventionSubmissionValidator $submissionValidator,
+        private readonly PlanPreventionConsultationGuard $consultationGuard,
     ) {
     }
 
@@ -49,7 +53,7 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('Plan non examiné par Chef de Projet');
         }
 
-        $missingTypes = $this->findMissingDocumentTypes($plan);
+        $missingTypes = $this->submissionValidator->findMissingDocumentTypes($plan, self::REQUIRED_DOCUMENT_TYPES);
         if (!empty($missingTypes)) {
             $missingLabels = array_map(
                 static fn(TypeDocumentPrevention $t) => $t->value,
@@ -60,6 +64,8 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
                 sprintf('documents_manquants: %s', implode(', ', $missingLabels)),
             );
         }
+
+        $this->consultationGuard->assertAllConsulted($plan);
 
         $user = $this->tokenStorage->getToken()?->getUser();
         if (!$user instanceof User) {
@@ -79,21 +85,8 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
         $this->entityManager->persist($decision);
 
         $plan->setStatut(StatutPlanPrevention::VALIDE_HSE);
+        $plan->setValidatedAt($now);
 
         return $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
-    }
-
-    /** @return TypeDocumentPrevention[] */
-    private function findMissingDocumentTypes(PlanPrevention $plan): array
-    {
-        $presentTypes = array_map(
-            static fn($doc) => $doc->getType(),
-            $plan->getDocuments()->toArray(),
-        );
-
-        return array_values(array_filter(
-            self::REQUIRED_DOCUMENT_TYPES,
-            static fn(TypeDocumentPrevention $required) => !in_array($required, $presentTypes, true),
-        ));
     }
 }

@@ -7,21 +7,15 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\ActivityPlanning\Message\ActivityPlanningUpdatedNotification;
 use App\Domain\ActivityPlanning\Service\AuditLogger;
-use App\Domain\ActivityPlanning\Service\ConflictDetector;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 {
-    private const DATE_FIELDS = [
-        'expectedStartDate', 'expectedEndDate',
-    ];
-
     private const ALL_FIELDS = [
         'process', 'provider', 'providerEmail',
         'siteCode', 'siteName',
@@ -34,7 +28,6 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private ProcessorInterface $persistProcessor,
         private EntityManagerInterface $entityManager,
-        private ConflictDetector $conflictDetector,
         private AuditLogger $auditLogger,
         private TokenStorageInterface $tokenStorage,
         private MessageBusInterface $messageBus,
@@ -89,10 +82,8 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
             $existing->setSites($newSites);
         }
 
-        $this->replaceSections($existing, $data);
         $this->applyActualDates($existing, $originalData);
         $this->checkLockedFields($existing, $originalData);
-        $this->checkDateConflicts($existing, $originalData);
 
         $result = $this->persistProcessor->process($existing, $operation, $uriVariables, $context);
 
@@ -101,22 +92,6 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         $this->dispatchNotification($existing, $originalData);
 
         return $result;
-    }
-
-    private function replaceSections(ActivityPlanning $existing, ActivityPlanning $data): void
-    {
-        $newSections = $data->getSections();
-        if ($newSections->isEmpty()) {
-            return;
-        }
-
-        foreach ($existing->getSections()->toArray() as $old) {
-            $existing->removeSection($old);
-        }
-
-        foreach ($newSections as $section) {
-            $existing->addSection($section);
-        }
     }
 
     private function applyActualDates(ActivityPlanning $planning, array $originalData): void
@@ -196,35 +171,6 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 
         if (!empty($changedLocked)) {
             throw new UnprocessableEntityHttpException('locked_fields_not_modifiable');
-        }
-    }
-
-    private function checkDateConflicts(ActivityPlanning $planning, array $originalData): void
-    {
-        $datesChanged = false;
-        foreach (self::DATE_FIELDS as $field) {
-            $getter = 'get' . ucfirst($field);
-            if (!method_exists($planning, $getter)) {
-                continue;
-            }
-            $newValue = $planning->$getter();
-            $oldValue = $originalData[$field] ?? null;
-
-            $newStr = $newValue instanceof \DateTimeInterface
-                ? $newValue->format('c')
-                : (string) $newValue;
-            $oldStr = $oldValue instanceof \DateTimeInterface
-                ? $oldValue->format('c')
-                : (string) $oldValue;
-
-            if ($newStr !== $oldStr) {
-                $datesChanged = true;
-                break;
-            }
-        }
-
-        if ($datesChanged && $this->conflictDetector->hasConflict($planning)) {
-            throw new ConflictHttpException('conflict_with_active_interventions');
         }
     }
 

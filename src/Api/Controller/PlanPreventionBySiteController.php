@@ -7,6 +7,8 @@ namespace App\Api\Controller;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
+use App\Domain\PlanPrevention\Entity\ModeOperatoirePlanPrevention;
+use App\Domain\PlanPrevention\Entity\PhasePlanPrevention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use Doctrine\ORM\EntityManagerInterface;
@@ -106,6 +108,24 @@ class PlanPreventionBySiteController extends AbstractController
                         'risqueResiduel'    => $r->getRisqueResiduel(),
                     ],
                     $plan->getRisques()->toArray(),
+                ),
+                'sections'          => array_map(
+                    static fn (PhasePlanPrevention $phase): array => [
+                        'id'      => $phase->getId()?->toRfc4122(),
+                        'libelle' => $phase->getLibelle(),
+                        'ordre'   => $phase->getOrdre(),
+                        'taches'  => array_map(
+                            static fn (ModeOperatoirePlanPrevention $mode): array => [
+                                'id'       => $mode->getId()?->toRfc4122(),
+                                'ordre'    => $mode->getOrdre(),
+                                'tache'    => $mode->getTache(),
+                                'materiel' => $mode->getMateriel(),
+                                'qui'      => $mode->getQui(),
+                            ],
+                            $phase->getModesOperatoires()->toArray(),
+                        ),
+                    ],
+                    $plan->getSections()->toArray(),
                 ),
                 'planificationSections' => $plan->getPlanificationSections(),
                 'codeSite'          => $plan->getCodeSite(),

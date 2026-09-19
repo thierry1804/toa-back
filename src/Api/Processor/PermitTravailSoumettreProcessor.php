@@ -10,6 +10,7 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
+use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
@@ -60,6 +61,8 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
         $companion = null;
         if ($permit->getProcessus() === ProcessusPermitTravail::NOUVEAU_SITE) {
             $companion = $this->checkNouveauSitePair($permit);
+        } else {
+            $this->checkGeneralRequis($permit);
         }
 
         $permit->setStatut(StatutPermitTravail::SOUMIS);
@@ -83,6 +86,32 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
     private function findMissingDocumentTypes(PermitTravail $permit): array
     {
         return $this->documentRequirementResolver->findMissingDocumentTypes($permit);
+    }
+
+    /**
+     * Hors « Nouveau site », un permis spécialisé ne peut être soumis que si un
+     * permis Général du même couple site/plan a déjà été soumis.
+     */
+    private function checkGeneralRequis(PermitTravail $permit): void
+    {
+        if ($permit->getType() === TypePermitTravail::GENERAL) {
+            return;
+        }
+
+        $generaux = $this->entityManager->getRepository(PermitTravail::class)->findBy([
+            'codeSite'       => $permit->getCodeSite(),
+            'planPrevention' => $permit->getPlanPrevention(),
+            'type'           => TypePermitTravail::GENERAL,
+        ]);
+
+        $nonSoumis = [StatutPermitTravail::BROUILLON, StatutPermitTravail::REJETE, StatutPermitTravail::REFUSE_HSE];
+        foreach ($generaux as $general) {
+            if (!in_array($general->getStatut(), $nonSoumis, true)) {
+                return;
+            }
+        }
+
+        throw new UnprocessableEntityHttpException('permit_travail.general_requis');
     }
 
     private function checkNouveauSitePair(PermitTravail $permit): ?PermitTravail

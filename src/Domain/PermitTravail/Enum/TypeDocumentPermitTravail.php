@@ -22,4 +22,54 @@ enum TypeDocumentPermitTravail: string
     case PV_CLOTURE_ENVIRONNEMENT    = 'PV_CLOTURE_ENVIRONNEMENT';
     case PV_FIN_TRAVAUX              = 'PV_FIN_TRAVAUX';
     case PHOTO_PROPRETE_SITE         = 'PHOTO_PROPRETE_SITE';
+    case PHOTO_AVANT_TRAVAUX         = 'PHOTO_AVANT_TRAVAUX';
+    case PHOTO_APRES_TRAVAUX         = 'PHOTO_APRES_TRAVAUX';
+
+    // Pièces environnementales — sites APN / API — permis général (avant travaux), Nouveau site.
+    case ENV_TRI_DECHETS               = 'ENV_TRI_DECHETS';
+    case ENV_DELIMITATION_SITE         = 'ENV_DELIMITATION_SITE';
+    case ENV_ACCES_EXISTANT            = 'ENV_ACCES_EXISTANT';
+    case ENV_AUTORISATION_CEF_DREDD    = 'ENV_AUTORISATION_CEF_DREDD';
+    case ENV_FICHE_TOOLBOX             = 'ENV_FICHE_TOOLBOX';
+    case ENV_INVENTAIRE_ESPECES        = 'ENV_INVENTAIRE_ESPECES';
+
+    // Permis général (avant travaux), autres processus.
+    case ENV_MATERIELS_DEVERSEMENT     = 'ENV_MATERIELS_DEVERSEMENT';
+    case ENV_MOYENS_URGENCE_POLLUTION  = 'ENV_MOYENS_URGENCE_POLLUTION';
+    case ENV_PROPRETE_AVANT            = 'ENV_PROPRETE_AVANT';
+
+    // Fin de travaux, Nouveau site.
+    case ENV_PHOTO_GENERATEUR_SUPERSILENT = 'ENV_PHOTO_GENERATEUR_SUPERSILENT';
+    case ENV_LUTTE_EROSION                = 'ENV_LUTTE_EROSION';
+    case ENV_REGISTRE_DECHETS             = 'ENV_REGISTRE_DECHETS';
+    case ENV_PROPRETE_SITE                = 'ENV_PROPRETE_SITE';
+    case ENV_REGISTRE_PLAINTES            = 'ENV_REGISTRE_PLAINTES';
+
+    // Fin de travaux, autres processus.
+    case ENV_QUANTITE_DECHETS          = 'ENV_QUANTITE_DECHETS';
+    case ENV_ENLEVEMENT_DECHETS        = 'ENV_ENLEVEMENT_DECHETS';
+    case ENV_PROPRETE_APRES            = 'ENV_PROPRETE_APRES';
+
+    /**
+     * Documents déposables une fois le permis sorti du brouillon, au moment de
+     * sa clôture manuelle.
+     */
+    public function isClotureType(): bool
+    {
+        return in_array($this, [
+            self::PV_CLOTURE_ENVIRONNEMENT,
+            self::PV_FIN_TRAVAUX,
+            self::PHOTO_PROPRETE_SITE,
+            self::PHOTO_AVANT_TRAVAUX,
+            self::PHOTO_APRES_TRAVAUX,
+            self::ENV_PHOTO_GENERATEUR_SUPERSILENT,
+            self::ENV_LUTTE_EROSION,
+            self::ENV_REGISTRE_DECHETS,
+            self::ENV_PROPRETE_SITE,
+            self::ENV_REGISTRE_PLAINTES,
+            self::ENV_QUANTITE_DECHETS,
+            self::ENV_ENLEVEMENT_DECHETS,
+            self::ENV_PROPRETE_APRES,
+        ], true);
+    }
 }

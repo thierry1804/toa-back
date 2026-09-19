@@ -50,8 +50,17 @@ class PlanPreventionExtension implements QueryCollectionExtensionInterface
         }
 
         if ($this->security->isGranted('ROLE_PRESTATAIRE')) {
+            $queryBuilder->join(sprintf('%s.createdBy', $root), 'pp_user');
+
+            if ($user->getEntreprise() !== null) {
+                $queryBuilder
+                    ->andWhere('pp_user.entreprise = :pp_entreprise')
+                    ->setParameter('pp_entreprise', $user->getEntreprise());
+
+                return;
+            }
+
             $queryBuilder
-                ->join(sprintf('%s.createdBy', $root), 'pp_user')
                 ->andWhere('pp_user.email = :pp_current_user')
                 ->setParameter('pp_current_user', $user->getUserIdentifier());
         }

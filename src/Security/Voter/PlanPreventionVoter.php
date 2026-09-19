@@ -173,9 +173,25 @@ class PlanPreventionVoter extends Voter
             return;
         }
 
-        if ($plan->getCreatedBy()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+        if (!$this->hasOwnership($plan, $user)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
+    }
+
+    /** Créateur, ou collègue de la même entreprise (aligné sur PermitTravailVoter et PlanPreventionExtension). */
+    private function hasOwnership(PlanPrevention $plan, User $user): bool
+    {
+        $creator = $plan->getCreatedBy();
+        if ($creator?->getUserIdentifier() === $user->getUserIdentifier()) {
+            return true;
+        }
+
+        $entrepriseId = $user->getEntreprise()?->getId();
+        if ($entrepriseId === null) {
+            return false;
+        }
+
+        return $creator?->getEntreprise()?->getId() === $entrepriseId;
     }
 
     /** CHEF_PROJET (can_edit, no can_delete) can only view plans assigned to them. */
@@ -211,7 +227,7 @@ class PlanPreventionVoter extends Voter
 
     private function checkOwnershipForCreatedBy(PlanPrevention $plan, User $user): void
     {
-        if ($plan->getCreatedBy()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+        if (!$this->hasOwnership($plan, $user)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
     }

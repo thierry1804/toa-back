@@ -196,7 +196,7 @@ class OfflineSnapshotDataProvider
     {
         $rows = $this->categorieRisqueRepository->createQueryBuilder('c')
             ->leftJoin('c.parent', 'p')
-            ->select('c.id', 'c.nom', 'c.typePermis', 'c.updatedAt', 'IDENTITY(c.parent) AS parentId', 'p.nom AS parentNom')
+            ->select('c.id', 'c.nom', 'c.typePermis', 'c.typeSite', 'c.updatedAt', 'IDENTITY(c.parent) AS parentId', 'p.nom AS parentNom')
             ->orderBy('c.nom', 'ASC')
             ->getQuery()
             ->getArrayResult();
@@ -205,6 +205,7 @@ class OfflineSnapshotDataProvider
             'id'         => (string) $row['id'],
             'nom'        => $row['nom'],
             'typePermis' => $row['typePermis'],
+            'typeSite'   => $row['typeSite'],
             'parentId'   => $row['parentId'] !== null ? (string) $row['parentId'] : null,
             'parentNom'  => $row['parentNom'],
             'updatedAt'  => $row['updatedAt'],
@@ -249,6 +250,8 @@ class OfflineSnapshotDataProvider
                 's.fokontany',
                 's.commune',
                 's.district',
+                's.apn',
+                's.api',
             )
             ->getQuery()
             ->getArrayResult();
@@ -270,6 +273,8 @@ class OfflineSnapshotDataProvider
                     'fok' => $s['fokontany'],
                     'com' => $s['commune'],
                     'dis' => $s['district'],
+                    'apn' => (bool) ($s['apn'] ?? false),
+                    'api' => (bool) ($s['api'] ?? false),
                 ],
             ];
         }

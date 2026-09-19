@@ -51,6 +51,7 @@ class CategorieRisqueListController extends AbstractController
         $data = array_map(static fn ($cat): array => [
             'id'         => (string) $cat->getId(),
             'nom'        => $cat->getNom(),
+            'typeSite'   => $cat->getTypeSite(),
             'parentId'   => $cat->getParent()?->getId() !== null ? (string) $cat->getParent()->getId() : null,
             'parentNom'  => $cat->getParent()?->getNom(),
             'createdAt'  => $cat->getCreatedAt()->format(\DateTimeInterface::ATOM),
