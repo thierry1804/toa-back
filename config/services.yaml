@@ -40,6 +40,14 @@ services:
                   key: '%env(MINIO_KEY)%'
                   secret: '%env(MINIO_SECRET)%'
 
+    App\Domain\Health\Probe\MinioProbe:
+        arguments:
+            $bucket: '%env(MINIO_BUCKET)%'
+
+    App\Domain\Health\Probe\GotenbergProbe:
+        arguments:
+            $gotenbergUrl: '%env(GOTENBERG_URL)%'
+
     App\Command\MailTestCommand:
         arguments:
             $fromAddress: '%env(MAILER_FROM_ADDRESS)%'
