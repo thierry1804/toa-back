@@ -8,6 +8,7 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Enum\TypePermitTravail;
+use App\Domain\Referentiel\Repository\SiteRepository;
 
 /**
  * Résout la liste des documents obligatoires pour un permis de travail, en
@@ -31,10 +32,57 @@ final class PermitDocumentRequirementResolver
         self::NOUVEAU_SITE => [
             TypeDocumentPermitTravail::PV_CLOTURE_ENVIRONNEMENT,
             TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
+            TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
+            TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX,
         ],
         self::AUTRES => [
             TypeDocumentPermitTravail::PHOTO_PROPRETE_SITE,
             TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
+            TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
+            TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX,
+        ],
+    ];
+
+    /**
+     * Pièces environnementales exigées à la soumission du permis général, pour les
+     * sites en aire protégée (APN / API).
+     *
+     * @var array<string, TypeDocumentPermitTravail[]>
+     */
+    private const ENV_SOUMISSION_MATRIX = [
+        self::NOUVEAU_SITE => [
+            TypeDocumentPermitTravail::ENV_TRI_DECHETS,
+            TypeDocumentPermitTravail::ENV_DELIMITATION_SITE,
+            TypeDocumentPermitTravail::ENV_ACCES_EXISTANT,
+            TypeDocumentPermitTravail::ENV_AUTORISATION_CEF_DREDD,
+            TypeDocumentPermitTravail::ENV_FICHE_TOOLBOX,
+            TypeDocumentPermitTravail::ENV_INVENTAIRE_ESPECES,
+        ],
+        self::AUTRES => [
+            TypeDocumentPermitTravail::ENV_MATERIELS_DEVERSEMENT,
+            TypeDocumentPermitTravail::ENV_MOYENS_URGENCE_POLLUTION,
+            TypeDocumentPermitTravail::ENV_PROPRETE_AVANT,
+        ],
+    ];
+
+    /**
+     * Pièces environnementales exigées à la clôture du permis général, pour les
+     * sites en aire protégée (APN / API).
+     *
+     * @var array<string, TypeDocumentPermitTravail[]>
+     */
+    private const ENV_CLOTURE_MATRIX = [
+        self::NOUVEAU_SITE => [
+            TypeDocumentPermitTravail::ENV_PHOTO_GENERATEUR_SUPERSILENT,
+            TypeDocumentPermitTravail::ENV_LUTTE_EROSION,
+            TypeDocumentPermitTravail::ENV_REGISTRE_DECHETS,
+            TypeDocumentPermitTravail::ENV_PROPRETE_SITE,
+            TypeDocumentPermitTravail::ENV_REGISTRE_PLAINTES,
+        ],
+        self::AUTRES => [
+            TypeDocumentPermitTravail::ENV_QUANTITE_DECHETS,
+            TypeDocumentPermitTravail::ENV_ENLEVEMENT_DECHETS,
+            TypeDocumentPermitTravail::ENV_PROPRETE_APRES,
         ],
     ];
 
@@ -110,12 +158,33 @@ final class PermitDocumentRequirementResolver
         ],
     ];
 
+    public function __construct(private readonly SiteRepository $siteRepository)
+    {
+    }
+
     /** @return TypeDocumentPermitTravail[] */
     public function getRequiredDocumentTypes(PermitTravail $permit): array
     {
         $isRenouvellement = $permit->getProcessus() === ProcessusPermitTravail::RENOUVELLEMENT ? 1 : 0;
+        $required = self::MATRIX[$this->bucket($permit)][$permit->getType()?->value ?? ''][$isRenouvellement] ?? [];
 
-        return self::MATRIX[$this->bucket($permit)][$permit->getType()?->value ?? ''][$isRenouvellement] ?? [];
+        if ($permit->getType() === TypePermitTravail::GENERAL && $this->isApnApiSite($permit)) {
+            $required = array_merge($required, self::ENV_SOUMISSION_MATRIX[$this->bucket($permit)]);
+        }
+
+        return $required;
+    }
+
+    public function isApnApiSite(PermitTravail $permit): bool
+    {
+        $codeSite = $permit->getCodeSite();
+        if ($codeSite === null || $codeSite === '') {
+            return false;
+        }
+
+        $site = $this->siteRepository->findByCodeSite($codeSite);
+
+        return $site !== null && ($site->isApn() || $site->isApi());
     }
 
     /** @return TypeDocumentPermitTravail[] */
@@ -127,7 +196,13 @@ final class PermitDocumentRequirementResolver
     /** @return TypeDocumentPermitTravail[] */
     public function getRequiredClotureDocumentTypes(PermitTravail $permit): array
     {
-        return self::CLOTURE_MATRIX[$this->bucket($permit)];
+        $required = self::CLOTURE_MATRIX[$this->bucket($permit)];
+
+        if ($permit->getType() === TypePermitTravail::GENERAL && $this->isApnApiSite($permit)) {
+            $required = array_merge($required, self::ENV_CLOTURE_MATRIX[$this->bucket($permit)]);
+        }
+
+        return $required;
     }
 
     /** @return TypeDocumentPermitTravail[] */

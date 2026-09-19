@@ -31,7 +31,7 @@ use Symfony\Component\Uid\Uuid;
     requirements: ['permitId' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'],
     methods: ['POST'],
 )]
-class ClotureManuelleProcesoor extends AbstractController
+class ClotureManuelleProcessor extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

@@ -90,6 +90,14 @@ class Site
     #[Groups(['site:read'])]
     private bool $sourceKmz = false;
 
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['site:read', 'import_kmz_site:read'])]
+    private bool $apn = false;
+
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['site:read', 'import_kmz_site:read'])]
+    private bool $api = false;
+
     #[ORM\ManyToOne(targetEntity: ImportKmzSite::class, inversedBy: 'sites')]
     #[ORM\JoinColumn(name: 'import_kmz_id', nullable: true, onDelete: 'SET NULL')]
     #[Groups(['site:read'])]
@@ -315,6 +323,30 @@ class Site
     public function setSourceKmz(bool $sourceKmz): static
     {
         $this->sourceKmz = $sourceKmz;
+
+        return $this;
+    }
+
+    public function isApn(): bool
+    {
+        return $this->apn;
+    }
+
+    public function setApn(bool $apn): static
+    {
+        $this->apn = $apn;
+
+        return $this;
+    }
+
+    public function isApi(): bool
+    {
+        return $this->api;
+    }
+
+    public function setApi(bool $api): static
+    {
+        $this->api = $api;
 
         return $this;
     }

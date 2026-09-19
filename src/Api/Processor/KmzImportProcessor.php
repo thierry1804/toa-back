@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Entity\SitePrevention;
+use App\Domain\Referentiel\Service\KmzFlagParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -76,6 +77,8 @@ final class KmzImportProcessor implements ProcessorInterface
             $site->setFokontany($placemark['fokontany']);
             $site->setCommune($placemark['commune']);
             $site->setDistrict($placemark['district']);
+            $site->setApn($placemark['apn'] ?? false);
+            $site->setApi($placemark['api'] ?? false);
 
             $this->entityManager->persist($site);
             $sites[] = $site;
@@ -96,6 +99,8 @@ final class KmzImportProcessor implements ProcessorInterface
                 'fokontany'       => $site->getFokontany(),
                 'commune'         => $site->getCommune(),
                 'district'        => $site->getDistrict(),
+                'apn'             => $site->isApn(),
+                'api'             => $site->isApi(),
             ];
         }, $sites);
 
@@ -240,16 +245,18 @@ final class KmzImportProcessor implements ProcessorInterface
                 'fokontany'       => $extendedData['fokontany'],
                 'commune'         => $extendedData['commune'],
                 'district'        => $extendedData['district'],
+                'apn'             => $extendedData['apn'],
+                'api'             => $extendedData['api'],
             ];
         }
 
         return ['placemarks' => $results, 'nbIgnores' => $nbIgnores];
     }
 
-    /** @return array{fokontany: string|null, commune: string|null, district: string|null} */
+    /** @return array{fokontany: string|null, commune: string|null, district: string|null, apn: bool|null, api: bool|null} */
     private function extractExtendedData(\SimpleXMLElement $placemark): array
     {
-        $result = ['fokontany' => null, 'commune' => null, 'district' => null];
+        $result = ['fokontany' => null, 'commune' => null, 'district' => null, 'apn' => null, 'api' => null];
 
         if (!isset($placemark->ExtendedData)) {
             return $result;
@@ -269,6 +276,8 @@ final class KmzImportProcessor implements ProcessorInterface
                 'fokontany' => $result['fokontany'] = $val,
                 'commune'   => $result['commune']   = $val,
                 'district'  => $result['district']  = $val,
+                'apn'       => $result['apn']       = KmzFlagParser::parse($val),
+                'api'       => $result['api']       = KmzFlagParser::parse($val),
                 default     => null,
             };
         }

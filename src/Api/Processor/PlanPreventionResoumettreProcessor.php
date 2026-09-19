@@ -10,9 +10,10 @@ use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Entity\VersionPlanPrevention;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
-use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
 use App\Domain\PlanPrevention\Repository\VersionPlanPreventionRepository;
+use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
+use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -22,15 +23,6 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 final class PlanPreventionResoumettreProcessor implements ProcessorInterface
 {
-    private const REQUIRED_DOCUMENT_TYPES = [
-        TypeDocumentPrevention::PLAN_URGENCE,
-        TypeDocumentPrevention::FDS,
-        TypeDocumentPrevention::LISTE_INTERVENANTS,
-        TypeDocumentPrevention::ATTESTATION_HSE,
-        TypeDocumentPrevention::FICHE_CONFORMITE,
-        TypeDocumentPrevention::LISTE_VEHICULES,
-    ];
-
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private readonly ProcessorInterface $persistProcessor,
@@ -39,6 +31,8 @@ final class PlanPreventionResoumettreProcessor implements ProcessorInterface
         private readonly VersionPlanPreventionRepository $versionRepository,
         private readonly PlanPreventionNotificationService $notificationService,
         private readonly RequestStack $requestStack,
+        private readonly PlanPreventionSubmissionValidator $submissionValidator,
+        private readonly PlanPreventionConsultationGuard $consultationGuard,
     ) {
     }
 
@@ -76,13 +70,7 @@ final class PlanPreventionResoumettreProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('plan_prevention.no_previous_refus');
         }
 
-        $missingTypes = $this->findMissingDocumentTypes($plan);
-        if (!empty($missingTypes)) {
-            throw new UnprocessableEntityHttpException(sprintf(
-                'documents_manquants: %s',
-                implode(', ', array_map(static fn(TypeDocumentPrevention $t) => $t->value, $missingTypes)),
-            ));
-        }
+        $this->submissionValidator->assertSubmittable($plan);
 
         $numeroVersion = $this->versionRepository->findNextNumeroVersion($plan);
         $motif         = $this->requestStack->getCurrentRequest()?->request->get('motifResoumission');
@@ -98,26 +86,15 @@ final class PlanPreventionResoumettreProcessor implements ProcessorInterface
         $this->entityManager->persist($version);
 
         $plan->setStatut(StatutPlanPrevention::SOUMIS);
+        $plan->setSoumisAt(new \DateTimeImmutable());
+        $plan->setValidatedAt(null);
+        $this->consultationGuard->resetConsultations($plan);
 
         $result = $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
 
         $this->notificationService->notifierHse($plan, $numeroVersion);
 
         return $result;
-    }
-
-    /** @return TypeDocumentPrevention[] */
-    private function findMissingDocumentTypes(PlanPrevention $plan): array
-    {
-        $presentTypes = array_map(
-            static fn($doc) => $doc->getType(),
-            $plan->getDocuments()->toArray(),
-        );
-
-        return array_values(array_filter(
-            self::REQUIRED_DOCUMENT_TYPES,
-            static fn(TypeDocumentPrevention $required) => !in_array($required, $presentTypes, true),
-        ));
     }
 
     private function buildSnapshot(PlanPrevention $plan): array

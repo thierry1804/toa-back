@@ -85,7 +85,6 @@ class KpiInterventionRepository extends ServiceEntityRepository
                 'AVG(k.tauxIncidents)              AS tauxIncidents',
                 'AVG(k.tempsMoyenValidationPlan)   AS tmpPlan',
                 'AVG(k.tempsMoyenValidationPermis) AS tmpPermis',
-                'AVG(k.tempsMoyenValidationPv)     AS tmpPv',
                 'AVG(k.avancementMoyen)            AS avancement',
             )
             ->where('k.periode IN (:periodes)')
@@ -108,7 +107,6 @@ class KpiInterventionRepository extends ServiceEntityRepository
             $kpi->setTauxIncidents(isset($row['tauxIncidents'])  ? round((float) $row['tauxIncidents'],  2) : null);
             $kpi->setTempsMoyenValidationPlan(isset($row['tmpPlan'])   ? round((float) $row['tmpPlan'],   2) : null);
             $kpi->setTempsMoyenValidationPermis(isset($row['tmpPermis']) ? round((float) $row['tmpPermis'], 2) : null);
-            $kpi->setTempsMoyenValidationPv(isset($row['tmpPv'])     ? round((float) $row['tmpPv'],     2) : null);
             $kpi->setAvancementMoyen(isset($row['avancement'])  ? round((float) $row['avancement'],  2) : null);
             $kpi->setUpdatedAt(new \DateTimeImmutable());
 

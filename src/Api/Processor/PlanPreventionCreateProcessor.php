@@ -9,9 +9,11 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionSectionsSynchronizer;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
@@ -22,6 +24,8 @@ final class PlanPreventionCreateProcessor implements ProcessorInterface
         private readonly ProcessorInterface $persistProcessor,
         private readonly EntityManagerInterface $entityManager,
         private readonly TokenStorageInterface $tokenStorage,
+        private readonly RequestStack $requestStack,
+        private readonly PlanPreventionSectionsSynchronizer $sectionsSynchronizer,
     ) {
     }
 
@@ -55,6 +59,11 @@ final class PlanPreventionCreateProcessor implements ProcessorInterface
                 }
                 $data->setPlanificationSites($rawSites);
             }
+        }
+
+        $body = json_decode($this->requestStack->getCurrentRequest()?->getContent() ?? '', true);
+        if (is_array($body) && array_key_exists('sections', $body)) {
+            $this->sectionsSynchronizer->sync($data, $body['sections']);
         }
 
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);

@@ -18,7 +18,8 @@ use Doctrine\ORM\QueryBuilder;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
- * Restricts collection and item queries for ROLE_HSE users to their own entreprise.
+ * Restricts collection and item queries for ROLE_HSE users to their own entreprise,
+ * except HSE of an internal (TOA) entreprise who see every prestataire (R-13).
  * ROLE_ADMIN and ROLE_SUPER_ADMIN bypass this filter entirely.
  */
 class EntrepriseScopeExtension implements QueryCollectionExtensionInterface, QueryItemExtensionInterface
@@ -59,11 +60,12 @@ class EntrepriseScopeExtension implements QueryCollectionExtensionInterface, Que
         }
 
         $entreprise = $user->getEntreprise();
-        if ($entreprise === null) {
+        // Le HSE de TOA (entreprise interne) valide les plans/permis de tous les prestataires (R-13).
+        if ($entreprise === null || $entreprise->isInterne()) {
             return;
         }
 
-        $alias      = $qb->getRootAliases()[0];
+        $alias     = $qb->getRootAliases()[0];
         $entrepriseId = $entreprise->getId();
 
         match ($resourceClass) {

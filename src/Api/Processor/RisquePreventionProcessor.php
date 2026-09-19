@@ -35,7 +35,30 @@ final class RisquePreventionProcessor implements ProcessorInterface
         }
 
         $data->setPlanPrevention($plan);
+        $this->assertModeOperatoireBelongsToPlan($data, $plan);
 
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+    }
+
+    /**
+     * Les plans sans phases propres (antérieurs à la saisie des modes opératoires
+     * dans le plan) conservent l'ancienne référence libre.
+     */
+    private function assertModeOperatoireBelongsToPlan(RisquePrevention $risque, PlanPrevention $plan): void
+    {
+        $modeId = $risque->getTachePlanifieeId();
+        if ($modeId === null || $modeId === '' || $plan->getSections()->isEmpty()) {
+            return;
+        }
+
+        foreach ($plan->getSections() as $phase) {
+            foreach ($phase->getModesOperatoires() as $mode) {
+                if ((string) $mode->getId() === $modeId) {
+                    return;
+                }
+            }
+        }
+
+        throw new UnprocessableEntityHttpException('tache_planifiee_introuvable');
     }
 }

@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\PlanPrevention\Entity\ExamenPlanPrevention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,6 +32,7 @@ final class PlanPreventionExaminerProcessor implements ProcessorInterface
         private readonly TokenStorageInterface $tokenStorage,
         private readonly PlanPreventionNotificationService $notificationService,
         private readonly RequestStack $requestStack,
+        private readonly PlanPreventionConsultationGuard $consultationGuard,
     ) {
     }
 
@@ -48,6 +50,8 @@ final class PlanPreventionExaminerProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('Statut invalide pour examen');
         }
 
+        $this->consultationGuard->assertAllConsulted($plan);
+
         $user = $this->tokenStorage->getToken()?->getUser();
         if (!$user instanceof User) {
             throw new UnprocessableEntityHttpException('plan_prevention.user_not_found');
@@ -56,6 +60,8 @@ final class PlanPreventionExaminerProcessor implements ProcessorInterface
         $commentaire = $this->extractCommentaire();
 
         $plan->setStatut(StatutPlanPrevention::EXAMINE);
+        // Le HSE doit consulter à son tour chaque pièce avant de valider ou refuser.
+        $this->consultationGuard->resetConsultations($plan);
 
         $examen = new ExamenPlanPrevention();
         $examen->setPlanPrevention($plan);

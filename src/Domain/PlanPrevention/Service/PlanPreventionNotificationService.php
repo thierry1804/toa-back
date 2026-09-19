@@ -18,7 +18,17 @@ class PlanPreventionNotificationService
         private readonly UserRepository $userRepository,
         private readonly LoggerInterface $logger,
         private readonly string $fromAddress = 'noreply@toa.app',
+        private readonly string $frontendUrl = '',
     ) {
+    }
+
+    private function planUrl(PlanPrevention $plan): ?string
+    {
+        if ($this->frontendUrl === '') {
+            return null;
+        }
+
+        return rtrim($this->frontendUrl, '/') . '/prevention/' . $plan->getId()?->toRfc4122();
     }
 
     /** Notify the chef de projet assigned to the plan when the prestataire submits it, so they can examine it */
@@ -42,6 +52,7 @@ class PlanPreventionNotificationService
                 ->htmlTemplate('email/plan_prevention/soumis.html.twig')
                 ->context([
                     'plan'      => $plan,
+                    'plan_url'  => $this->planUrl($plan),
                     'recipient' => $chefProjet,
                 ]);
 
@@ -83,6 +94,7 @@ class PlanPreventionNotificationService
                     ->htmlTemplate('email/plan_prevention/soumis.html.twig')
                     ->context([
                         'plan'      => $plan,
+                        'plan_url'  => $this->planUrl($plan),
                         'recipient' => $hseUser,
                         'version'   => $numeroVersion,
                     ]);
@@ -127,6 +139,7 @@ class PlanPreventionNotificationService
                     ->htmlTemplate('email/plan_prevention/a_valider.html.twig')
                     ->context([
                         'plan'         => $plan,
+                        'plan_url'     => $this->planUrl($plan),
                         'recipient'    => $hseUser,
                         'examinateur'  => $chefProjet,
                     ]);
@@ -148,14 +161,22 @@ class PlanPreventionNotificationService
     }
 
     /**
-     * Resolves the HSE team scoped to the entreprise of the plan's creator
-     * (the prestataire). Returns an empty array if the creator has no
-     * entreprise — there is then no specific team to target.
+     * L'équipe HSE notifiée est celle de TOA (entreprises marquées `interne`).
+     * Repli sur les HSE de l'entreprise du créateur si aucune entreprise interne n'a de HSE.
      *
      * @return User[]
      */
     private function findHseTeamFor(PlanPrevention $plan): array
     {
+        $hseUsers = $this->userRepository->findByRoleInInternalEntreprises('ROLE_HSE');
+        if ($hseUsers !== []) {
+            return $hseUsers;
+        }
+
+        $this->logger->warning('[PlanPrevention] Aucun ROLE_HSE dans une entreprise `interne` : repli sur l\'entreprise du créateur. Vérifier le flag entreprise.interne.', [
+            'plan_reference' => $plan->getReference(),
+        ]);
+
         $entrepriseId = $plan->getCreatedBy()?->getEntreprise()?->getId();
         if ($entrepriseId === null) {
             return [];
@@ -185,6 +206,7 @@ class PlanPreventionNotificationService
                 ->htmlTemplate('email/plan_prevention/refuse.html.twig')
                 ->context([
                     'plan'        => $plan,
+                    'plan_url'    => $this->planUrl($plan),
                     'recipient'   => $prestataire,
                     'commentaire' => $commentaire,
                 ]);

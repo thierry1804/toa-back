@@ -68,6 +68,11 @@ class CategorieRisque
     #[Groups(['categorie_risque:read', 'categorie_risque:write'])]
     private ?string $typePermis = null;
 
+    #[ORM\Column(length: 10, nullable: true)]
+    #[Groups(['categorie_risque:read', 'categorie_risque:write'])]
+    #[Assert\Choice(choices: ['APN', 'API'], message: 'type_site_invalid')]
+    private ?string $typeSite = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     #[Groups(['categorie_risque:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -116,6 +121,18 @@ class CategorieRisque
     public function setTypePermis(?string $typePermis): static
     {
         $this->typePermis = $typePermis;
+
+        return $this;
+    }
+
+    public function getTypeSite(): ?string
+    {
+        return $this->typeSite;
+    }
+
+    public function setTypeSite(?string $typeSite): static
+    {
+        $this->typeSite = $typeSite;
 
         return $this;
     }

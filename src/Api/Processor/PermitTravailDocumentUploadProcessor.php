@@ -6,12 +6,11 @@ namespace App\Api\Processor;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
-use App\Domain\Menu\Service\PermissionChecker;
+use App\Api\Support\UploadRules;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Entity\PermitTravailDocument;
-use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
-use App\Domain\User\Entity\User;
+use App\Domain\PermitTravail\Service\PermitDocumentAccessGuard;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -19,21 +18,10 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
 {
-    private const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg'];
-    private const MAX_SIZE_BYTES     = 10 * 1024 * 1024; // 10 MB
-
-    // Documents de clôture : seuls ceux-là peuvent être déposés une fois le
-    // permis sorti du brouillon, au moment de sa clôture manuelle.
-    private const CLOTURE_DOCUMENT_TYPES = [
-        TypeDocumentPermitTravail::PV_CLOTURE_ENVIRONNEMENT,
-        TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
-        TypeDocumentPermitTravail::PHOTO_PROPRETE_SITE,
-    ];
+    private const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
@@ -42,8 +30,7 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
         private readonly RequestStack $requestStack,
         #[Autowire('@default.storage')]
         private readonly FilesystemOperator $storage,
-        private readonly TokenStorageInterface $tokenStorage,
-        private readonly PermissionChecker $permissionChecker,
+        private readonly PermitDocumentAccessGuard $accessGuard,
     ) {
     }
 
@@ -71,7 +58,7 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException(sprintf('type_invalid: %s', $validValues));
         }
 
-        if (!in_array($file->getMimeType(), self::ALLOWED_MIME_TYPES, true)) {
+        if (!in_array($file->getMimeType(), UploadRules::ALLOWED_MIME_TYPES, true)) {
             throw new UnprocessableEntityHttpException('file_mime_type_invalid');
         }
 
@@ -85,24 +72,7 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('permit_travail.not_found');
         }
 
-        $isClotureUpload = in_array($type, self::CLOTURE_DOCUMENT_TYPES, true)
-            && in_array($permit->getStatut(), [StatutPermitTravail::VALIDE_HSE, StatutPermitTravail::EN_COURS], true);
-
-        if ($permit->getStatut() !== StatutPermitTravail::BROUILLON && !$isClotureUpload) {
-            throw new AccessDeniedException('permit_travail.statut_not_brouillon');
-        }
-
-        $currentUser = $this->tokenStorage->getToken()?->getUser();
-        if ($currentUser instanceof User) {
-            $roleActions = $this->permissionChecker->getRoleActions($currentUser->getRoles(), 'permit_travail.edit');
-            $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
-            if (empty($canBypass)) {
-                $permitOwner = $permit->getCreatedBy();
-                if ($permitOwner !== null && $permitOwner->getUserIdentifier() !== $currentUser->getUserIdentifier()) {
-                    throw new AccessDeniedException('error.voter.access_denied');
-                }
-            }
-        }
+        $this->accessGuard->assertCanModify($permit, $type);
 
         $extension = $file->guessExtension() ?? 'bin';
         $filePath  = sprintf(
@@ -113,17 +83,15 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
             $extension,
         );
 
-        // Remove existing document of same type (file + DB record)
-        foreach ($permit->getDocuments() as $existing) {
-            if ($existing->getType() === $type) {
-                try {
-                    $this->storage->delete($existing->getFilePath());
-                } catch (\Throwable) {
-                }
+        $capturedAt = UploadRules::capturedAt($request);
+
+        // Un type marqué « non applicable » est repris en compte dès qu'un fichier est déposé.
+        foreach ($permit->getDocuments()->toArray() as $existing) {
+            if ($existing->getType() === $type && $existing->isNonApplicable()) {
+                $permit->getDocuments()->removeElement($existing);
                 $this->entityManager->remove($existing);
             }
         }
-        $this->entityManager->flush();
 
         $this->storage->write($filePath, file_get_contents($file->getPathname()));
 
@@ -133,6 +101,7 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
         $document->setFilePath($filePath);
         $document->setMimeType($file->getMimeType() ?? '');
         $document->setUploadedAt(new \DateTimeImmutable());
+        $document->setCapturedAt($capturedAt);
 
         return $this->persistProcessor->process($document, $operation, $uriVariables, $context);
     }

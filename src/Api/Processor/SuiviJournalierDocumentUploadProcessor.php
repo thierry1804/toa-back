@@ -6,6 +6,7 @@ namespace App\Api\Processor;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Api\Support\UploadRules;
 use App\Domain\Intervention\Entity\SuiviJournalier;
 use App\Domain\Intervention\Entity\SuiviJournalierDocument;
 use Doctrine\ORM\EntityManagerInterface;
@@ -18,12 +19,6 @@ use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 final class SuiviJournalierDocumentUploadProcessor implements ProcessorInterface
 {
-    private const ALLOWED_MIME_TYPES = [
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'application/pdf',
-    ];
     private const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
     public function __construct(
@@ -49,7 +44,7 @@ final class SuiviJournalierDocumentUploadProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('file_required');
         }
 
-        if (!in_array($file->getMimeType(), self::ALLOWED_MIME_TYPES, true)) {
+        if (!in_array($file->getMimeType(), UploadRules::ALLOWED_MIME_TYPES, true)) {
             throw new UnprocessableEntityHttpException('file_mime_type_invalid');
         }
 
@@ -80,6 +75,7 @@ final class SuiviJournalierDocumentUploadProcessor implements ProcessorInterface
         $document->setMimeType($file->getMimeType() ?? '');
         $document->setNom($originalName);
         $document->setUploadedAt(new \DateTimeImmutable());
+        $document->setCapturedAt(UploadRules::capturedAt($request));
 
         return $this->persistProcessor->process($document, $operation, $uriVariables, $context);
     }

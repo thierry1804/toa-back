@@ -213,6 +213,10 @@ class PermitTravail
     #[Groups(['permit_travail:read'])]
     private ?\DateTimeImmutable $soumisAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['permit_travail:read'])]
+    private ?\DateTimeImmutable $validatedAt = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['permit_travail:read', 'intervention:read'])]
@@ -446,6 +450,18 @@ class PermitTravail
     public function setSoumisAt(?\DateTimeImmutable $soumisAt): static
     {
         $this->soumisAt = $soumisAt;
+
+        return $this;
+    }
+
+    public function getValidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->validatedAt;
+    }
+
+    public function setValidatedAt(?\DateTimeImmutable $validatedAt): static
+    {
+        $this->validatedAt = $validatedAt;
 
         return $this;
     }

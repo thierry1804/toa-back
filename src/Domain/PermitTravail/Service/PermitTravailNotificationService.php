@@ -18,7 +18,34 @@ class PermitTravailNotificationService
         private readonly UserRepository $userRepository,
         private readonly LoggerInterface $logger,
         private readonly string $fromAddress = 'noreply@toa.app',
+        private readonly string $frontendUrl = '',
     ) {
+    }
+
+    private function permitUrl(PermitTravail $permit): string
+    {
+        return rtrim($this->frontendUrl, '/') . '/permits-travail/' . $permit->getId()?->toRfc4122();
+    }
+
+    private function referenceLink(PermitTravail $permit): string
+    {
+        $reference = htmlspecialchars((string) $permit->getReference());
+        if ($this->frontendUrl === '') {
+            return $reference;
+        }
+
+        return sprintf('<a href="%s">%s</a>', htmlspecialchars($this->permitUrl($permit)), $reference);
+    }
+
+    private function withLink(string $text, PermitTravail $permit): string
+    {
+        if ($this->frontendUrl === '') {
+            return $text;
+        }
+
+        return $text . "
+
+Accéder au permis : " . $this->permitUrl($permit);
     }
 
     public function notifierValidation(PermitTravail $permit): void
@@ -38,7 +65,7 @@ class PermitTravailNotificationService
                 ->from($this->fromAddress)
                 ->to((string) $prestataire->getEmail())
                 ->subject(sprintf('[TOA] Permis de Travail #%s validé', $permit->getReference()))
-                ->text($this->buildValidationText($permit, $prestataire))
+                ->text($this->withLink($this->buildValidationText($permit, $prestataire), $permit))
                 ->html($this->buildValidationHtml($permit, $prestataire));
 
             $this->mailer->send($email);
@@ -73,7 +100,7 @@ class PermitTravailNotificationService
                 ->from($this->fromAddress)
                 ->to((string) $prestataire->getEmail())
                 ->subject(sprintf('[TOA] Permis de Travail #%s refusé', $permit->getReference()))
-                ->text($this->buildRefusText($permit, $prestataire, $commentaire))
+                ->text($this->withLink($this->buildRefusText($permit, $prestataire, $commentaire), $permit))
                 ->html($this->buildRefusHtml($permit, $prestataire, $commentaire));
 
             $this->mailer->send($email);
@@ -113,7 +140,7 @@ class PermitTravailNotificationService
                     ->from($this->fromAddress)
                     ->to((string) $hseUser->getEmail())
                     ->subject(sprintf('[TOA] Permis %s soumis pour validation', $permit->getReference()))
-                    ->text($this->buildSoumissionText($permit, $hseUser))
+                    ->text($this->withLink($this->buildSoumissionText($permit, $hseUser), $permit))
                     ->html($this->buildSoumissionHtml($permit, $hseUser));
 
                 $this->mailer->send($email);
@@ -170,7 +197,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $recipient->getFirstname()),
             htmlspecialchars((string) $recipient->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getType()?->value),
             htmlspecialchars((string) $permit->getCodeSite()),
         );
@@ -198,7 +225,7 @@ class PermitTravailNotificationService
                 ->from($this->fromAddress)
                 ->to((string) $chefProjet->getEmail())
                 ->subject(sprintf('[TOA] Permis de Travail #%s clôturé — vérification requise', $permit->getReference()))
-                ->text($this->buildClotureText($permit, $chefProjet))
+                ->text($this->withLink($this->buildClotureText($permit, $chefProjet), $permit))
                 ->html($this->buildClotureHtml($permit, $chefProjet));
 
             $this->mailer->send($email);
@@ -256,7 +283,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $chefProjet->getFirstname()),
             htmlspecialchars((string) $chefProjet->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
         );
@@ -300,7 +327,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $prestataire->getFirstname()),
             htmlspecialchars((string) $prestataire->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
         );
@@ -327,14 +354,22 @@ class PermitTravailNotificationService
     }
 
     /**
-     * Resolves the HSE team scoped to the entreprise of the permit's creator
-     * (the prestataire). Returns an empty array if the creator has no
-     * entreprise — there is then no specific team to target.
+     * L'équipe HSE notifiée est celle de TOA (entreprises marquées `interne`).
+     * Repli sur les HSE de l'entreprise du créateur si aucune entreprise interne n'a de HSE.
      *
      * @return User[]
      */
     private function findHseTeamFor(PermitTravail $permit): array
     {
+        $hseUsers = $this->userRepository->findByRoleInInternalEntreprises('ROLE_HSE');
+        if ($hseUsers !== []) {
+            return $hseUsers;
+        }
+
+        $this->logger->warning('[PermitTravail] Aucun ROLE_HSE dans une entreprise `interne` : repli sur l\'entreprise du créateur. Vérifier le flag entreprise.interne.', [
+            'permit_id' => $permit->getId()?->toRfc4122(),
+        ]);
+
         $entrepriseId = $permit->getCreatedBy()?->getEntreprise()?->getId();
         if ($entrepriseId === null) {
             return [];
@@ -362,7 +397,7 @@ class PermitTravailNotificationService
                     ->from($this->fromAddress)
                     ->to((string) $hseUser->getEmail())
                     ->subject(sprintf('[TOA] Permis %s resoumis (v%d)', $permit->getReference(), $numeroVersion))
-                    ->text($this->buildResoumissionText($permit, $hseUser, $numeroVersion))
+                    ->text($this->withLink($this->buildResoumissionText($permit, $hseUser, $numeroVersion), $permit))
                     ->html($this->buildResoumissionHtml($permit, $hseUser, $numeroVersion));
 
                 $this->mailer->send($email);
@@ -424,7 +459,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $recipient->getFirstname()),
             htmlspecialchars((string) $recipient->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getType()?->value),
             htmlspecialchars((string) $permit->getCodeSite()),
             $numeroVersion,
@@ -454,7 +489,7 @@ class PermitTravailNotificationService
                     ->from($this->fromAddress)
                     ->to((string) $hseUser->getEmail())
                     ->subject(sprintf('[TOA] PV #%s validé — archivage requis', $permit->getReference()))
-                    ->text($this->buildArchivageText($permit, $hseUser, $chefProjetNom, $dateValidation))
+                    ->text($this->withLink($this->buildArchivageText($permit, $hseUser, $chefProjetNom, $dateValidation), $permit))
                     ->html($this->buildArchivageHtml($permit, $hseUser, $chefProjetNom, $dateValidation));
 
                 $this->mailer->send($email);
@@ -514,7 +549,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $recipient->getFirstname()),
             htmlspecialchars((string) $recipient->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars($chefProjetNom),
             htmlspecialchars($dateValidation->format('d/m/Y H:i')),
@@ -538,7 +573,7 @@ class PermitTravailNotificationService
                 ->from($this->fromAddress)
                 ->to((string) $prestataire->getEmail())
                 ->subject(sprintf('[TOA] PV #%s refusé par Chef de Projet', $permit->getReference()))
-                ->text($this->buildPvRefusText($permit, $prestataire, $commentaire))
+                ->text($this->withLink($this->buildPvRefusText($permit, $prestataire, $commentaire), $permit))
                 ->html($this->buildPvRefusHtml($permit, $prestataire, $commentaire));
 
             $this->mailer->send($email);
@@ -600,7 +635,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $prestataire->getFirstname()),
             htmlspecialchars((string) $prestataire->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
             nl2br(htmlspecialchars($commentaire)),
@@ -626,7 +661,7 @@ class PermitTravailNotificationService
                 ->from($this->fromAddress)
                 ->to((string) $prestataire->getEmail())
                 ->subject(sprintf('[TOA] Permis de Travail #%s bientôt expiré', $permit->getReference()))
-                ->text($this->buildExpirationText($permit, $prestataire, $dateFinPrevue))
+                ->text($this->withLink($this->buildExpirationText($permit, $prestataire, $dateFinPrevue), $permit))
                 ->html($this->buildExpirationHtml($permit, $prestataire, $dateFinPrevue));
 
             $this->mailer->send($email);
@@ -687,7 +722,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $prestataire->getFirstname()),
             htmlspecialchars((string) $prestataire->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
             htmlspecialchars($dateFinPrevue?->format('d/m/Y H:i') ?? '—'),
@@ -718,7 +753,7 @@ class PermitTravailNotificationService
 </html>',
             htmlspecialchars((string) $prestataire->getFirstname()),
             htmlspecialchars((string) $prestataire->getName()),
-            htmlspecialchars((string) $permit->getReference()),
+            $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
             nl2br(htmlspecialchars($commentaire)),

@@ -74,6 +74,14 @@ class SitePrevention
     #[Groups(['site_prevention:read', 'plan_prevention:read'])]
     private ?string $district = null;
 
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['site_prevention:read', 'plan_prevention:read'])]
+    private bool $apn = false;
+
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['site_prevention:read', 'plan_prevention:read'])]
+    private bool $api = false;
+
     #[ORM\ManyToOne(targetEntity: Site::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['site_prevention:read', 'plan_prevention:read'])]
@@ -236,6 +244,30 @@ class SitePrevention
     public function setDistrict(?string $district): static
     {
         $this->district = $district;
+
+        return $this;
+    }
+
+    public function isApn(): bool
+    {
+        return $this->apn;
+    }
+
+    public function setApn(bool $apn): static
+    {
+        $this->apn = $apn;
+
+        return $this;
+    }
+
+    public function isApi(): bool
+    {
+        return $this->api;
+    }
+
+    public function setApi(bool $api): static
+    {
+        $this->api = $api;
 
         return $this;
     }

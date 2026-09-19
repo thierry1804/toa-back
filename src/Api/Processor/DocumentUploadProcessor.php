@@ -6,6 +6,7 @@ namespace App\Api\Processor;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Api\Support\UploadRules;
 use App\Domain\PlanPrevention\Entity\DocumentPrevention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
@@ -19,8 +20,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 final class DocumentUploadProcessor implements ProcessorInterface
 {
-    private const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg'];
-    private const MAX_SIZE_BYTES     = 10 * 1024 * 1024; // 10 MB
+    private const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
@@ -56,7 +56,7 @@ final class DocumentUploadProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException(sprintf('type_invalid: %s', $validValues));
         }
 
-        if (!in_array($file->getMimeType(), self::ALLOWED_MIME_TYPES, true)) {
+        if (!in_array($file->getMimeType(), UploadRules::ALLOWED_MIME_TYPES, true)) {
             throw new UnprocessableEntityHttpException('file_mime_type_invalid');
         }
 
@@ -79,18 +79,15 @@ final class DocumentUploadProcessor implements ProcessorInterface
             $extension,
         );
 
-        // Remove existing document of same type (file + DB record)
-        foreach ($plan->getDocuments() as $existing) {
-            if ($existing->getType() === $type) {
-                try {
-                    $this->storage->delete($existing->getFilePath());
-                } catch (\Throwable) {
-                    // Ignore missing file in storage
-                }
+        $capturedAt = UploadRules::capturedAt($request);
+
+        // Un type marqué « non applicable » est repris en compte dès qu'un fichier est déposé.
+        foreach ($plan->getDocuments()->toArray() as $existing) {
+            if ($existing->getType() === $type && $existing->isNonApplicable()) {
+                $plan->getDocuments()->removeElement($existing);
                 $this->entityManager->remove($existing);
             }
         }
-        $this->entityManager->flush();
 
         $this->storage->write($filePath, file_get_contents($file->getPathname()));
 
@@ -100,6 +97,7 @@ final class DocumentUploadProcessor implements ProcessorInterface
         $document->setFilePath($filePath);
         $document->setMimeType($file->getMimeType() ?? '');
         $document->setUploadedAt(new \DateTimeImmutable());
+        $document->setCapturedAt($capturedAt);
 
         return $this->persistProcessor->process($document, $operation, $uriVariables, $context);
     }

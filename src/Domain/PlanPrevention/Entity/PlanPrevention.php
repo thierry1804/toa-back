@@ -15,6 +15,7 @@ use App\Api\Processor\PlanPreventionExaminerProcessor;
 use App\Api\Processor\PlanPreventionRefuserProcessor;
 use App\Api\Processor\PlanPreventionResoumettreProcessor;
 use App\Api\Processor\PlanPreventionSoumettreProcessor;
+use App\Api\Processor\PlanPreventionUpdateProcessor;
 use App\Api\Processor\PlanPreventionValiderProcessor;
 use App\Domain\PlanPrevention\Entity\DecisionHsePlanPrevention;
 use App\Domain\PlanPrevention\Entity\ExamenPlanPrevention;
@@ -54,6 +55,7 @@ use Symfony\Component\Validator\Constraints as Assert;
             uriTemplate: '/plans-prevention/{id}',
             requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'],
             security: "is_granted('PLAN_PREVENTION_EDIT', object)",
+            processor: PlanPreventionUpdateProcessor::class,
         ),
         new Post(
             uriTemplate: '/plans-prevention/{id}/soumettre',
@@ -260,8 +262,37 @@ class PlanPrevention
     #[Groups(['plan_prevention:read'])]
     private array $planificationSections = [];
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['plan_prevention:read'])]
+    private ?\DateTimeImmutable $soumisAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['plan_prevention:read'])]
+    private ?\DateTimeImmutable $validatedAt = null;
+
+    /** @var Collection<int, PhasePlanPrevention> */
+    #[ORM\OneToMany(
+        targetEntity: PhasePlanPrevention::class,
+        mappedBy: 'planPrevention',
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true,
+    )]
+    #[ORM\OrderBy(['ordre' => 'ASC'])]
+    #[Groups(['plan_prevention:read'])]
+    private Collection $sections;
+
+    #[Groups(['plan_prevention:read'])]
+    private bool $hasApnApiSite = false;
+
+    /** @var list<array{codeSite: string, nomSite: string, apn: bool, api: bool}> */
+    #[Groups(['plan_prevention:read'])]
+    private array $sitesApnApi = [];
+
+    private ?\Closure $sitesApnApiLoader = null;
+
     public function __construct()
     {
+        $this->sections      = new ArrayCollection();
         $this->risques       = new ArrayCollection();
         $this->documents     = new ArrayCollection();
         $this->sites         = new ArrayCollection();
@@ -547,6 +578,127 @@ class PlanPrevention
         $this->planificationSections = $sections;
 
         return $this;
+    }
+
+    public function getSoumisAt(): ?\DateTimeImmutable
+    {
+        return $this->soumisAt;
+    }
+
+    public function setSoumisAt(?\DateTimeImmutable $soumisAt): static
+    {
+        $this->soumisAt = $soumisAt;
+
+        return $this;
+    }
+
+    public function getValidatedAt(): ?\DateTimeImmutable
+    {
+        return $this->validatedAt;
+    }
+
+    public function setValidatedAt(?\DateTimeImmutable $validatedAt): static
+    {
+        $this->validatedAt = $validatedAt;
+
+        return $this;
+    }
+
+    /** @return Collection<int, PhasePlanPrevention> */
+    public function getSections(): Collection
+    {
+        return $this->sections;
+    }
+
+    public function addSection(PhasePlanPrevention $section): static
+    {
+        if (!$this->sections->contains($section)) {
+            $this->sections->add($section);
+            $section->setPlanPrevention($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSection(PhasePlanPrevention $section): static
+    {
+        $this->sections->removeElement($section);
+
+        return $this;
+    }
+
+    public function getHasApnApiSite(): bool
+    {
+        $this->getSitesApnApi();
+
+        return $this->hasApnApiSite;
+    }
+
+    /** @param list<array{codeSite: string, nomSite: string, apn: bool, api: bool}> $sites */
+    public function setSitesApnApi(array $sites): static
+    {
+        $this->sitesApnApiLoader = null;
+        $this->sitesApnApi = $sites;
+        $this->hasApnApiSite = $sites !== [];
+
+        return $this;
+    }
+
+    /**
+     * Le loader (Closure) n'est pas sérialisable : l'entité est mise dans le contexte des emails
+     * qui transitent par Messenger. Après désérialisation, les sites APN/API restent ceux déjà résolus.
+     *
+     * @return array<string, mixed>
+     */
+    public function __serialize(): array
+    {
+        if ($this->sitesApnApiLoader !== null) {
+            $this->getSitesApnApi();
+        }
+
+        $vars = get_object_vars($this);
+        unset($vars['sitesApnApiLoader']);
+
+        return $vars;
+    }
+
+    /** @param array<string, mixed> $data */
+    public function __unserialize(array $data): void
+    {
+        foreach ($data as $property => $value) {
+            $this->$property = $value;
+        }
+    }
+
+    /** Calcul différé : aucune requête tant que ni `hasApnApiSite` ni `sitesApnApi` ne sont lus. */
+    public function setSitesApnApiLoader(\Closure $loader): static
+    {
+        $this->sitesApnApiLoader = $loader;
+
+        return $this;
+    }
+
+    /** @return list<array{codeSite: string, nomSite: string, apn: bool, api: bool}> */
+    public function getSitesApnApi(): array
+    {
+        if ($this->sitesApnApiLoader !== null) {
+            $loader = $this->sitesApnApiLoader;
+            $this->setSitesApnApi($loader());
+        }
+
+        return $this->sitesApnApi;
+    }
+
+    #[Groups(['plan_prevention:read'])]
+    public function isTousDocumentsConsultes(): bool
+    {
+        foreach ($this->documents as $document) {
+            if (!$document->isNonApplicable() && $document->getConsultedAt() === null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     #[ORM\PrePersist]

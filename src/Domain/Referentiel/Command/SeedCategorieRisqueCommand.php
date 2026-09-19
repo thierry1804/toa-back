@@ -48,6 +48,20 @@ class SeedCategorieRisqueCommand extends Command
             'Risques psychosociaux',
             'Risque face aux maladies infectieuses',
         ],
+        'Risques liés à une aire protégée nationale (APN)' => [
+            'Atteinte à la faune et à la flore (APN)',
+            'Autre(s) risque(s) APN à préciser',
+        ],
+        'Risques liés à une aire protégée internationale (API)' => [
+            'Atteinte à la faune et à la flore (API)',
+            'Autre(s) risque(s) API à préciser',
+        ],
+    ];
+
+    /** Catégories racines dont les risques répondent à l'obligation APN/API du plan de prévention. */
+    private const TYPE_SITE = [
+        'Risques liés à une aire protégée nationale (APN)' => 'APN',
+        'Risques liés à une aire protégée internationale (API)' => 'API',
     ];
 
     public function __construct(
@@ -71,6 +85,10 @@ class SeedCategorieRisqueCommand extends Command
                 $this->entityManager->persist($root);
                 $created++;
                 $io->writeln(sprintf('  + Catégorie : %s', $rootNom));
+            }
+
+            if (isset(self::TYPE_SITE[$rootNom]) && $root->getTypeSite() === null) {
+                $root->setTypeSite(self::TYPE_SITE[$rootNom]);
             }
 
             foreach ($children as $childNom) {

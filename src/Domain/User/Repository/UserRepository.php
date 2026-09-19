@@ -52,6 +52,26 @@ class UserRepository extends ServiceEntityRepository
         return $this->findBy(['id' => $ids], ['name' => 'ASC', 'firstname' => 'ASC']);
     }
 
+    /**
+     * Utilisateurs portant le rôle donné et rattachés à une entreprise interne (TOA).
+     *
+     * @return User[]
+     */
+    public function findByRoleInInternalEntreprises(string $role): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $sql = 'SELECT u.id FROM "user" u JOIN entreprise e ON e.id = u.entreprise_id WHERE e.interne = TRUE AND u.roles::text LIKE :role';
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue('role', '%"' . $role . '"%');
+        $ids = array_column($stmt->executeQuery()->fetchAllAssociative(), 'id');
+
+        if (empty($ids)) {
+            return [];
+        }
+
+        return $this->findBy(['id' => $ids], ['name' => 'ASC', 'firstname' => 'ASC']);
+    }
+
     /** @return User[] */
     public function findByEmailExcludingId(array $criteria): array
     {

@@ -137,7 +137,6 @@ final class UpdateKpisHandler
         $kpi->setTauxIncidents($tauxIncidents);
         $kpi->setTempsMoyenValidationPlan($tempsMoyenPlan);
         $kpi->setTempsMoyenValidationPermis($tempsMoyenPermis);
-        $kpi->setTempsMoyenValidationPv($delai);
         $kpi->setAvancementMoyen($avancementMoyen);
         $kpi->setUpdatedAt(new \DateTimeImmutable());
 

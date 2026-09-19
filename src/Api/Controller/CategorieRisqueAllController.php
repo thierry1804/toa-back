@@ -23,7 +23,7 @@ class CategorieRisqueAllController extends AbstractController
     {
         $items = $this->categorieRisqueRepository->createQueryBuilder('c')
             ->leftJoin('c.parent', 'p')
-            ->select('c.id', 'c.nom', 'c.typePermis', 'c.createdAt', 'c.updatedAt', 'IDENTITY(c.parent) AS parentId', 'p.nom AS parentNom')
+            ->select('c.id', 'c.nom', 'c.typePermis', 'c.typeSite', 'c.createdAt', 'c.updatedAt', 'IDENTITY(c.parent) AS parentId', 'p.nom AS parentNom')
             ->orderBy('c.nom', 'ASC')
             ->getQuery()
             ->getArrayResult();
@@ -32,6 +32,7 @@ class CategorieRisqueAllController extends AbstractController
             'id'         => (string) $row['id'],
             'nom'        => $row['nom'],
             'typePermis' => $row['typePermis'],
+            'typeSite'   => $row['typeSite'],
             'parentId'   => $row['parentId'] !== null ? (string) $row['parentId'] : null,
             'parentNom'  => $row['parentNom'],
             'createdAt'  => $row['createdAt']->format(\DateTimeInterface::ATOM),

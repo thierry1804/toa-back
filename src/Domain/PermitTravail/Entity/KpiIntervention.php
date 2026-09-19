@@ -49,9 +49,6 @@ class KpiIntervention
     private ?float $tempsMoyenValidationPermis = null;
 
     #[ORM\Column(type: Types::FLOAT, nullable: true)]
-    private ?float $tempsMoyenValidationPv = null;
-
-    #[ORM\Column(type: Types::FLOAT, nullable: true)]
     private ?float $avancementMoyen = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
@@ -166,18 +163,6 @@ class KpiIntervention
     public function setTempsMoyenValidationPermis(?float $temps): static
     {
         $this->tempsMoyenValidationPermis = $temps;
-
-        return $this;
-    }
-
-    public function getTempsMoyenValidationPv(): ?float
-    {
-        return $this->tempsMoyenValidationPv;
-    }
-
-    public function setTempsMoyenValidationPv(?float $temps): static
-    {
-        $this->tempsMoyenValidationPv = $temps;
 
         return $this;
     }

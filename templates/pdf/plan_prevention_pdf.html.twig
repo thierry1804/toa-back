@@ -400,22 +400,30 @@
       <tbody>
         {% set docTypes = ['PLAN_URGENCE','FDS','LISTE_INTERVENANTS','ATTESTATION_HSE','FICHE_CONFORMITE','LISTE_VEHICULES'] %}
         {% for type in docTypes %}
-          {% set found = null %}
-          {% for doc in plan.documents %}
-            {% if doc.type.value == type %}{% set found = doc %}{% endif %}
-          {% endfor %}
+          {% set docs = plan.documents|filter(d => d.type.value == type) %}
+          {% if docs|length == 0 %}
           <tr>
             <td style="font-weight:600;">{{ type|replace({'_': ' '}) }}</td>
-            <td>{{ found ? found.mimeType : '—' }}</td>
-            <td>{{ found ? found.uploadedAt|date('d/m/Y H:i') : '—' }}</td>
+            <td>—</td>
+            <td>—</td>
+            <td style="text-align:center;"><span style="color:#721c24;">✗ Manquant</span></td>
+          </tr>
+          {% else %}
+            {% for doc in docs %}
+          <tr>
+            <td style="font-weight:600;">{{ type|replace({'_': ' '}) }}{% if docs|length > 1 %} ({{ loop.index }}/{{ docs|length }}){% endif %}</td>
+            <td>{{ doc.nonApplicable ? '—' : doc.mimeType }}</td>
+            <td>{{ (doc.capturedAt ?? doc.uploadedAt)|date('d/m/Y H:i') }}</td>
             <td style="text-align:center;">
-              {% if found %}
-                <span style="color:#155724;font-weight:700;">✓ Présent</span>
+              {% if doc.nonApplicable %}
+                <span style="color:#555;font-weight:700;">N/A</span>
               {% else %}
-                <span style="color:#721c24;">✗ Manquant</span>
+                <span style="color:#155724;font-weight:700;">✓ Présent</span>
               {% endif %}
             </td>
           </tr>
+            {% endfor %}
+          {% endif %}
         {% endfor %}
       </tbody>
     </table>

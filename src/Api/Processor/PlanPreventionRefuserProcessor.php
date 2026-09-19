@@ -10,6 +10,7 @@ use App\Domain\PlanPrevention\Entity\DecisionHsePlanPrevention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,6 +28,7 @@ final class PlanPreventionRefuserProcessor implements ProcessorInterface
         private readonly TokenStorageInterface $tokenStorage,
         private readonly PlanPreventionNotificationService $notificationService,
         private readonly RequestStack $requestStack,
+        private readonly PlanPreventionConsultationGuard $consultationGuard,
     ) {
     }
 
@@ -49,6 +51,8 @@ final class PlanPreventionRefuserProcessor implements ProcessorInterface
         if ($commentaire === null || $commentaire === '') {
             throw new UnprocessableEntityHttpException('Commentaire obligatoire en cas de refus');
         }
+
+        $this->consultationGuard->assertAllConsulted($plan);
 
         $user = $this->tokenStorage->getToken()?->getUser();
         if (!$user instanceof User) {

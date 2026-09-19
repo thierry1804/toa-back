@@ -59,6 +59,8 @@ class ReferentielSiteListController extends AbstractController
             'commune'         => $site->getCommune(),
             'district'        => $site->getDistrict(),
             'situation'       => $site->getSituation(),
+            'apn'             => $site->isApn(),
+            'api'             => $site->isApi(),
             'sourceKmz'       => $site->isSourceKmz(),
             'createdAt'       => $site->getCreatedAt()->format(\DateTimeInterface::ATOM),
             'updatedAt'       => $site->getUpdatedAt()->format(\DateTimeInterface::ATOM),

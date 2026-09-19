@@ -8,6 +8,7 @@ use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\ActivityPlanning\Entity\SectionPlanifiee;
 use App\Domain\ActivityPlanning\Entity\TachePlanifiee;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
+use App\Domain\PlanPrevention\Service\ApnApiSiteResolver;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener;
 use Doctrine\ORM\Event\PostLoadEventArgs;
 use Doctrine\ORM\Events;
@@ -15,7 +16,20 @@ use Doctrine\ORM\Events;
 #[AsEntityListener(event: Events::postLoad, method: 'postLoad', entity: PlanPrevention::class)]
 final class PlanPreventionPostLoadListener
 {
+    public function __construct(private readonly ApnApiSiteResolver $apnApiSiteResolver)
+    {
+    }
+
     public function postLoad(PlanPrevention $plan, PostLoadEventArgs $args): void
+    {
+        $this->loadPlanificationData($plan, $args);
+
+        $resolver = $this->apnApiSiteResolver;
+        $resolver->register($plan);
+        $plan->setSitesApnApiLoader(static fn (): array => $resolver->resolveForPlan($plan));
+    }
+
+    private function loadPlanificationData(PlanPrevention $plan, PostLoadEventArgs $args): void
     {
         $planificationId = $plan->getPlanificationId();
         if ($planificationId === null) {

@@ -7,6 +7,7 @@ namespace App\Api\Controller;
 use App\Domain\Referentiel\Entity\ImportKmzSite;
 use App\Domain\Referentiel\Entity\Site;
 use App\Domain\Referentiel\Repository\SiteRepository;
+use App\Domain\Referentiel\Service\KmzFlagParser;
 use App\Security\Voter\ReferentielSiteVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -73,6 +74,13 @@ class ReferentielSiteKmzImportController extends AbstractController
                 $existing->setZone($placemark['zone']);
                 $existing->setTypePylone($placemark['typePylone']);
                 $existing->setHauteurPylone($placemark['hauteurPylone']);
+                // Colonne absente ou vide (null) : on conserve le statut APN/API déjà connu du site.
+                if ($placemark['apn'] !== null) {
+                    $existing->setApn($placemark['apn']);
+                }
+                if ($placemark['api'] !== null) {
+                    $existing->setApi($placemark['api']);
+                }
                 $existing->setImportKmz($import);
                 $existing->setUpdatedAt(new \DateTime());
                 $sites[] = $existing;
@@ -92,6 +100,8 @@ class ReferentielSiteKmzImportController extends AbstractController
                 $site->setZone($placemark['zone']);
                 $site->setTypePylone($placemark['typePylone']);
                 $site->setHauteurPylone($placemark['hauteurPylone']);
+                $site->setApn($placemark['apn'] ?? false);
+                $site->setApi($placemark['api'] ?? false);
                 $site->setSourceKmz(true);
                 $site->setImportKmz($import);
                 $this->entityManager->persist($site);
@@ -129,6 +139,8 @@ class ReferentielSiteKmzImportController extends AbstractController
                 'zone'            => $s->getZone(),
                 'typePylone'      => $s->getTypePylone(),
                 'hauteurPylone'   => $s->getHauteurPylone(),
+                'apn'             => $s->isApn(),
+                'api'             => $s->isApi(),
             ], $sites),
         ]);
     }
@@ -256,13 +268,15 @@ class ReferentielSiteKmzImportController extends AbstractController
                 'zone'            => $extendedData['zone'],
                 'typePylone'      => $extendedData['typePylone'],
                 'hauteurPylone'   => $extendedData['hauteurPylone'],
+                'apn'             => $extendedData['apn'],
+                'api'             => $extendedData['api'],
             ];
         }
 
         return ['placemarks' => $results, 'nbIgnores' => $nbIgnores];
     }
 
-    /** @return array{codeSite: string|null, fokontany: string|null, commune: string|null, district: string|null, typeSite: string|null, zone: string|null, typePylone: string|null, hauteurPylone: float|null} */
+    /** @return array{codeSite: string|null, fokontany: string|null, commune: string|null, district: string|null, typeSite: string|null, zone: string|null, typePylone: string|null, hauteurPylone: float|null, apn: bool|null, api: bool|null} */
     private function extractExtendedData(\SimpleXMLElement $placemark): array
     {
         $result = [
@@ -274,6 +288,8 @@ class ReferentielSiteKmzImportController extends AbstractController
             'zone'          => null,
             'typePylone'    => null,
             'hauteurPylone' => null,
+            'apn'           => null,
+            'api'           => null,
         ];
 
         if (!isset($placemark->ExtendedData)) {
@@ -300,6 +316,8 @@ class ReferentielSiteKmzImportController extends AbstractController
                 'type_pylone', 'typepylone', 'pylone' => $result['typePylone']    = $val,
                 'hauteur_pylone', 'hauteurpylone',
                 'hauteur'                             => $result['hauteurPylone'] = (float) preg_replace('/[^0-9.]/', '', $val) ?: null,
+                'apn'                                 => $result['apn']           = KmzFlagParser::parse($val),
+                'api'                                 => $result['api']           = KmzFlagParser::parse($val),
                 default                               => null,
             };
         }
