@@ -47,6 +47,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new GetCollection(
             uriTemplate: '/permits-travail',
             security: "is_granted('PERMIT_TRAVAIL_VIEW')",
+            order: ['createdAt' => 'DESC'],
         ),
         new Post(
             uriTemplate: '/permits-travail',
