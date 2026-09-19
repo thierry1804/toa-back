@@ -65,13 +65,18 @@ class EntrepriseNameCoherenceValidatorTest extends ConstraintValidatorTestCase
             ->assertRaised();
     }
 
-    public function testHseWithEntrepriseNameIsInvalid(): void
+    public function testHseWithEntrepriseNameIsValid(): void
     {
         $user = $this->buildUser(['ROLE_HSE'], 'Acme Corp');
         $this->validator->validate($user, new EntrepriseNameCoherence());
-        $this->buildViolation('entreprise_name_not_allowed_for_role')
-            ->atPath('property.path.entrepriseName')
-            ->assertRaised();
+        $this->assertNoViolation();
+    }
+
+    public function testAgentTerrainWithEntrepriseNameIsValid(): void
+    {
+        $user = $this->buildUser(['ROLE_AGENT_TERRAIN'], 'Acme Corp');
+        $this->validator->validate($user, new EntrepriseNameCoherence());
+        $this->assertNoViolation();
     }
 
     public function testCollaborateurWithEntrepriseNameIsInvalid(): void
