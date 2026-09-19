@@ -21,6 +21,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: InstallationEquipementRepository::class)]
 #[ORM\Table(name: '`installation_equipement`')]
+#[ORM\UniqueConstraint(name: 'uniq_installation_equipement_nom', columns: ['nom'], options: ['where' => '(deleted_at IS NULL)'])]
 #[ORM\HasLifecycleCallbacks]
 #[ApiResource(
     operations: [
@@ -58,7 +59,7 @@ class InstallationEquipement
     #[Groups(['installation_equipement:read'])]
     private ?Uuid $id = null;
 
-    #[ORM\Column(length: 255, unique: true)]
+    #[ORM\Column(length: 255)]
     #[Groups(['installation_equipement:read', 'installation_equipement:write'])]
     #[Assert\NotBlank(message: 'nom_required')]
     #[Assert\Length(max: 255, maxMessage: 'nom_too_long')]

@@ -13,6 +13,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: SiteRepository::class)]
 #[ORM\Table(name: '`site`')]
+#[ORM\UniqueConstraint(name: 'uniq_site_code', columns: ['code_site'])]
 class Site
 {
     #[ORM\Id]
@@ -22,7 +23,7 @@ class Site
     #[Groups(['site:read', 'import_kmz_site:read'])]
     private ?Uuid $id = null;
 
-    #[ORM\Column(name: 'code_site', length: 255)]
+    #[ORM\Column(name: 'code_site', length: 100)]
     #[Groups(['site:read', 'import_kmz_site:read'])]
     private string $codeSite = '';
 
