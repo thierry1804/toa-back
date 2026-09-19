@@ -70,7 +70,7 @@ class PermitTravailLogSubscriber
         $this->pendingConsultes[(string) $entity->getId()] = [
             'userId'     => $user->getId(),
             'codeSite'   => $entity->getCodeSite(),
-            'typePermis' => $entity->getType()?->value ?? '',
+            'typePermis' => $entity->getType()->value ?? '',
         ];
     }
 
@@ -121,7 +121,9 @@ class PermitTravailLogSubscriber
             return;
         }
 
-        [$oldStatut, $newStatut] = $changeSet['statut'];
+        $statutChange = $changeSet['statut'];
+        $oldStatut    = $statutChange[0];
+        $newStatut    = $statutChange[1];
 
         // Doctrine's UoW may store raw string snapshots for newly-persisted entities
         // instead of the PHP-backed enum — handle both cases.

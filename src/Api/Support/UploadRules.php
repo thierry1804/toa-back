@@ -26,7 +26,7 @@ final class UploadRules
             throw new UnprocessableEntityHttpException('captured_at_invalid');
         }
 
-        $format = ($matches[1] ?? '') !== '' ? 'Y-m-d\TH:i:s.uP' : 'Y-m-d\TH:i:sP';
+        $format = $matches[1] !== '' ? 'Y-m-d\TH:i:s.uP' : 'Y-m-d\TH:i:sP';
         $capturedAt = \DateTimeImmutable::createFromFormat($format, $raw);
         $errors = \DateTimeImmutable::getLastErrors();
         if ($capturedAt === false || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {

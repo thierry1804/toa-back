@@ -268,10 +268,10 @@ class SeedMenuCommand extends Command
                         $access = new MenuAccess();
                         $access->setMenu($existing);
                         $access->setRole($roleName);
-                        $access->setCanView($permissions['view'] ?? true);
-                        $access->setCanCreate($permissions['create'] ?? true);
-                        $access->setCanEdit($permissions['edit'] ?? true);
-                        $access->setCanDelete($permissions['delete'] ?? true);
+                        $access->setCanView($permissions['view']);
+                        $access->setCanCreate($permissions['create']);
+                        $access->setCanEdit($permissions['edit']);
+                        $access->setCanDelete($permissions['delete']);
                         $this->entityManager->persist($access);
                         $this->entityManager->flush();
                         $io->writeln(sprintf('  ✓ <info>%s</info> accès ajouté → %s', $definition['name'], $roleName));
@@ -308,10 +308,10 @@ class SeedMenuCommand extends Command
                     $access = new MenuAccess();
                     $access->setMenu($menu);
                     $access->setRole($roleName);
-                    $access->setCanView($permissions['view'] ?? true);
-                    $access->setCanCreate($permissions['create'] ?? true);
-                    $access->setCanEdit($permissions['edit'] ?? true);
-                    $access->setCanDelete($permissions['delete'] ?? true);
+                    $access->setCanView($permissions['view']);
+                    $access->setCanCreate($permissions['create']);
+                    $access->setCanEdit($permissions['edit']);
+                    $access->setCanDelete($permissions['delete']);
 
                     $this->entityManager->persist($access);
                     $this->entityManager->flush();

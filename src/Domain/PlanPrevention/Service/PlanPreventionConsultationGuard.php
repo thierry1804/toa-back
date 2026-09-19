@@ -14,7 +14,7 @@ class PlanPreventionConsultationGuard
         $pending = [];
         foreach ($plan->getDocuments() as $document) {
             if (!$document->isNonApplicable() && $document->getConsultedAt() === null) {
-                $pending[$document->getType()?->value ?? 'DOCUMENT'] = true;
+                $pending[$document->getType()->value ?? 'DOCUMENT'] = true;
             }
         }
 

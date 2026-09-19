@@ -99,7 +99,7 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
         $document->setPermitTravail($permit);
         $document->setType($type);
         $document->setFilePath($filePath);
-        $document->setMimeType($file->getMimeType() ?? '');
+        $document->setMimeType($file->getMimeType());
         $document->setUploadedAt(new \DateTimeImmutable());
         $document->setCapturedAt($capturedAt);
 

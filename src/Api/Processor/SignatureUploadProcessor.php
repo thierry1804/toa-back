@@ -25,8 +25,6 @@ final class SignatureUploadProcessor implements ProcessorInterface
     private const MAX_SIZE_BYTES     = 2 * 1024 * 1024; // 2 MB
 
     public function __construct(
-        #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
-        private readonly ProcessorInterface $persistProcessor,
         private readonly EntityManagerInterface $entityManager,
         private readonly RequestStack $requestStack,
         #[Autowire('@default.storage')]

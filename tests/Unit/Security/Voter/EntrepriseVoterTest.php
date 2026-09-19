@@ -8,6 +8,7 @@ use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
 use App\Security\Voter\EntrepriseVoter;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
@@ -16,7 +17,7 @@ use Symfony\Component\Uid\Uuid;
 
 class EntrepriseVoterTest extends TestCase
 {
-    private PermissionChecker $permissionChecker;
+    private PermissionChecker&MockObject $permissionChecker;
     private EntrepriseVoter $voter;
 
     protected function setUp(): void

@@ -12,14 +12,15 @@ use App\Domain\PermitTravail\MessageHandler\CheckPermitsExpirationHandler;
 use App\Domain\PermitTravail\Repository\PermitTravailRepository;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 class CheckPermitsExpirationHandlerTest extends TestCase
 {
-    private PermitTravailRepository $repository;
-    private PermitTravailNotificationService $notificationService;
-    private EntityManagerInterface $entityManager;
+    private PermitTravailRepository&MockObject $repository;
+    private PermitTravailNotificationService&MockObject $notificationService;
+    private EntityManagerInterface&MockObject $entityManager;
     private CheckPermitsExpirationHandler $handler;
 
     protected function setUp(): void

@@ -10,7 +10,7 @@ class CoherentDatesValidator extends ConstraintValidator
 {
     public function validate(mixed $value, Constraint $constraint): void
     {
-        if (!$value instanceof ActivityPlanning) {
+        if (!$constraint instanceof CoherentDates || !$value instanceof ActivityPlanning) {
             return;
         }
 

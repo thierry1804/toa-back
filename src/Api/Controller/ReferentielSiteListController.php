@@ -6,7 +6,6 @@ namespace App\Api\Controller;
 
 use App\Domain\Referentiel\Repository\SiteRepository;
 use App\Security\Voter\ReferentielSiteVoter;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,7 +21,6 @@ class ReferentielSiteListController extends AbstractController
 
     public function __construct(
         private readonly SiteRepository $siteRepository,
-        private readonly EntityManagerInterface $entityManager,
     ) {
     }
 

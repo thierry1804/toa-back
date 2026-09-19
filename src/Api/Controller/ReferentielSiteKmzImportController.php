@@ -180,7 +180,7 @@ class ReferentielSiteKmzImportController extends AbstractController
     }
 
     /**
-     * @return array{placemarks: list<array{name: string, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, fokontany: string|null, commune: string|null, district: string|null}>, nbIgnores: int}
+     * @return array{placemarks: list<array{name: string, codeSite: string|null, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, fokontany: string|null, commune: string|null, district: string|null, typeSite: string|null, zone: string|null, typePylone: string|null, hauteurPylone: float|null, apn: bool|null, api: bool|null}>, nbIgnores: int}
      */
     private function parseKmz(string $path): array
     {
@@ -207,7 +207,7 @@ class ReferentielSiteKmzImportController extends AbstractController
     }
 
     /**
-     * @return array{placemarks: list<array{name: string, codeSite: string|null, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, fokontany: string|null, commune: string|null, district: string|null}>, nbIgnores: int}
+     * @return array{placemarks: list<array{name: string, codeSite: string|null, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, fokontany: string|null, commune: string|null, district: string|null, typeSite: string|null, zone: string|null, typePylone: string|null, hauteurPylone: float|null, apn: bool|null, api: bool|null}>, nbIgnores: int}
      */
     private function parsePlacemarks(string $kmlContent): array
     {

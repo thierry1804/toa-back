@@ -11,15 +11,16 @@ use App\Api\Processor\PrestataireUserScopeProcessor;
 use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\User\Entity\User;
 use App\Domain\User\Repository\UserRepository;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class PrestataireUserScopeProcessorTest extends TestCase
 {
-    private ProcessorInterface $inner;
-    private TokenStorageInterface $tokenStorage;
-    private UserRepository $userRepository;
+    private ProcessorInterface&MockObject $inner;
+    private TokenStorageInterface&MockObject $tokenStorage;
+    private UserRepository&MockObject $userRepository;
     private PrestataireUserScopeProcessor $processor;
 
     protected function setUp(): void

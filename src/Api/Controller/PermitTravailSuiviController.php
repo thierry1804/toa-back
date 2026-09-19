@@ -53,7 +53,7 @@ class PermitTravailSuiviController extends AbstractController
                     'codeSite'     => $l->getCodeSite(),
                     'typePermis'   => $l->getTypePermis()->value,
                     'metadata'     => $l->getMetadata(),
-                    'createdAt'    => $l->getCreatedAt()?->format(\DateTimeInterface::ATOM),
+                    'createdAt'    => $l->getCreatedAt()->format(\DateTimeInterface::ATOM),
                     'declenchePar' => $l->getDeclenchePar() !== null ? [
                         'id'        => $l->getDeclenchePar()->getId(),
                         'email'     => $l->getDeclenchePar()->getEmail(),

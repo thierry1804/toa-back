@@ -13,6 +13,7 @@ use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
 use App\Domain\Role\Entity\RoleAction;
 use App\Domain\User\Entity\User;
 use App\Security\Voter\PermitTravailVoter;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -22,8 +23,8 @@ use Symfony\Component\Uid\Uuid;
 
 class PermitTravailVoterTest extends TestCase
 {
-    private PermissionChecker $permissionChecker;
-    private PvReceptionPdfRepository $pvRepository;
+    private PermissionChecker&MockObject $permissionChecker;
+    private PvReceptionPdfRepository&MockObject $pvRepository;
     private PermitTravailVoter $voter;
 
     protected function setUp(): void

@@ -18,7 +18,6 @@ class LoginAttemptManager
 {
     private const PREFIX        = 'toa:login:';
     private const WARN_AT       = 4;    // warn on the 4th failure
-    private const BLOCK_AT      = 5;    // block on the 5th failure
     private const TIER1_TTL     = 900;  // 15 min in seconds
     private const TIER2_TTL     = 1800; // 30 min in seconds
     private const ESCALATED_TTL = 2700; // 45 min — must outlast the tier-1 block

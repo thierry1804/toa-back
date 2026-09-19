@@ -36,6 +36,7 @@ class UserMenuProvider implements ProviderInterface
             ->getQuery()
             ->getResult();
 
+        /** @var array<int, array{canView: bool, canCreate: bool, canEdit: bool, canDelete: bool}> $permissions */
         $permissions = [];
         foreach ($accessRules as $rule) {
             $menuId = $rule->getMenu()->getId();

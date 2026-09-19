@@ -72,7 +72,7 @@ final class SuiviJournalierDocumentUploadProcessor implements ProcessorInterface
         $document = new SuiviJournalierDocument();
         $document->setSuiviJournalier($suivi);
         $document->setFilePath($filePath);
-        $document->setMimeType($file->getMimeType() ?? '');
+        $document->setMimeType($file->getMimeType());
         $document->setNom($originalName);
         $document->setUploadedAt(new \DateTimeImmutable());
         $document->setCapturedAt(UploadRules::capturedAt($request));

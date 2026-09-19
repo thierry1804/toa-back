@@ -6,6 +6,7 @@ namespace App\Domain\Role\Command;
 
 use App\Domain\Role\Entity\ActionKey;
 use App\Domain\Role\Entity\RoleAction;
+use App\Domain\Role\Repository\ActionKeyRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -463,6 +464,7 @@ class SeedRoleActionCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        /** @var ActionKeyRepository $akRepo */
         $akRepo = $this->entityManager->getRepository(ActionKey::class);
         $raRepo = $this->entityManager->getRepository(RoleAction::class);
 

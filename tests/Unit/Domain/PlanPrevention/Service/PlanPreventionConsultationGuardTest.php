@@ -85,17 +85,17 @@ class PlanPreventionConsultationGuardTest extends TestCase
 
     public function testApnApiSitesAreResolvedLazily(): void
     {
-        $calls = 0;
-        $plan = (new PlanPrevention())->setSitesApnApiLoader(static function () use (&$calls): array {
-            ++$calls;
+        $calls = new \ArrayObject(['n' => 0]);
+        $plan = (new PlanPrevention())->setSitesApnApiLoader(static function () use ($calls): array {
+            ++$calls['n'];
 
             return [['codeSite' => 'ANK-001', 'nomSite' => 'Ankazobe', 'apn' => true, 'api' => false]];
         });
 
-        $this->assertSame(0, $calls);
+        $this->assertSame(0, $calls['n']);
         $this->assertTrue($plan->getHasApnApiSite());
         $plan->getSitesApnApi();
-        $this->assertSame(1, $calls);
+        $this->assertSame(1, $calls['n']);
     }
 
     private function document(TypeDocumentPrevention $type, bool $nonApplicable = false): DocumentPrevention

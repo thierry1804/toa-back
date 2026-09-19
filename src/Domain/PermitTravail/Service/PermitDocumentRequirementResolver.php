@@ -166,7 +166,7 @@ final class PermitDocumentRequirementResolver
     public function getRequiredDocumentTypes(PermitTravail $permit): array
     {
         $isRenouvellement = $permit->getProcessus() === ProcessusPermitTravail::RENOUVELLEMENT ? 1 : 0;
-        $required = self::MATRIX[$this->bucket($permit)][$permit->getType()?->value ?? ''][$isRenouvellement] ?? [];
+        $required = self::MATRIX[$this->bucket($permit)][$permit->getType()->value ?? ''][$isRenouvellement] ?? [];
 
         if ($permit->getType() === TypePermitTravail::GENERAL && $this->isApnApiSite($permit)) {
             $required = array_merge($required, self::ENV_SOUMISSION_MATRIX[$this->bucket($permit)]);

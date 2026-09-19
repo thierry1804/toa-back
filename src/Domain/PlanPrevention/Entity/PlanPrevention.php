@@ -239,11 +239,11 @@ class PlanPrevention
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
     #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
-    private array $installations = [];
+    private ?array $installations = [];
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
     #[Groups(['plan_prevention:read', 'plan_prevention:write'])]
-    private array $equipements = [];
+    private ?array $equipements = [];
 
     #[ORM\Column(nullable: true)]
     #[Groups(['plan_prevention:read', 'plan_prevention:write'])]

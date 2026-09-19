@@ -62,6 +62,7 @@ final class GeneratePermitTravailPdfHandler
             $permit->getDecisionsHse()->toArray();
 
             $typePermis = $permit->getType() ?? TypePermitTravail::GENERAL;
+            // @phpstan-ignore nullCoalesce.offset (repli défensif si un nouveau type de permis est ajouté sans template)
             $template   = self::TEMPLATE_MAP[$typePermis->value] ?? self::TEMPLATE_MAP[TypePermitTravail::GENERAL->value];
 
             $now = new \DateTimeImmutable();

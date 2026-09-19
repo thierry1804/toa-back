@@ -20,6 +20,7 @@ use App\Domain\Role\Entity\RoleAction;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -29,11 +30,11 @@ use Symfony\Component\Uid\Uuid;
 
 class PermitTravailDeleteProcessorTest extends TestCase
 {
-    private EntityManagerInterface $entityManager;
-    private PermitTravailGroupeRepository $groupeRepository;
-    private PermissionChecker $permissionChecker;
-    private TokenStorageInterface $tokenStorage;
-    private FilesystemOperator $storage;
+    private EntityManagerInterface&MockObject $entityManager;
+    private PermitTravailGroupeRepository&MockObject $groupeRepository;
+    private PermissionChecker&MockObject $permissionChecker;
+    private TokenStorageInterface&MockObject $tokenStorage;
+    private FilesystemOperator&MockObject $storage;
     private PermitTravailDeleteProcessor $processor;
 
     protected function setUp(): void

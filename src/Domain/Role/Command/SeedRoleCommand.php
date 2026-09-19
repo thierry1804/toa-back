@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Role\Command;
 
 use App\Domain\Role\Entity\Role;
+use App\Domain\Role\Repository\RoleRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -37,6 +38,7 @@ class SeedRoleCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
+        /** @var RoleRepository $repo */
         $repo = $this->entityManager->getRepository(Role::class);
 
         $created = 0;

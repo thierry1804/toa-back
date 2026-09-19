@@ -11,7 +11,6 @@ use App\Domain\PlanPrevention\Entity\SitePrevention;
 use App\Domain\Referentiel\Service\KmzFlagParser;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -28,8 +27,6 @@ final class KmzImportProcessor implements ProcessorInterface
     ];
 
     public function __construct(
-        #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
-        private readonly ProcessorInterface $persistProcessor,
         private readonly EntityManagerInterface $entityManager,
         private readonly RequestStack $requestStack,
         private readonly LoggerInterface $logger,
@@ -158,7 +155,7 @@ final class KmzImportProcessor implements ProcessorInterface
     }
 
     /**
-     * @return array{placemarks: array<int, array{name: string, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, ordreAffichage: int}>, nbIgnores: int}
+     * @return array{placemarks: array<int, array{name: string, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, ordreAffichage: int, fokontany: string|null, commune: string|null, district: string|null, apn: bool|null, api: bool|null}>, nbIgnores: int}
      */
     private function parseKmz(string $path): array
     {
@@ -185,7 +182,7 @@ final class KmzImportProcessor implements ProcessorInterface
     }
 
     /**
-     * @return array{placemarks: array<int, array{name: string, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, ordreAffichage: int, fokontany: string|null, commune: string|null, district: string|null}>, nbIgnores: int}
+     * @return array{placemarks: array<int, array{name: string, latitude: float, longitude: float, altitude: float|null, description: string|null, couleurMarqueur: string|null, ordreAffichage: int, fokontany: string|null, commune: string|null, district: string|null, apn: bool|null, api: bool|null}>, nbIgnores: int}
      */
     private function parsePlacemarks(string $kmlContent): array
     {
