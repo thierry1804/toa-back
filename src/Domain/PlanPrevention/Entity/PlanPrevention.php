@@ -187,18 +187,6 @@ class PlanPrevention
     #[Groups(['plan_prevention:read'])]
     private Collection $risques;
 
-    /** R-04 : sections/modes opératoires saisis par le prestataire — voir SectionPrevention. */
-    #[ORM\OneToMany(
-        targetEntity: SectionPrevention::class,
-        mappedBy: 'planPrevention',
-        cascade: ['persist', 'remove'],
-        orphanRemoval: true,
-        fetch: 'EXTRA_LAZY',
-    )]
-    #[ORM\OrderBy(['ordre' => 'ASC'])]
-    #[Groups(['plan_prevention:read'])]
-    private Collection $sections;
-
     #[ORM\OneToMany(
         targetEntity: DocumentPrevention::class,
         mappedBy: 'planPrevention',
@@ -307,7 +295,6 @@ class PlanPrevention
     {
         $this->sections      = new ArrayCollection();
         $this->risques       = new ArrayCollection();
-        $this->sections      = new ArrayCollection();
         $this->documents     = new ArrayCollection();
         $this->sites         = new ArrayCollection();
         $this->examens       = new ArrayCollection();
@@ -460,21 +447,6 @@ class PlanPrevention
         if (!$this->risques->contains($risque)) {
             $this->risques->add($risque);
             $risque->setPlanPrevention($this);
-        }
-
-        return $this;
-    }
-
-    public function getSections(): Collection
-    {
-        return $this->sections;
-    }
-
-    public function addSection(SectionPrevention $section): static
-    {
-        if (!$this->sections->contains($section)) {
-            $this->sections->add($section);
-            $section->setPlanPrevention($this);
         }
 
         return $this;
