@@ -151,6 +151,10 @@ class ActivityPlanning
         orphanRemoval: true
     )]
     #[ORM\OrderBy(['ordre' => 'ASC'])]
+    /**
+     * R-04 : saisie déplacée vers PlanPrevention::$sections (prestataire).
+     * Lecture seule ici — conservé pour l'historique des planifications déjà saisies.
+     */
     #[Groups(['activity_planning:read'])]
     private Collection $sections;
 

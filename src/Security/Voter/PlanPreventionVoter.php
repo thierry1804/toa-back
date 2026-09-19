@@ -18,6 +18,8 @@ class PlanPreventionVoter extends Voter
     public const VIEW        = 'PLAN_PREVENTION_VIEW';
     public const CREATE      = 'PLAN_PREVENTION_CREATE';
     public const EDIT        = 'PLAN_PREVENTION_EDIT';
+    /** R-04 : sections/modes opératoires — prestataire créateur uniquement, sans bypass HSE/CHEF_PROJET. */
+    public const EDIT_OPERATOIRE = 'PLAN_PREVENTION_EDIT_OPERATOIRE';
     public const SUBMIT      = 'PLAN_PREVENTION_SUBMIT';
     public const EXAMINE     = 'PLAN_PREVENTION_EXAMINE';
     public const VALIDER_HSE = 'PLAN_PREVENTION_VALIDER_HSE';
@@ -31,6 +33,7 @@ class PlanPreventionVoter extends Voter
         self::VIEW        => 'VIEW',
         self::CREATE      => 'CREATE',
         self::EDIT        => 'EDIT',
+        self::EDIT_OPERATOIRE => 'EDIT',
         self::SUBMIT      => 'CREATE',
         self::RESOUMETTRE => 'CREATE',
         self::IMPORT_KMZ  => 'CREATE',
@@ -44,7 +47,7 @@ class PlanPreventionVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE, self::IMPORT_KMZ, self::GENERATE_PDF], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::EDIT_OPERATOIRE, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE, self::IMPORT_KMZ, self::GENERATE_PDF], true)) {
             return false;
         }
 
@@ -64,7 +67,7 @@ class PlanPreventionVoter extends Voter
         // EDIT (risques, documents, plan content) is accessible to any role that can CREATE or EDIT.
         // can_create covers PRESTATAIRE acting on their own plan; ownership checks below enforce scope.
         // All other actions require the exact mapped menu permission.
-        if ($attribute === self::EDIT) {
+        if ($attribute === self::EDIT || $attribute === self::EDIT_OPERATOIRE) {
             $canCreate = $this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'CREATE');
             $canEdit   = $this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'EDIT');
             if (!$canCreate && !$canEdit) {
@@ -87,6 +90,13 @@ class PlanPreventionVoter extends Voter
         if ($attribute === self::EDIT && $subject instanceof PlanPrevention) {
             $this->checkBrouillonStatut($subject);
             $this->checkOwnershipForPrestataire($subject, $roles, $user);
+        }
+
+        // ── EDIT_OPERATOIRE (sections/modes opératoires, R-04) ──────────────────
+        // Prestataire créateur uniquement — pas de bypass HSE/CHEF_PROJET/menu EDIT.
+        if ($attribute === self::EDIT_OPERATOIRE && $subject instanceof PlanPrevention) {
+            $this->checkBrouillonStatut($subject);
+            $this->checkOwnershipForCreatedBy($subject, $user);
         }
 
         // ── SUBMIT ────────────────────────────────────────────────────────────
