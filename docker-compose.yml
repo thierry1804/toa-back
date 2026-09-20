@@ -108,7 +108,7 @@ services:
         image: nginx:alpine
         container_name: toa_nginx
         ports:
-            - "8080:80"
+            - "127.0.0.1:8080:80"
             - "80:80"
             - "443:443"
         volumes:
@@ -153,7 +153,7 @@ services:
             ADMINER_DEFAULT_SERVER: postgres
             ADMINER_DEFAULT_DRIVER: pgsql
         ports:
-            - "8081:8080"
+            - "127.0.0.1:8081:8080"
         depends_on:
             - postgres
         networks:
@@ -167,7 +167,7 @@ services:
             MERCURE_PUBLISHER_JWT_KEY: mercure_secret
             MERCURE_SUBSCRIBER_JWT_KEY: mercure_secret
         ports:
-            - "3001:3001"
+            - "127.0.0.1:3001:3001"
         networks:
             - toa_net
 
@@ -176,7 +176,7 @@ services:
         container_name: toa_gotenberg
         command: gotenberg --chromium-disable-javascript=false
         ports:
-            - "3002:3000"
+            - "127.0.0.1:3002:3000"
         networks:
             - toa_net
 
@@ -185,8 +185,8 @@ services:
         container_name: toa_minio
         command: server /data --console-address ":9001"
         ports:
-            - "9000:9000"
-            - "9001:9001"
+            - "127.0.0.1:9000:9000"
+            - "127.0.0.1:9001:9001"
         volumes:
             - miniodata:/data
         networks:
