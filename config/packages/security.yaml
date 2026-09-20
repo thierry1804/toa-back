@@ -68,7 +68,6 @@ security:
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
         - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
-        - { path: ^/api/system/mail-test, roles: PUBLIC_ACCESS }
         - { path: ^/api/health$, roles: PUBLIC_ACCESS }
         - { path: ^/api/?$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

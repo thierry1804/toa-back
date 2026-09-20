@@ -79,6 +79,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[Groups(['user:write'])]
     #[Assert\NotBlank(message: 'password_required', groups: ['user:create'])]
+    #[Assert\Length(min: 8, max: 128, minMessage: 'password_too_short', maxMessage: 'password_too_long')]
     private ?string $plainPassword = null;
 
     #[ORM\Column(type: 'json')]
