@@ -12,16 +12,17 @@ services:
         environment:
             APP_ENV: prod
             APP_DEBUG: "0"
-            DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
+            APP_SECRET: ${TOA_APP_SECRET:?voir .env.docker.example}
+            DATABASE_URL: postgresql://toa_user:${TOA_DB_PASSWORD:?voir .env.docker.example}@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
             JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
-            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
+            JWT_PASSPHRASE: ${TOA_JWT_PASSPHRASE:?voir .env.docker.example}
             MERCURE_URL: http://mercure:3001/.well-known/mercure
-            MERCURE_JWT_SECRET: mercure_secret
+            MERCURE_JWT_SECRET: ${TOA_MERCURE_SECRET:?voir .env.docker.example}
             MINIO_ENDPOINT: http://minio:9000
-            MINIO_KEY: minioadmin
-            MINIO_SECRET: minioadmin
+            MINIO_KEY: ${TOA_MINIO_ROOT_USER:?voir .env.docker.example}
+            MINIO_SECRET: ${TOA_MINIO_ROOT_PASSWORD:?voir .env.docker.example}
             MINIO_BUCKET: toa
         healthcheck:
             test: ["CMD", "php-fpm", "-t"]
@@ -42,16 +43,17 @@ services:
         environment:
             APP_ENV: prod
             APP_DEBUG: "0"
-            DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
+            APP_SECRET: ${TOA_APP_SECRET:?voir .env.docker.example}
+            DATABASE_URL: postgresql://toa_user:${TOA_DB_PASSWORD:?voir .env.docker.example}@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
             JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
-            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
+            JWT_PASSPHRASE: ${TOA_JWT_PASSPHRASE:?voir .env.docker.example}
             MERCURE_URL: http://mercure:3001/.well-known/mercure
-            MERCURE_JWT_SECRET: mercure_secret
+            MERCURE_JWT_SECRET: ${TOA_MERCURE_SECRET:?voir .env.docker.example}
             MINIO_ENDPOINT: http://minio:9000
-            MINIO_KEY: minioadmin
-            MINIO_SECRET: minioadmin
+            MINIO_KEY: ${TOA_MINIO_ROOT_USER:?voir .env.docker.example}
+            MINIO_SECRET: ${TOA_MINIO_ROOT_PASSWORD:?voir .env.docker.example}
             MINIO_BUCKET: toa
 
     worker_pdf:
@@ -67,16 +69,17 @@ services:
         environment:
             APP_ENV: prod
             APP_DEBUG: "0"
-            DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
+            APP_SECRET: ${TOA_APP_SECRET:?voir .env.docker.example}
+            DATABASE_URL: postgresql://toa_user:${TOA_DB_PASSWORD:?voir .env.docker.example}@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
             JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
-            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
+            JWT_PASSPHRASE: ${TOA_JWT_PASSPHRASE:?voir .env.docker.example}
             MERCURE_URL: http://mercure:3001/.well-known/mercure
-            MERCURE_JWT_SECRET: mercure_secret
+            MERCURE_JWT_SECRET: ${TOA_MERCURE_SECRET:?voir .env.docker.example}
             MINIO_ENDPOINT: http://minio:9000
-            MINIO_KEY: minioadmin
-            MINIO_SECRET: minioadmin
+            MINIO_KEY: ${TOA_MINIO_ROOT_USER:?voir .env.docker.example}
+            MINIO_SECRET: ${TOA_MINIO_ROOT_PASSWORD:?voir .env.docker.example}
             MINIO_BUCKET: toa
 
     scheduler:
@@ -92,16 +95,17 @@ services:
         environment:
             APP_ENV: prod
             APP_DEBUG: "0"
-            DATABASE_URL: postgresql://toa_user:mypasswordtoa@postgres:5432/toa_db?serverVersion=16&charset=utf8
+            APP_SECRET: ${TOA_APP_SECRET:?voir .env.docker.example}
+            DATABASE_URL: postgresql://toa_user:${TOA_DB_PASSWORD:?voir .env.docker.example}@postgres:5432/toa_db?serverVersion=16&charset=utf8
             REDIS_URL: redis://redis:6379
             JWT_SECRET_KEY: "%kernel.project_dir%/config/jwt/private.pem"
             JWT_PUBLIC_KEY: "%kernel.project_dir%/config/jwt/public.pem"
-            JWT_PASSPHRASE: aa0c378fe79f45e97fbe8dcb38cb5a663758d6bd733d0c66ca1b975cf86af284
+            JWT_PASSPHRASE: ${TOA_JWT_PASSPHRASE:?voir .env.docker.example}
             MERCURE_URL: http://mercure:3001/.well-known/mercure
-            MERCURE_JWT_SECRET: mercure_secret
+            MERCURE_JWT_SECRET: ${TOA_MERCURE_SECRET:?voir .env.docker.example}
             MINIO_ENDPOINT: http://minio:9000
-            MINIO_KEY: minioadmin
-            MINIO_SECRET: minioadmin
+            MINIO_KEY: ${TOA_MINIO_ROOT_USER:?voir .env.docker.example}
+            MINIO_SECRET: ${TOA_MINIO_ROOT_PASSWORD:?voir .env.docker.example}
             MINIO_BUCKET: toa
 
     nginx:
@@ -128,7 +132,7 @@ services:
         environment:
             POSTGRES_DB: toa_db
             POSTGRES_USER: toa_user
-            POSTGRES_PASSWORD: mypasswordtoa
+            POSTGRES_PASSWORD: ${TOA_DB_PASSWORD:?voir .env.docker.example}
         volumes:
             - pgdata:/var/lib/postgresql/data
         networks:
@@ -164,8 +168,8 @@ services:
         container_name: toa_mercure
         environment:
             SERVER_NAME: ":3001"
-            MERCURE_PUBLISHER_JWT_KEY: mercure_secret
-            MERCURE_SUBSCRIBER_JWT_KEY: mercure_secret
+            MERCURE_PUBLISHER_JWT_KEY: ${TOA_MERCURE_SECRET:?voir .env.docker.example}
+            MERCURE_SUBSCRIBER_JWT_KEY: ${TOA_MERCURE_SECRET:?voir .env.docker.example}
         ports:
             - "127.0.0.1:3001:3001"
         networks:
@@ -184,6 +188,9 @@ services:
         image: minio/minio
         container_name: toa_minio
         command: server /data --console-address ":9001"
+        environment:
+            MINIO_ROOT_USER: ${TOA_MINIO_ROOT_USER:?voir .env.docker.example}
+            MINIO_ROOT_PASSWORD: ${TOA_MINIO_ROOT_PASSWORD:?voir .env.docker.example}
         ports:
             - "127.0.0.1:9000:9000"
             - "127.0.0.1:9001:9001"
