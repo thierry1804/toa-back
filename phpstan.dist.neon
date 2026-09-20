@@ -9,6 +9,9 @@ parameters:
         - public/
         - src/
         - tests/
+    excludePaths:
+        # Fichier de référence généré par Symfony (aide IDE), non exécuté.
+        - config/reference.php
     ignoreErrors:
         # Niveau 6 : typage générique/iterable en PHPDoc (Collection<int, X>, array<string, mixed>…)
         # non renseigné dans le code existant ; à résorber progressivement, pas bloquant.
