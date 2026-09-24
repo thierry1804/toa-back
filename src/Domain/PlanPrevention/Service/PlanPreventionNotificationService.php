@@ -161,28 +161,13 @@ class PlanPreventionNotificationService
     }
 
     /**
-     * L'équipe HSE notifiée est celle de TOA (entreprises marquées `interne`).
-     * Repli sur les HSE de l'entreprise du créateur si aucune entreprise interne n'a de HSE.
+     * Tous les utilisateurs ROLE_HSE sont notifiés, sans filtre par entreprise.
      *
      * @return User[]
      */
     private function findHseTeamFor(PlanPrevention $plan): array
     {
-        $hseUsers = $this->userRepository->findByRoleInInternalEntreprises('ROLE_HSE');
-        if ($hseUsers !== []) {
-            return $hseUsers;
-        }
-
-        $this->logger->warning('[PlanPrevention] Aucun ROLE_HSE dans une entreprise `interne` : repli sur l\'entreprise du créateur. Vérifier le flag entreprise.interne.', [
-            'plan_reference' => $plan->getReference(),
-        ]);
-
-        $entrepriseId = $plan->getCreatedBy()?->getEntreprise()?->getId();
-        if ($entrepriseId === null) {
-            return [];
-        }
-
-        return $this->userRepository->findByRoleAndEntreprise('ROLE_HSE', $entrepriseId);
+        return $this->userRepository->findByRole('ROLE_HSE');
     }
 
     /** Notify the prestataire when their plan is refused */
