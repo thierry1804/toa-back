@@ -2,6 +2,7 @@ services:
     php:
         build: ./docker/php
         container_name: toa_php
+        restart: unless-stopped
         volumes:
             - .:/var/www/toa-api
         networks:
@@ -111,6 +112,7 @@ services:
     nginx:
         image: nginx:alpine
         container_name: toa_nginx
+        restart: unless-stopped
         ports:
             - "127.0.0.1:8080:80"
             - "80:80"
@@ -129,6 +131,7 @@ services:
     postgres:
         image: postgres:16-alpine
         container_name: toa_postgres
+        restart: unless-stopped
         environment:
             POSTGRES_DB: toa_db
             POSTGRES_USER: toa_user
@@ -146,6 +149,7 @@ services:
     redis:
         image: redis:7-alpine
         container_name: toa_redis
+        restart: unless-stopped
         command: redis-server --appendonly yes
         networks:
             - toa_net
@@ -153,6 +157,7 @@ services:
     adminer:
         image: adminer:latest
         container_name: toa_adminer
+        restart: unless-stopped
         environment:
             ADMINER_DEFAULT_SERVER: postgres
             ADMINER_DEFAULT_DRIVER: pgsql
@@ -166,6 +171,7 @@ services:
     mercure:
         image: dunglas/mercure
         container_name: toa_mercure
+        restart: unless-stopped
         environment:
             SERVER_NAME: ":3001"
             MERCURE_PUBLISHER_JWT_KEY: ${TOA_MERCURE_SECRET:?voir .env.docker.example}
@@ -178,6 +184,7 @@ services:
     gotenberg:
         image: gotenberg/gotenberg:8
         container_name: toa_gotenberg
+        restart: unless-stopped
         command: gotenberg --chromium-disable-javascript=false
         ports:
             - "127.0.0.1:3002:3000"
@@ -187,6 +194,7 @@ services:
     minio:
         image: minio/minio
         container_name: toa_minio
+        restart: unless-stopped
         command: server /data --console-address ":9001"
         environment:
             MINIO_ROOT_USER: ${TOA_MINIO_ROOT_USER:?voir .env.docker.example}
