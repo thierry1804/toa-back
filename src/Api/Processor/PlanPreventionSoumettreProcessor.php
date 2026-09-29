@@ -6,11 +6,13 @@ namespace App\Api\Processor;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
+use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -38,6 +40,17 @@ final class PlanPreventionSoumettreProcessor implements ProcessorInterface
         }
 
         $this->submissionValidator->assertSubmittable($plan);
+
+        // Filet de sécurité pour les plans créés avant que la création n'affecte
+        // automatiquement le chef de projet de la planification (ou dont le lien
+        // vers la planification a été renseigné après coup) : sans ce repli, la
+        // notification de soumission ne partirait à personne.
+        if ($plan->getChefProjet() === null && $plan->getPlanificationId() !== null) {
+            $planification = $this->entityManager->find(ActivityPlanning::class, $plan->getPlanificationId());
+            if ($planification?->getCreatedBy() instanceof User) {
+                $plan->setChefProjet($planification->getCreatedBy());
+            }
+        }
 
         $plan->setStatut(StatutPlanPrevention::SOUMIS);
         $plan->setSoumisAt(new \DateTimeImmutable());
