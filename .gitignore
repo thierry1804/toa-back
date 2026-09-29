@@ -22,3 +22,4 @@ phpstan.neon
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+/docker/adminer.htpasswd
