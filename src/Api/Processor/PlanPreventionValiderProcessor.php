@@ -12,6 +12,7 @@ use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
 use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
+use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -36,6 +37,7 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
         private readonly TokenStorageInterface $tokenStorage,
         private readonly PlanPreventionSubmissionValidator $submissionValidator,
         private readonly PlanPreventionConsultationGuard $consultationGuard,
+        private readonly PlanPreventionNotificationService $notificationService,
     ) {
     }
 
@@ -87,6 +89,10 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
         $plan->setStatut(StatutPlanPrevention::VALIDE_HSE);
         $plan->setValidatedAt($now);
 
-        return $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
+        $result = $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
+
+        $this->notificationService->notifierValidation($plan);
+
+        return $result;
     }
 }

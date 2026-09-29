@@ -170,6 +170,46 @@ class PlanPreventionNotificationService
         return $this->userRepository->findByRole('ROLE_HSE');
     }
 
+    /** Notify the prestataire when their plan is validated by the HSE team */
+    public function notifierValidation(PlanPrevention $plan): void
+    {
+        $prestataire = $plan->getCreatedBy();
+
+        if (!$prestataire instanceof User) {
+            $this->logger->warning('[PlanPrevention] notifierValidation: prestataire introuvable', [
+                'plan_reference' => $plan->getReference(),
+            ]);
+
+            return;
+        }
+
+        try {
+            $email = (new TemplatedEmail())
+                ->from($this->fromAddress)
+                ->to((string) $prestataire->getEmail())
+                ->subject(sprintf('[TOA] Plan de Prévention #%s validé', $plan->getReference()))
+                ->htmlTemplate('email/plan_prevention/valide.html.twig')
+                ->context([
+                    'plan'      => $plan,
+                    'plan_url'  => $this->planUrl($plan),
+                    'recipient' => $prestataire,
+                ]);
+
+            $this->mailer->send($email);
+
+            $this->logger->info('[PlanPrevention] Notification validation envoyée au prestataire', [
+                'plan_reference' => $plan->getReference(),
+                'recipient'      => $prestataire->getEmail(),
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('[PlanPrevention] Échec envoi notification validation prestataire', [
+                'plan_reference' => $plan->getReference(),
+                'recipient'      => $prestataire->getEmail(),
+                'error'          => $e->getMessage(),
+            ]);
+        }
+    }
+
     /** Notify the prestataire when their plan is refused */
     public function notifierPrestataire(PlanPrevention $plan, string $commentaire): void
     {

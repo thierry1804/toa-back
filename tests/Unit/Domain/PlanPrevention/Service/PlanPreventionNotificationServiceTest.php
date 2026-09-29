@@ -105,4 +105,22 @@ class PlanPreventionNotificationServiceTest extends TestCase
 
         $this->service->notifierHse(new PlanPrevention(), 1);
     }
+
+    public function testNotifierValidationSendsConfirmationToPrestataire(): void
+    {
+        $prestataire = (new User())->setEmail('prestataire@acme.mg')->setFirstname('Jean')->setName('Rakoto');
+        $plan = (new PlanPrevention())->setCreatedBy($prestataire);
+        $recipients = $this->captureRecipients();
+
+        $this->service->notifierValidation($plan);
+
+        $this->assertSame(['prestataire@acme.mg'], $recipients->getArrayCopy());
+    }
+
+    public function testNotifierValidationDoesNothingWhenPlanHasNoCreator(): void
+    {
+        $this->mailer->expects($this->never())->method('send');
+
+        $this->service->notifierValidation(new PlanPrevention());
+    }
 }
