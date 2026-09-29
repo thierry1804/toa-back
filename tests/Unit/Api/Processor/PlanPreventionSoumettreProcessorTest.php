@@ -7,8 +7,8 @@ namespace App\Tests\Unit\Api\Processor;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\State\ProcessorInterface;
 use App\Api\Processor\PlanPreventionSoumettreProcessor;
-use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionChefProjetResolver;
 use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
@@ -20,8 +20,8 @@ use PHPUnit\Framework\TestCase;
 class PlanPreventionSoumettreProcessorTest extends TestCase
 {
     private ProcessorInterface&MockObject $persistProcessor;
-    private EntityManagerInterface&MockObject $entityManager;
     private PlanPreventionNotificationService&MockObject $notificationService;
+    private PlanPreventionChefProjetResolver&MockObject $chefProjetResolver;
     private PlanPreventionSoumettreProcessor $processor;
 
     protected function setUp(): void
@@ -29,60 +29,46 @@ class PlanPreventionSoumettreProcessorTest extends TestCase
         $this->persistProcessor = $this->createMock(ProcessorInterface::class);
         $this->persistProcessor->method('process')->willReturnArgument(0);
 
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->notificationService = $this->createMock(PlanPreventionNotificationService::class);
+        $this->chefProjetResolver = $this->createMock(PlanPreventionChefProjetResolver::class);
 
         $this->processor = new PlanPreventionSoumettreProcessor(
             $this->persistProcessor,
-            $this->entityManager,
+            $this->createMock(EntityManagerInterface::class),
             $this->notificationService,
             $this->createMock(PlanPreventionSubmissionValidator::class),
             $this->createMock(PlanPreventionConsultationGuard::class),
+            $this->chefProjetResolver,
         );
     }
 
-    private function planification(User $createdBy): ActivityPlanning
-    {
-        $planification = (new ActivityPlanning())->setCreatedBy($createdBy);
-        $ref = new \ReflectionProperty($planification, 'id');
-        $ref->setAccessible(true);
-        $ref->setValue($planification, 42);
-
-        return $planification;
-    }
-
-    public function testFallsBackToThePlanificationsCreatorWhenChefProjetIsMissing(): void
+    public function testBackfillsTheChefProjetBeforePersistingAndNotifying(): void
     {
         $chefProjet = (new User())->setEmail('chef@toa.mg');
-        $this->entityManager->method('find')->with(ActivityPlanning::class, 42)->willReturn($this->planification($chefProjet));
-
         $plan = (new PlanPrevention())->setPlanificationId(42);
+
+        $this->chefProjetResolver->expects($this->once())
+            ->method('backfill')
+            ->with($plan)
+            ->willReturnCallback(static function (PlanPrevention $p) use ($chefProjet): User {
+                $p->setChefProjet($chefProjet);
+
+                return $chefProjet;
+            });
 
         $this->notificationService->expects($this->once())
             ->method('notifierChefProjet')
             ->with($this->callback(static fn (PlanPrevention $p): bool => $p->getChefProjet() === $chefProjet));
 
         $this->processor->process($plan, new Post());
-
-        $this->assertSame($chefProjet, $plan->getChefProjet());
     }
 
-    public function testDoesNotOverrideAnAlreadyAssignedChefProjet(): void
-    {
-        $assigned = (new User())->setEmail('assigne@toa.mg');
-        $planningCreator = (new User())->setEmail('autre@toa.mg');
-        $this->entityManager->method('find')->with(ActivityPlanning::class, 42)->willReturn($this->planification($planningCreator));
-
-        $plan = (new PlanPrevention())->setPlanificationId(42)->setChefProjet($assigned);
-
-        $this->processor->process($plan, new Post());
-
-        $this->assertSame($assigned, $plan->getChefProjet());
-    }
-
-    public function testLeavesChefProjetNullWhenThereIsNoLinkedPlanificationEither(): void
+    public function testStillNotifiesEvenWhenTheChefProjetCannotBeResolved(): void
     {
         $plan = new PlanPrevention();
+
+        $this->chefProjetResolver->expects($this->once())->method('backfill')->with($plan)->willReturn(null);
+        $this->notificationService->expects($this->once())->method('notifierChefProjet')->with($plan);
 
         $this->processor->process($plan, new Post());
 

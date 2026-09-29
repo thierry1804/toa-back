@@ -14,6 +14,8 @@ use App\Domain\PermitTravail\Message\GeneratePvReceptionMessage;
 use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
+use App\Domain\PlanPrevention\Entity\PlanPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionChefProjetResolver;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -39,6 +41,7 @@ class ClotureManuelleProcessor extends AbstractController
         private readonly MessageBusInterface $messageBus,
         private readonly PermitDocumentRequirementResolver $documentRequirementResolver,
         private readonly PermitTravailNotificationService $notificationService,
+        private readonly PlanPreventionChefProjetResolver $chefProjetResolver,
     ) {}
 
     public function __invoke(string $permitId, Request $request): JsonResponse
@@ -84,6 +87,14 @@ class ClotureManuelleProcessor extends AbstractController
         $permit->setStatut(StatutPermitTravail::CLOTURE);
 
         $this->entityManager->persist($cloture);
+
+        // Filet de sécurité : si le plan lié n'a pas de chef de projet assigné (plans créés
+        // avant l'affectation automatique depuis la planification), on le résout ici pour
+        // que la notification de clôture ne parte pas dans le vide.
+        $plan = $permit->getPlanPrevention();
+        if ($plan instanceof PlanPrevention) {
+            $this->chefProjetResolver->backfill($plan);
+        }
 
         $existing = $this->pvRepository->findByPermitTravailId($permitId);
         if ($existing !== null) {
