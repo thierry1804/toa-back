@@ -21,6 +21,12 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 
 final class PlanPreventionRefuserProcessor implements ProcessorInterface
 {
+    private const STATUTS_REFUSABLES = [
+        StatutPlanPrevention::SOUMIS,
+        StatutPlanPrevention::EN_COURS_DE_VALIDATION,
+        StatutPlanPrevention::EXAMINE,
+    ];
+
     public function __construct(
         #[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]
         private readonly ProcessorInterface $persistProcessor,
@@ -42,8 +48,8 @@ final class PlanPreventionRefuserProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('plan_prevention.not_found');
         }
 
-        if ($plan->getStatut() !== StatutPlanPrevention::EXAMINE) {
-            throw new UnprocessableEntityHttpException('Plan non examiné');
+        if (!in_array($plan->getStatut(), self::STATUTS_REFUSABLES, true)) {
+            throw new UnprocessableEntityHttpException('plan_prevention.statut_invalide_pour_refus');
         }
 
         $commentaire = $this->extractCommentaire();
@@ -72,7 +78,7 @@ final class PlanPreventionRefuserProcessor implements ProcessorInterface
 
         $this->entityManager->persist($decision);
 
-        $plan->setStatut(StatutPlanPrevention::BROUILLON);
+        $plan->setStatut(StatutPlanPrevention::A_CORRIGER);
 
         $result = $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
 

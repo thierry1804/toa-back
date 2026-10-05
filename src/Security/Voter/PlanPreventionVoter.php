@@ -22,6 +22,7 @@ class PlanPreventionVoter extends Voter
     public const EXAMINE     = 'PLAN_PREVENTION_EXAMINE';
     public const VALIDER_HSE = 'PLAN_PREVENTION_VALIDER_HSE';
     public const REFUSER_HSE = 'PLAN_PREVENTION_REFUSER_HSE';
+    public const REFUSER     = 'PLAN_PREVENTION_REFUSER';
     public const RESOUMETTRE  = 'PLAN_PREVENTION_RESOUMETTRE';
     public const IMPORT_KMZ   = 'PLAN_PREVENTION_IMPORT_KMZ';
     public const GENERATE_PDF = 'PLAN_PREVENTION_GENERATE_PDF';
@@ -37,6 +38,7 @@ class PlanPreventionVoter extends Voter
         self::EXAMINE     => 'EDIT',
         self::VALIDER_HSE => 'EDIT',
         self::REFUSER_HSE => 'EDIT',
+        self::REFUSER     => 'EDIT',
         self::GENERATE_PDF => 'EDIT',
     ];
 
@@ -44,7 +46,7 @@ class PlanPreventionVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::RESOUMETTRE, self::IMPORT_KMZ, self::GENERATE_PDF], true)) {
+        if (!in_array($attribute, [self::VIEW, self::CREATE, self::EDIT, self::SUBMIT, self::EXAMINE, self::VALIDER_HSE, self::REFUSER_HSE, self::REFUSER, self::RESOUMETTRE, self::IMPORT_KMZ, self::GENERATE_PDF], true)) {
             return false;
         }
 
@@ -141,6 +143,14 @@ class PlanPreventionVoter extends Voter
             }
         }
 
+        // ── REFUSER (Chef sur soumis / HSE sur examiné) ───────────────────────
+        if ($attribute === self::REFUSER) {
+            if (!$subject instanceof PlanPrevention) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+            $this->checkStatutForRefuser($subject, $roles, $user);
+        }
+
         // ── VALIDER_HSE / REFUSER_HSE ─────────────────────────────────────────
         if ($attribute === self::VALIDER_HSE || $attribute === self::REFUSER_HSE) {
             if (!$subject instanceof PlanPrevention) {
@@ -234,7 +244,12 @@ class PlanPreventionVoter extends Voter
 
     private function checkBrouillonStatut(PlanPrevention $plan): void
     {
-        if ($plan->getStatut() !== StatutPlanPrevention::BROUILLON) {
+        $ok = in_array($plan->getStatut(), [
+            StatutPlanPrevention::BROUILLON,
+            StatutPlanPrevention::A_CORRIGER,
+        ], true);
+
+        if (!$ok) {
             throw new AccessDeniedException('plan_prevention.statut_not_brouillon');
         }
     }
@@ -246,6 +261,40 @@ class PlanPreventionVoter extends Voter
         if (!in_array($plan->getStatut(), $statuts, true)) {
             throw new AccessDeniedException('plan_prevention.statut_invalide_pour_examen');
         }
+    }
+
+    private function checkStatutForRefuser(PlanPrevention $plan, array $roles, User $user): void
+    {
+        $statut = $plan->getStatut();
+        $examinable = in_array($statut, [
+            StatutPlanPrevention::SOUMIS,
+            StatutPlanPrevention::EN_COURS_DE_VALIDATION,
+        ], true);
+
+        if ($examinable) {
+            // Chef assigné (même logique que EXAMINE) ; ADMIN/SUPER_ADMIN bypass via DELETE
+            if (!$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'DELETE')) {
+                $this->checkOwnershipForChefProjet($plan, $user);
+            }
+
+            return;
+        }
+
+        if ($statut === StatutPlanPrevention::EXAMINE) {
+            // HSE / admin — pas le Chef seul
+            if (
+                in_array('ROLE_CHEF_PROJET', $roles, true)
+                && !in_array('ROLE_HSE', $roles, true)
+                && !in_array('ROLE_ADMIN', $roles, true)
+                && !in_array('ROLE_SUPER_ADMIN', $roles, true)
+            ) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            return;
+        }
+
+        throw new AccessDeniedException('plan_prevention.statut_invalide_pour_refus');
     }
 
     private function checkStatutForHse(PlanPrevention $plan): void

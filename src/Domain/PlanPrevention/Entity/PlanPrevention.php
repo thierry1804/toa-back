@@ -86,7 +86,7 @@ use Symfony\Component\Validator\Constraints as Assert;
             uriTemplate: '/plans-prevention/{id}/refuser',
             read: true,
             deserialize: false,
-            security: "is_granted('PLAN_PREVENTION_REFUSER_HSE', object)",
+            security: "is_granted('PLAN_PREVENTION_REFUSER', object)",
             processor: PlanPreventionRefuserProcessor::class,
             name: 'plan_prevention_refuser',
         ),

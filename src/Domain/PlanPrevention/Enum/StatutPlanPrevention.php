@@ -7,6 +7,7 @@ namespace App\Domain\PlanPrevention\Enum;
 enum StatutPlanPrevention: string
 {
     case BROUILLON              = 'BROUILLON';
+    case A_CORRIGER             = 'A_CORRIGER';
     case SOUMIS                 = 'SOUMIS';
     case VALIDE                 = 'VALIDE';
     case REJETE                 = 'REJETE';

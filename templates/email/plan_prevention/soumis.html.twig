@@ -148,10 +148,12 @@
     <tr>
       <td style="padding:14px 18px;">
         <p style="margin:0;font-size:13px;color:#15803d;line-height:1.5;">
-          <strong>Prochaine étape :</strong> Connectez-vous à la plateforme TOA pour examiner ce plan et le transmettre à l'équipe HSE pour validation.
+          <strong>Prochaine étape :</strong> Ouvrez le plan ci-dessous pour l'examiner et le transmettre à l'équipe HSE.
         </p>
       </td>
     </tr>
   </table>
+
+  {% include 'email/_cta_button.html.twig' with { url: plan_url, label: 'Ouvrir le plan' } %}
 
 {% endblock %}

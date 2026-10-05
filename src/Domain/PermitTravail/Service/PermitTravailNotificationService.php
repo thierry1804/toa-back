@@ -24,28 +24,58 @@ class PermitTravailNotificationService
 
     private function permitUrl(PermitTravail $permit): string
     {
+        if ($this->frontendUrl === '') {
+            return '';
+        }
+
         return rtrim($this->frontendUrl, '/') . '/permits-travail/' . $permit->getId()?->toRfc4122();
     }
 
     private function referenceLink(PermitTravail $permit): string
     {
         $reference = htmlspecialchars((string) $permit->getReference());
-        if ($this->frontendUrl === '') {
+        $url = $this->permitUrl($permit);
+        if ($url === '') {
             return $reference;
         }
 
-        return sprintf('<a href="%s">%s</a>', htmlspecialchars($this->permitUrl($permit)), $reference);
+        return sprintf('<a href="%s">%s</a>', htmlspecialchars($url), $reference);
     }
 
     private function withLink(string $text, PermitTravail $permit): string
     {
-        if ($this->frontendUrl === '') {
+        $url = $this->permitUrl($permit);
+        if ($url === '') {
             return $text;
         }
 
         return $text . "
 
-Accéder au permis : " . $this->permitUrl($permit);
+Accéder au permis : " . $url;
+    }
+
+    private function accessCtaHtml(PermitTravail $permit, string $label = 'Ouvrir le permis'): string
+    {
+        $url = $this->permitUrl($permit);
+        if ($url === '') {
+            return '';
+        }
+
+        $safeUrl = htmlspecialchars($url);
+        $safeLabel = htmlspecialchars($label);
+
+        return sprintf(
+            '<table width="100%%" cellpadding="0" cellspacing="0" role="presentation" style="margin:24px 0 8px;">'
+            . '<tr><td align="center">'
+            . '<a href="%s" style="display:inline-block;background-color:#006633;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:12px 28px;border-radius:8px;">%s</a>'
+            . '</td></tr>'
+            . '<tr><td align="center" style="padding-top:10px;">'
+            . '<p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.4;word-break:break-all;">%s</p>'
+            . '</td></tr></table>',
+            $safeUrl,
+            $safeLabel,
+            $safeUrl,
+        );
     }
 
     public function notifierValidation(PermitTravail $permit): void
@@ -200,14 +230,8 @@ Accéder au permis : " . $this->permitUrl($permit);
             $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getType()?->value),
             htmlspecialchars((string) $permit->getCodeSite()),
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis à valider');
     }
-
-    /**
-     * Notifie le chef de projet TOA (rattaché au plan de prévention du
-     * permis) qu'un permis vient d'être clôturé par le prestataire, avec
-     * les documents de clôture à vérifier.
-     */
     public function notifierClotureChefProjet(PermitTravail $permit): void
     {
         $chefProjet = $permit->getPlanPrevention()?->getChefProjet();
@@ -286,7 +310,7 @@ Accéder au permis : " . $this->permitUrl($permit);
             $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis');
     }
 
     private function buildValidationText(PermitTravail $permit, User $prestataire): string
@@ -330,7 +354,7 @@ Accéder au permis : " . $this->permitUrl($permit);
             $this->referenceLink($permit),
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis validé');
     }
 
     private function buildRefusText(PermitTravail $permit, User $prestataire, string $commentaire): string
@@ -448,7 +472,7 @@ Accéder au permis : " . $this->permitUrl($permit);
             htmlspecialchars((string) $permit->getType()?->value),
             htmlspecialchars((string) $permit->getCodeSite()),
             $numeroVersion,
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis à valider');
     }
 
     public function notifierHseArchivage(PermitTravail $permit, \DateTimeImmutable $dateValidation): void
@@ -538,7 +562,7 @@ Accéder au permis : " . $this->permitUrl($permit);
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars($chefProjetNom),
             htmlspecialchars($dateValidation->format('d/m/Y H:i')),
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis');
     }
 
     public function notifierPrestatairePvRefus(PermitTravail $permit, string $commentaire): void
@@ -624,7 +648,7 @@ Accéder au permis : " . $this->permitUrl($permit);
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
             nl2br(htmlspecialchars($commentaire)),
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis');
     }
 
     public function notifierExpirationProchaine(PermitTravail $permit): void
@@ -711,7 +735,7 @@ Accéder au permis : " . $this->permitUrl($permit);
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
             htmlspecialchars($dateFinPrevue?->format('d/m/Y H:i') ?? '—'),
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis');
     }
 
     private function buildRefusHtml(PermitTravail $permit, User $prestataire, string $commentaire): string
@@ -742,6 +766,6 @@ Accéder au permis : " . $this->permitUrl($permit);
             htmlspecialchars((string) $permit->getCodeSite()),
             htmlspecialchars((string) $permit->getType()?->value),
             nl2br(htmlspecialchars($commentaire)),
-        );
+        ) . $this->accessCtaHtml($permit, 'Ouvrir le permis');
     }
 }

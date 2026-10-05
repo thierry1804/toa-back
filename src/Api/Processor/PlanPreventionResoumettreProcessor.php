@@ -51,7 +51,11 @@ final class PlanPreventionResoumettreProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('plan_prevention.user_not_found');
         }
 
-        if ($plan->getStatut() !== StatutPlanPrevention::BROUILLON) {
+        $statutsOk = [
+            StatutPlanPrevention::BROUILLON,
+            StatutPlanPrevention::A_CORRIGER,
+        ];
+        if (!in_array($plan->getStatut(), $statutsOk, true)) {
             throw new UnprocessableEntityHttpException('plan_prevention.statut_not_brouillon');
         }
 

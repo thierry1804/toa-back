@@ -130,10 +130,12 @@
     <tr>
       <td style="padding:14px 18px;">
         <p style="margin:0;font-size:13px;color:#92400e;line-height:1.5;">
-          <strong>Action requise :</strong> Corrigez votre plan en tenant compte du motif indiqué, puis soumettez-le à nouveau via la plateforme TOA.
+          <strong>Action requise :</strong> Corrigez votre plan en tenant compte du motif indiqué, puis soumettez-le à nouveau.
         </p>
       </td>
     </tr>
   </table>
+
+  {% include 'email/_cta_button.html.twig' with { url: plan_url, label: 'Corriger le plan' } %}
 
 {% endblock %}
