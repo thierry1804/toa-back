@@ -10,6 +10,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\User\Entity\User;
 use App\Domain\User\Repository\UserRepository;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
@@ -103,6 +104,34 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
             $data->setEntreprise($actor->getEntreprise());
             $this->pinDisplayFieldsToActor($data, $actor);
         }
+
+        $this->guardLastActiveHse($data, $actor);
+    }
+
+    /**
+     * A prestataire's only active ROLE_HSE account is the sole bridge able
+     * to submit plans/permits to TOA for validation. Deactivating it would
+     * silently lock the whole team out of that flow, so refuse the PATCH/PUT
+     * when it would leave the entreprise with zero active HSE.
+     */
+    private function guardLastActiveHse(User $data, User $actor): void
+    {
+        if ($data->getIsActive() || !in_array('ROLE_HSE', $data->getRoles(), true)) {
+            return;
+        }
+
+        $entreprise = $actor->getEntreprise();
+        if ($entreprise === null) {
+            return;
+        }
+
+        foreach ($this->userRepository->findByRoleAndEntreprise('ROLE_HSE', $entreprise->getId()) as $hseUser) {
+            if ($hseUser->getId() !== $data->getId() && $hseUser->getIsActive()) {
+                return;
+            }
+        }
+
+        throw new UnprocessableEntityHttpException('user.last_hse_cannot_deactivate');
     }
 
     private function resolveAssignableRole(User $data): string

@@ -13,6 +13,7 @@ use App\Domain\User\Entity\User;
 use App\Domain\User\Repository\UserRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
@@ -43,7 +44,7 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
         $actor->setEntrepriseName('Ma Boite');
-        $actor->setQualiteRepresentant('Gérant');
+        $actor->setQualiteRepresentant('Gerant');
         $this->setActor($actor);
 
         $otherEntreprise = $this->buildEntreprise();
@@ -58,7 +59,7 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
         $this->assertSame($ownEntreprise, $result->getEntreprise());
         $this->assertSame('Ma Boite', $result->getEntrepriseName());
-        $this->assertSame('Gérant', $result->getQualiteRepresentant());
+        $this->assertSame('Gerant', $result->getQualiteRepresentant());
     }
 
     public function testCreateAllowsHseAndAgentTerrainRoles(): void
@@ -165,6 +166,93 @@ class PrestataireUserScopeProcessorTest extends TestCase
 
         $this->assertEqualsCanonicalizing(['ROLE_SUPER_ADMIN', 'ROLE_USER'], $result->getRoles());
         $this->assertSame($entreprise, $result->getEntreprise());
+    }
+
+    public function testDeactivatingLastActiveHseThrows(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        $lastHse = $this->buildPrestataire($ownEntreprise, id: 2);
+        $lastHse->setRoles(['ROLE_HSE']);
+        $lastHse->setIsActive(false);
+
+        $this->userRepository
+            ->method('findByRoleAndEntreprise')
+            ->with('ROLE_HSE', $ownEntreprise->getId())
+            ->willReturn([$lastHse]);
+
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectExceptionMessage('user.last_hse_cannot_deactivate');
+
+        $this->processor->process($lastHse, new Patch(), ['id' => 2]);
+    }
+
+    public function testDeactivatingHseWithAnotherActiveHseDoesNotThrow(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        $target = $this->buildPrestataire($ownEntreprise, id: 2);
+        $target->setRoles(['ROLE_HSE']);
+        $target->setIsActive(false);
+
+        $colleague = $this->buildPrestataire($ownEntreprise, id: 3);
+        $colleague->setRoles(['ROLE_HSE']);
+        $colleague->setIsActive(true);
+
+        $this->userRepository
+            ->method('findByRoleAndEntreprise')
+            ->with('ROLE_HSE', $ownEntreprise->getId())
+            ->willReturn([$target, $colleague]);
+
+        $result = $this->processor->process($target, new Patch(), ['id' => 2]);
+
+        $this->assertFalse($result->getIsActive());
+    }
+
+    public function testDeactivatingHseWithOnlyInactiveColleagueThrows(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        $target = $this->buildPrestataire($ownEntreprise, id: 2);
+        $target->setRoles(['ROLE_HSE']);
+        $target->setIsActive(false);
+
+        $inactiveColleague = $this->buildPrestataire($ownEntreprise, id: 3);
+        $inactiveColleague->setRoles(['ROLE_HSE']);
+        $inactiveColleague->setIsActive(false);
+
+        $this->userRepository
+            ->method('findByRoleAndEntreprise')
+            ->with('ROLE_HSE', $ownEntreprise->getId())
+            ->willReturn([$target, $inactiveColleague]);
+
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectExceptionMessage('user.last_hse_cannot_deactivate');
+
+        $this->processor->process($target, new Patch(), ['id' => 2]);
+    }
+
+    public function testReactivatingHseIsNeverBlocked(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        $target = $this->buildPrestataire($ownEntreprise, id: 2);
+        $target->setRoles(['ROLE_HSE']);
+        $target->setIsActive(true);
+
+        $this->userRepository->expects($this->never())->method('findByRoleAndEntreprise');
+
+        $result = $this->processor->process($target, new Patch(), ['id' => 2]);
+
+        $this->assertTrue($result->getIsActive());
     }
 
     private function buildEntreprise(): Entreprise
