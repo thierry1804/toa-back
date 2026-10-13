@@ -40,8 +40,25 @@ class CurrentUserExtension implements QueryCollectionExtensionInterface
             return;
         }
 
-        // ROLE_PRESTATAIRE sees only their own permits
-        $rootAlias = $queryBuilder->getRootAliases()[0];
+        // Everyone else (ROLE_PRESTATAIRE, and prestataire-side roles such as
+        // ROLE_CHEF_PROJET_PRESTATAIRE / ROLE_AGENT_TERRAIN) sees every permit
+        // created by their own entreprise's team, not just their own permits
+        // — aligned with PermitTravailVoter::hasOwnership() (creator OR same
+        // entreprise as creator). If the user has no entreprise at all
+        // (should not normally happen for these roles), fall back to the
+        // strict per-user scope as a safe default.
+        $rootAlias  = $queryBuilder->getRootAliases()[0];
+        $entreprise = $user->getEntreprise();
+
+        if ($entreprise !== null) {
+            $queryBuilder
+                ->join(sprintf('%s.createdBy', $rootAlias), 'cue_creator')
+                ->andWhere('cue_creator.entreprise = :current_entreprise')
+                ->setParameter('current_entreprise', $entreprise);
+
+            return;
+        }
+
         $queryBuilder
             ->andWhere(sprintf('%s.createdBy = :current_user', $rootAlias))
             ->setParameter('current_user', $user);

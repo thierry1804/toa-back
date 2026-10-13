@@ -28,8 +28,13 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
     /**
      * Rôles qu'un prestataire scoped peut attribuer à un membre de son
      * équipe. Toute autre valeur soumise retombe sur ROLE_PRESTATAIRE.
+     *
+     * Arbitrage client formel (D1, retour client R-02) : ROLE_HSE a été
+     * retiré de cette liste — un prestataire ne peut plus attribuer ROLE_HSE
+     * à l'un de ses subordonnés (il le pouvait avant). C'est un changement
+     * de comportement volontaire, pas une régression.
      */
-    private const ASSIGNABLE_ROLES = ['ROLE_PRESTATAIRE', 'ROLE_HSE', 'ROLE_AGENT_TERRAIN'];
+    private const ASSIGNABLE_ROLES = ['ROLE_CHEF_PROJET_PRESTATAIRE', 'ROLE_AGENT_TERRAIN'];
 
     public function __construct(
         #[Autowire(service: UserPasswordHasherProcessor::class)]
@@ -42,13 +47,13 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
     {
         if ($data instanceof User) {
-            $this->enforceScope($data, $operation, $uriVariables);
+            $this->enforceScope($data, $operation, $uriVariables, $context);
         }
 
         return $this->inner->process($data, $operation, $uriVariables, $context);
     }
 
-    private function enforceScope(User $data, Operation $operation, array $uriVariables): void
+    private function enforceScope(User $data, Operation $operation, array $uriVariables, array $context): void
     {
         $actor = $this->tokenStorage->getToken()?->getUser();
         if (!$actor instanceof User || !$this->isPrestataireScoped($actor)) {
@@ -99,7 +104,8 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
         // Editing a teammate: UserVoter already confirmed they share the
         // actor's entreprise before we get here — keep them pinned there
         // and restrict the role to the assignable set.
-        $data->setRoles([$this->resolveAssignableRole($data)]);
+        $previous = $context['previous_data'] ?? null;
+        $data->setRoles([$this->resolveAssignableRole($data, $previous instanceof User ? $previous : null)]);
         if ($actor->getEntreprise() !== null) {
             $data->setEntreprise($actor->getEntreprise());
             $this->pinDisplayFieldsToActor($data, $actor);
@@ -134,11 +140,28 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
         throw new UnprocessableEntityHttpException('user.last_hse_cannot_deactivate');
     }
 
-    private function resolveAssignableRole(User $data): string
+    /**
+     * Rôles historiques (ex. ROLE_HSE, attribuable par un prestataire avant
+     * l'arbitrage D1) déjà présents sur un compte avant ce PATCH ne sont pas
+     * dans ASSIGNABLE_ROLES, mais ne doivent pas être écrasés par une édition
+     * qui ne touche à rien d'autre que, par exemple, isActive — seule une
+     * tentative de nouvelle attribution (rôle soumis différent du rôle déjà
+     * persisté) doit retomber sur ROLE_PRESTATAIRE.
+     */
+    private function resolveAssignableRole(User $data, ?User $previous = null): string
     {
         $submitted = $data->getRoles()[0] ?? null;
 
-        return in_array($submitted, self::ASSIGNABLE_ROLES, true) ? $submitted : 'ROLE_PRESTATAIRE';
+        if (in_array($submitted, self::ASSIGNABLE_ROLES, true)) {
+            return $submitted;
+        }
+
+        $previousRole = $previous?->getRoles()[0] ?? null;
+        if ($previousRole !== null && $previousRole === $submitted) {
+            return $submitted;
+        }
+
+        return 'ROLE_PRESTATAIRE';
     }
 
     /**

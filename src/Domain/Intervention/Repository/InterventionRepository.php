@@ -23,9 +23,7 @@ class InterventionRepository extends ServiceEntityRepository
      * Returns scalar rows: id, statut, permitReference, codeSite,
      * avancementMoyen (latest suivi avancementPourcentage by date), nbSuivis (COUNT), dernierSuivi (MAX date).
      *
-     * Role filtering:
-     *  - isHse=true  -> all interventions
-     *  - isHse=false -> only interventions whose planPrevention.chefProjet = currentUser
+     * Role filtering: see applyOwnershipFilter().
      */
     public function getDashboardData(
         User $currentUser,
@@ -49,10 +47,7 @@ class InterventionRepository extends ServiceEntityRepository
             ->leftJoin('i.suivis', 'sj')
             ->groupBy('i.id, i.statut, pt.reference, pt.codeSite');
 
-        if (!$isHse) {
-            $qb->andWhere('pp.chefProjet = :currentUser')
-               ->setParameter('currentUser', $currentUser);
-        }
+        $this->applyOwnershipFilter($qb, $currentUser, $isHse);
 
         if ($codeSite !== null && $codeSite !== '') {
             $qb->andWhere('pt.codeSite = :codeSite')
@@ -134,10 +129,7 @@ class InterventionRepository extends ServiceEntityRepository
             ])
             ->groupBy('i.id, i.statut, pt.reference, pt.codeSite');
 
-        if (!$isHse) {
-            $qb->andWhere('pp.chefProjet = :currentUser')
-               ->setParameter('currentUser', $currentUser);
-        }
+        $this->applyOwnershipFilter($qb, $currentUser, $isHse);
 
         if ($codeSite !== null && $codeSite !== '') {
             $qb->andWhere('pt.codeSite = :codeSite')
@@ -175,10 +167,7 @@ class InterventionRepository extends ServiceEntityRepository
             ->andWhere('sj.date = :date')
             ->setParameter('date', $date->format('Y-m-d'));
 
-        if (!$isHse) {
-            $qb->andWhere('pp.chefProjet = :currentUser')
-               ->setParameter('currentUser', $currentUser);
-        }
+        $this->applyOwnershipFilter($qb, $currentUser, $isHse);
 
         if ($codeSite !== null && $codeSite !== '') {
             $qb->andWhere('pt.codeSite = :codeSite')
@@ -186,6 +175,39 @@ class InterventionRepository extends ServiceEntityRepository
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Role filtering shared by getDashboardData()/getActiveInterventionsBySite()/
+     * countSuivisForDate(), all of which join i.permitTravail as 'pt' and
+     * pt.planPrevention as 'pp' before calling this method.
+     *
+     *  - isHse=true                        -> no filter, all interventions visible.
+     *  - isHse=false, currentUser has an entreprise (prestataire-side roles:
+     *    ROLE_PRESTATAIRE, ROLE_CHEF_PROJET_PRESTATAIRE, ROLE_AGENT_TERRAIN,
+     *    ROLE_HSE cote prestataire) -> scoped to every permit created by a
+     *    member of that entreprise (team-wide), never pp.chefProjet, which is
+     *    never a prestataire-side user.
+     *  - isHse=false, currentUser has no entreprise (ROLE_CHEF_PROJET TOA)
+     *    -> unchanged legacy behaviour: pp.chefProjet = currentUser.
+     */
+    private function applyOwnershipFilter(\Doctrine\ORM\QueryBuilder $qb, User $currentUser, bool $isHse): void
+    {
+        if ($isHse) {
+            return;
+        }
+
+        $entreprise = $currentUser->getEntreprise();
+        if ($entreprise !== null) {
+            $qb->leftJoin('pt.createdBy', 'ptCreator')
+               ->andWhere('ptCreator.entreprise = :entreprise')
+               ->setParameter('entreprise', $entreprise);
+
+            return;
+        }
+
+        $qb->andWhere('pp.chefProjet = :currentUser')
+           ->setParameter('currentUser', $currentUser);
     }
 
     /**

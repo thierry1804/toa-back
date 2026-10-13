@@ -62,13 +62,13 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $this->assertSame('Gerant', $result->getQualiteRepresentant());
     }
 
-    public function testCreateAllowsHseAndAgentTerrainRoles(): void
+    public function testCreateAllowsChefProjetPrestataireAndAgentTerrainRoles(): void
     {
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
         $this->setActor($actor);
 
-        foreach (['ROLE_HSE', 'ROLE_AGENT_TERRAIN'] as $role) {
+        foreach (['ROLE_CHEF_PROJET_PRESTATAIRE', 'ROLE_AGENT_TERRAIN'] as $role) {
             $newUser = new User();
             $newUser->setRoles([$role]);
             $newUser->setEntreprise($ownEntreprise);
@@ -78,6 +78,26 @@ class PrestataireUserScopeProcessorTest extends TestCase
             $this->assertContains($role, $result->getRoles());
             $this->assertSame($ownEntreprise, $result->getEntreprise());
         }
+    }
+
+    /**
+     * Arbitrage client formel (D1, retour client R-02) : un prestataire ne
+     * peut plus attribuer ROLE_HSE a un subordonne (il le pouvait avant).
+     * Toute tentative, a la creation, retombe sur ROLE_PRESTATAIRE.
+     */
+    public function testCreateRejectsHseAndFallsBackToPrestataire(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        $newUser = new User();
+        $newUser->setRoles(['ROLE_HSE']);
+        $newUser->setEntreprise($ownEntreprise);
+
+        $result = $this->processor->process($newUser, new Post());
+
+        $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
     }
 
     public function testEditingTeammateIgnoresSubmittedRoleAndEntreprise(): void
@@ -98,6 +118,71 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
         $this->assertSame($ownEntreprise, $result->getEntreprise());
         $this->assertSame('Ma Boite', $result->getEntrepriseName());
+    }
+
+    /**
+     * Arbitrage D1 (R-02) appliquee a une tentative de nouvelle attribution
+     * via PATCH : un teammate qui n'avait pas ROLE_HSE avant ne peut pas se
+     * le voir attribuer, meme si le prestataire le soumet explicitement.
+     */
+    public function testEditingTeammateRejectsNewlyAssignedHseAndFallsBackToPrestataire(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        $previous = $this->buildPrestataire($ownEntreprise, id: 2);
+        $previous->setRoles(['ROLE_AGENT_TERRAIN']);
+
+        $teammate = $this->buildPrestataire($ownEntreprise, id: 2);
+        $teammate->setRoles(['ROLE_HSE']);
+
+        $result = $this->processor->process(
+            $teammate,
+            new Patch(),
+            ['id' => 2],
+            ['previous_data' => $previous],
+        );
+
+        $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
+    }
+
+    /**
+     * Regression guard for a side effect of the ASSIGNABLE_ROLES change: a
+     * teammate who already had ROLE_HSE before this feature existed (granted
+     * back when a prestataire could still assign it) must not be silently
+     * demoted to ROLE_PRESTATAIRE by an unrelated PATCH (e.g. toggling
+     * isActive) that never touched the role field — only an actual attempt
+     * to CHANGE the role to something new is rejected by the arbitrage.
+     */
+    public function testEditingTeammateWithoutChangingRoleDoesNotDemoteAnExistingHse(): void
+    {
+        $ownEntreprise = $this->buildEntreprise();
+        $actor = $this->buildPrestataire($ownEntreprise, id: 1);
+        $this->setActor($actor);
+
+        $previous = $this->buildPrestataire($ownEntreprise, id: 2);
+        $previous->setRoles(['ROLE_HSE']);
+
+        // Same role as before the PATCH: the client did not submit a role
+        // change, API Platform's PATCH merge kept the already-persisted role.
+        // isActive stays true (untouched) so the last-active-HSE guard -- a
+        // separate concern, covered by its own tests below -- never engages
+        // here; this test is purely about role preservation.
+        $teammate = $this->buildPrestataire($ownEntreprise, id: 2);
+        $teammate->setRoles(['ROLE_HSE']);
+        $teammate->setName('Nouveau Nom');
+
+        $this->userRepository->expects($this->never())->method('findByRoleAndEntreprise');
+
+        $result = $this->processor->process(
+            $teammate,
+            new Patch(),
+            ['id' => 2],
+            ['previous_data' => $previous],
+        );
+
+        $this->assertContains('ROLE_HSE', $result->getRoles());
     }
 
     public function testSelfEditCanUpdateOwnDisplayFieldsWhenLinkingEntreprise(): void
@@ -174,6 +259,9 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
         $this->setActor($actor);
 
+        $previous = $this->buildPrestataire($ownEntreprise, id: 2);
+        $previous->setRoles(['ROLE_HSE']);
+
         $lastHse = $this->buildPrestataire($ownEntreprise, id: 2);
         $lastHse->setRoles(['ROLE_HSE']);
         $lastHse->setIsActive(false);
@@ -186,7 +274,7 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $this->expectException(UnprocessableEntityHttpException::class);
         $this->expectExceptionMessage('user.last_hse_cannot_deactivate');
 
-        $this->processor->process($lastHse, new Patch(), ['id' => 2]);
+        $this->processor->process($lastHse, new Patch(), ['id' => 2], ['previous_data' => $previous]);
     }
 
     public function testDeactivatingHseWithAnotherActiveHseDoesNotThrow(): void
@@ -194,6 +282,9 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
         $this->setActor($actor);
+
+        $previous = $this->buildPrestataire($ownEntreprise, id: 2);
+        $previous->setRoles(['ROLE_HSE']);
 
         $target = $this->buildPrestataire($ownEntreprise, id: 2);
         $target->setRoles(['ROLE_HSE']);
@@ -208,7 +299,7 @@ class PrestataireUserScopeProcessorTest extends TestCase
             ->with('ROLE_HSE', $ownEntreprise->getId())
             ->willReturn([$target, $colleague]);
 
-        $result = $this->processor->process($target, new Patch(), ['id' => 2]);
+        $result = $this->processor->process($target, new Patch(), ['id' => 2], ['previous_data' => $previous]);
 
         $this->assertFalse($result->getIsActive());
     }
@@ -218,6 +309,9 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
         $this->setActor($actor);
+
+        $previous = $this->buildPrestataire($ownEntreprise, id: 2);
+        $previous->setRoles(['ROLE_HSE']);
 
         $target = $this->buildPrestataire($ownEntreprise, id: 2);
         $target->setRoles(['ROLE_HSE']);
@@ -235,7 +329,7 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $this->expectException(UnprocessableEntityHttpException::class);
         $this->expectExceptionMessage('user.last_hse_cannot_deactivate');
 
-        $this->processor->process($target, new Patch(), ['id' => 2]);
+        $this->processor->process($target, new Patch(), ['id' => 2], ['previous_data' => $previous]);
     }
 
     public function testReactivatingHseIsNeverBlocked(): void
@@ -244,13 +338,16 @@ class PrestataireUserScopeProcessorTest extends TestCase
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
         $this->setActor($actor);
 
+        $previous = $this->buildPrestataire($ownEntreprise, id: 2);
+        $previous->setRoles(['ROLE_HSE']);
+
         $target = $this->buildPrestataire($ownEntreprise, id: 2);
         $target->setRoles(['ROLE_HSE']);
         $target->setIsActive(true);
 
         $this->userRepository->expects($this->never())->method('findByRoleAndEntreprise');
 
-        $result = $this->processor->process($target, new Patch(), ['id' => 2]);
+        $result = $this->processor->process($target, new Patch(), ['id' => 2], ['previous_data' => $previous]);
 
         $this->assertTrue($result->getIsActive());
     }

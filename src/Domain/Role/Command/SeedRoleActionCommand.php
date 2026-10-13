@@ -454,6 +454,15 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'controle_journalier.create',       'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'controle_journalier.view',         'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'controle_journalier.edit',         'bypass' => false],
+        // ROLE_CHEF_PROJET_PRESTATAIRE (R-01) : lecture seule, limitee a
+        // l'entreprise du prestataire (filtrage par entreprise applique
+        // ailleurs, pas de bypass d'ownership ici) ; aucune cle de
+        // creation/modification/validation n'est ajoutee pour ce role.
+        ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'permit_travail.view',           'bypass' => false],
+        ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'intervention.view',             'bypass' => false],
+        ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'suivi_journalier.view',          'bypass' => false],
+        ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'intervention.suivi.dashboard',   'bypass' => false],
+        ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'intervention.suivi.detail',      'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)
