@@ -48,12 +48,31 @@ class SuiviJournalierCreateProcessorTest extends TestCase
 
         $this->suiviRepository->method('existsByInterventionAndDate')->willReturn(false);
 
-        $suivi = $this->buildSuivi($intervention, '2026-01-01');
+        $suivi = $this->buildSuivi($intervention, '2026-01-01', 15);
 
         $result = $this->processor->process($suivi, new Post());
 
         $this->assertSame($suivi, $result);
         $this->assertSame(StatutIntervention::EN_COURS, $intervention->getStatut());
+    }
+
+    public function testCreatingSuiviWithZeroPercentOnEvaluationCompleteInterventionDoesNotMoveStatut(): void
+    {
+        // A suivi logged with 0% progress (e.g. "non realise" on day one) must
+        // not be enough to move the intervention out of EVALUATION_COMPLETE.
+        $intervention = $this->buildIntervention(StatutIntervention::EVALUATION_COMPLETE);
+        $this->setActor($this->buildUser());
+
+        $this->suiviRepository->method('existsByInterventionAndDate')->willReturn(false);
+
+        $suivi = $this->buildSuivi($intervention, '2026-01-01', 0);
+        $suivi->setRealise(false);
+        $suivi->setMotifNonRealisation('Intemperies');
+
+        $result = $this->processor->process($suivi, new Post());
+
+        $this->assertSame($suivi, $result);
+        $this->assertSame(StatutIntervention::EVALUATION_COMPLETE, $intervention->getStatut());
     }
 
     public function testCreatingSecondSuiviOnEnCoursInterventionSucceedsAndDoesNotRegressStatut(): void
@@ -67,7 +86,7 @@ class SuiviJournalierCreateProcessorTest extends TestCase
 
         $this->suiviRepository->method('existsByInterventionAndDate')->willReturn(false);
 
-        $suivi = $this->buildSuivi($intervention, '2026-01-02');
+        $suivi = $this->buildSuivi($intervention, '2026-01-02', 0);
 
         $result = $this->processor->process($suivi, new Post());
 
@@ -82,7 +101,7 @@ class SuiviJournalierCreateProcessorTest extends TestCase
 
         $this->suiviRepository->expects($this->never())->method('existsByInterventionAndDate');
 
-        $suivi = $this->buildSuivi($intervention, '2026-01-01');
+        $suivi = $this->buildSuivi($intervention, '2026-01-01', 10);
 
         $this->expectException(UnprocessableEntityHttpException::class);
         $this->expectExceptionMessage('suivi_journalier.evaluation_requise');
@@ -101,7 +120,7 @@ class SuiviJournalierCreateProcessorTest extends TestCase
 
         $this->suiviRepository->expects($this->never())->method('existsByInterventionAndDate');
 
-        $suivi = $this->buildSuivi($intervention, '2026-01-01');
+        $suivi = $this->buildSuivi($intervention, '2026-01-01', 10);
 
         $this->expectException(UnprocessableEntityHttpException::class);
         $this->expectExceptionMessage('suivi_journalier.evaluation_requise');
@@ -125,14 +144,14 @@ class SuiviJournalierCreateProcessorTest extends TestCase
         return $intervention;
     }
 
-    private function buildSuivi(Intervention $intervention, string $date): SuiviJournalier
+    private function buildSuivi(Intervention $intervention, string $date, int $avancement = 10): SuiviJournalier
     {
         $suivi = new SuiviJournalier();
         $suivi->setIntervention($intervention);
         $suivi->setDate(new \DateTimeImmutable($date));
         $suivi->setNomResponsable('Jean Rakoto');
         $suivi->setRealise(true);
-        $suivi->setAvancementPourcentage(10);
+        $suivi->setAvancementPourcentage($avancement);
 
         return $suivi;
     }

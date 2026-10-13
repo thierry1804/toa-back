@@ -65,7 +65,7 @@ final class SuiviJournalierCreateProcessor implements ProcessorInterface
 
         $data->setCreatedBy($user);
 
-        if ($intervention->getStatut() === StatutIntervention::EVALUATION_COMPLETE) {
+        if ($intervention->getStatut() === StatutIntervention::EVALUATION_COMPLETE && $avancement > 0) {
             $intervention->setStatut(StatutIntervention::EN_COURS);
         }
 

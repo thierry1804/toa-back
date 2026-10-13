@@ -78,13 +78,9 @@ class InterventionDetailHseController extends AbstractController
             ];
         }
 
-        $avancementValues = array_filter(
-            array_map(fn ($s) => $s['avancementPourcentage'], $suivis),
-            fn ($v) => $v !== null,
-        );
-        $avancementMoyen = count($avancementValues) > 0
-            ? round(array_sum($avancementValues) / count($avancementValues), 2)
-            : 0.0;
+        $suivisTries = $suivis;
+        usort($suivisTries, static fn (array $a, array $b): int => strcmp((string) $b['date'], (string) $a['date']));
+        $avancementMoyen = $suivisTries[0]['avancementPourcentage'] ?? 0.0;
 
         return $this->json([
             'intervention' => [

@@ -7,6 +7,7 @@ namespace App\Api\Processor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Domain\Intervention\Entity\SuiviJournalier;
+use App\Domain\Intervention\Enum\StatutIntervention;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -31,6 +32,11 @@ final class SuiviJournalierUpdateProcessor implements ProcessorInterface
         $avancement = $data->getAvancementPourcentage();
         if ($avancement === null || $avancement < 0 || $avancement > 100) {
             throw new UnprocessableEntityHttpException('suivi_journalier.avancement_invalide');
+        }
+
+        $intervention = $data->getIntervention();
+        if ($intervention !== null && $intervention->getStatut() === StatutIntervention::EVALUATION_COMPLETE && $avancement > 0) {
+            $intervention->setStatut(StatutIntervention::EN_COURS);
         }
 
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);

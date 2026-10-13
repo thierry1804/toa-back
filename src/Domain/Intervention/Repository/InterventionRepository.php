@@ -21,11 +21,11 @@ class InterventionRepository extends ServiceEntityRepository
 
     /**
      * Returns scalar rows: id, statut, permitReference, codeSite,
-     * avancementMoyen (AVG), nbSuivis (COUNT), dernierSuivi (MAX date).
+     * avancementMoyen (latest suivi avancementPourcentage by date), nbSuivis (COUNT), dernierSuivi (MAX date).
      *
      * Role filtering:
-     *  - isHse=true  → all interventions
-     *  - isHse=false → only interventions whose planPrevention.chefProjet = currentUser
+     *  - isHse=true  -> all interventions
+     *  - isHse=false -> only interventions whose planPrevention.chefProjet = currentUser
      */
     public function getDashboardData(
         User $currentUser,
@@ -41,7 +41,6 @@ class InterventionRepository extends ServiceEntityRepository
                 'i.statut as statut',
                 'pt.reference as permitReference',
                 'pt.codeSite as codeSite',
-                'COALESCE(AVG(sj.avancementPourcentage), 0) as avancementMoyen',
                 'COUNT(DISTINCT sj.id) as nbSuivis',
                 'MAX(sj.date) as dernierSuivi',
             )
@@ -75,7 +74,17 @@ class InterventionRepository extends ServiceEntityRepository
             }
         }
 
-        return $qb->getQuery()->getScalarResult();
+        $rows = $qb->getQuery()->getScalarResult();
+
+        $interventionIds = array_map(static fn (array $row): string => (string) $row['id'], $rows);
+        $latestAvancements = $this->fetchLatestAvancementByIntervention($interventionIds);
+
+        foreach ($rows as &$row) {
+            $row['avancementMoyen'] = $latestAvancements[(string) $row['id']] ?? 0;
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -112,7 +121,6 @@ class InterventionRepository extends ServiceEntityRepository
                 'i.statut as statut',
                 'pt.reference as permitReference',
                 'pt.codeSite as codeSite',
-                'COALESCE(AVG(sj.avancementPourcentage), 0) as avancementMoyen',
                 'COUNT(DISTINCT sj.id) as nbSuivis',
             )
             ->leftJoin('i.permitTravail', 'pt')
@@ -136,7 +144,17 @@ class InterventionRepository extends ServiceEntityRepository
                ->setParameter('codeSite', $codeSite);
         }
 
-        return $qb->getQuery()->getScalarResult();
+        $rows = $qb->getQuery()->getScalarResult();
+
+        $interventionIds = array_map(static fn (array $row): string => (string) $row['id'], $rows);
+        $latestAvancements = $this->fetchLatestAvancementByIntervention($interventionIds);
+
+        foreach ($rows as &$row) {
+            $row['avancementMoyen'] = $latestAvancements[(string) $row['id']] ?? 0;
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -168,5 +186,37 @@ class InterventionRepository extends ServiceEntityRepository
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns, per intervention id, the avancementPourcentage of its most recent
+     * suivi journalier (by date, then by createdAt as a tie-breaker), using a
+     * native DISTINCT ON query since this cannot be expressed as a correlated
+     * value alongside a GROUP BY in DQL.
+     *
+     * @param string[] $interventionIds
+     *
+     * @return array<string, int> map of interventionId (string) to avancementPourcentage
+     */
+    private function fetchLatestAvancementByIntervention(array $interventionIds): array
+    {
+        if ($interventionIds === []) {
+            return [];
+        }
+
+        $sql = 'SELECT DISTINCT ON (intervention_id) intervention_id, avancement_pourcentage '
+            . 'FROM suivi_journalier '
+            . 'ORDER BY intervention_id, date DESC, created_at DESC';
+
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative($sql);
+
+        $latestByIntervention = [];
+        foreach ($rows as $row) {
+            $latestByIntervention[$row['intervention_id']] = (int) $row['avancement_pourcentage'];
+        }
+
+        $wantedIds = array_flip($interventionIds);
+
+        return array_intersect_key($latestByIntervention, $wantedIds);
     }
 }
