@@ -67,6 +67,7 @@ services:
     App\Domain\ActivityPlanning\Service\PlanningMailer:
         arguments:
             $fromAddress: '%env(MAILER_FROM_ADDRESS)%'
+            $frontendUrl: '%env(FRONTEND_URL)%'
 
     App\Domain\PlanPrevention\Service\GotenbergPdfService:
         arguments:

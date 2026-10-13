@@ -46,6 +46,25 @@ class ActivityPlanningExtension implements QueryCollectionExtensionInterface
         }
 
         $root = $queryBuilder->getRootAliases()[0];
+
+        // Un planning est créé par le chef de projet TOA, jamais par le
+        // prestataire (R-04) : createdBy ne vaut donc jamais l'utilisateur
+        // côté prestataire et la collection restait vide. Ces profils
+        // doivent voir tous les plannings de leur entreprise (champ
+        // `entreprise` de ActivityPlanning = prestataire assigné au
+        // planning), quel que soit le créateur.
+        $entreprise = $user->getEntreprise();
+        if ($entreprise !== null) {
+            $queryBuilder
+                ->andWhere(sprintf('%s.entreprise = :ap_current_entreprise', $root))
+                ->setParameter('ap_current_entreprise', $entreprise);
+
+            return;
+        }
+
+        // Repli : utilisateur sans entreprise (cas anormal hors
+        // BYPASS_ROLES). On conserve l'ancien scope par créateur plutôt que
+        // d'exposer toute la collection.
         $queryBuilder
             ->andWhere(sprintf('%s.createdBy = :ap_current_user', $root))
             ->setParameter('ap_current_user', $user);

@@ -12,7 +12,17 @@ class PlanningMailer
         private MailerInterface $mailer,
         private readonly LoggerInterface $logger,
         private readonly string $fromAddress = 'noreply@toa.app',
+        private readonly string $frontendUrl = '',
     ) {
+    }
+
+    private function planningUrl(int $planningId): ?string
+    {
+        if ($this->frontendUrl === '') {
+            return null;
+        }
+
+        return rtrim($this->frontendUrl, '/') . '/planning/' . $planningId;
     }
 
     public function sendCreationNotification(
@@ -107,17 +117,21 @@ class PlanningMailer
         string $siteCode,
         string $siteName,
     ): string {
+        $url = $this->planningUrl($planningId);
+        $linkLine = $url !== null ? "\n\nConsulter le planning : {$url}" : '';
+
         return sprintf(
             "Bonjour %s,\n\n"
             . "Un nouveau plan d'activité vous a été assigné :\n"
             . "  Planning #%d — %s\n"
-            . "  Site : %s (%s)\n\n"
+            . "  Site : %s (%s)%s\n\n"
             . "Cordialement,\nL'équipe TOA",
             $recipientName,
             $planningId,
             $process,
             $siteName,
-            $siteCode
+            $siteCode,
+            $linkLine
         );
     }
 
@@ -128,6 +142,14 @@ class PlanningMailer
         string $siteCode,
         string $siteName,
     ): string {
+        $url = $this->planningUrl($planningId);
+        $linkBlock = $url !== null
+            ? sprintf(
+                '<p><a href="%1$s" style="display: inline-block; padding: 10px 20px; background-color: #0d6efd; color: #ffffff; text-decoration: none; border-radius: 4px;">Consulter le planning</a></p>',
+                htmlspecialchars($url)
+            )
+            : '';
+
         return sprintf(
             '<!DOCTYPE html>
 <html>
@@ -138,6 +160,7 @@ class PlanningMailer
     <p>Un nouveau plan d\'activité vous a été assigné :</p>
     <p><strong>Planning #%d</strong> — %s</p>
     <p>Site : <strong>%s</strong> (%s)</p>
+    %s
     <hr>
     <p style="color: #666; font-size: 0.9em;">Cordialement,<br>L\'équipe TOA</p>
 </body>
@@ -146,22 +169,27 @@ class PlanningMailer
             $planningId,
             htmlspecialchars($process),
             htmlspecialchars($siteName),
-            htmlspecialchars($siteCode)
+            htmlspecialchars($siteCode),
+            $linkBlock
         );
     }
 
     private function buildTextBody(string $recipientName, int $planningId, string $process, array $changeLines): string
     {
+        $url = $this->planningUrl($planningId);
+        $linkLine = $url !== null ? "\n\nConsulter le planning : {$url}" : '';
+
         return sprintf(
             "Bonjour %s,\n\n"
             . "Le planning suivant a été mis à jour :\n"
             . "  Planning #%d — %s\n\n"
-            . "Modifications :\n%s\n\n"
+            . "Modifications :\n%s%s\n\n"
             . "Cordialement,\nL'équipe TOA",
             $recipientName,
             $planningId,
             $process,
-            implode("\n", $changeLines)
+            implode("\n", $changeLines),
+            $linkLine
         );
     }
 
@@ -171,6 +199,14 @@ class PlanningMailer
         foreach ($changeLines as $line) {
             $items .= sprintf("<li>%s</li>\n", htmlspecialchars($line));
         }
+
+        $url = $this->planningUrl($planningId);
+        $linkBlock = $url !== null
+            ? sprintf(
+                '<p><a href="%1$s" style="display: inline-block; padding: 10px 20px; background-color: #0d6efd; color: #ffffff; text-decoration: none; border-radius: 4px;">Consulter le planning</a></p>',
+                htmlspecialchars($url)
+            )
+            : '';
 
         return sprintf(
             '<!DOCTYPE html>
@@ -183,6 +219,7 @@ class PlanningMailer
     <p><strong>Planning #%d</strong> — %s</p>
     <h3>Modifications :</h3>
     <ul>%s</ul>
+    %s
     <hr>
     <p style="color: #666; font-size: 0.9em;">Cordialement,<br>L\'équipe TOA</p>
 </body>
@@ -190,7 +227,8 @@ class PlanningMailer
             htmlspecialchars($recipientName),
             $planningId,
             htmlspecialchars($process),
-            $items
+            $items,
+            $linkBlock
         );
     }
 }

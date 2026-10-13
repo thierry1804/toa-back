@@ -55,11 +55,8 @@ class ActivityPlanningVoter extends Voter
             return true;
         }
 
-        if ($subject instanceof ActivityPlanning) {
-            $owner = $subject->getCreatedBy();
-            if ($owner !== null && $owner->getUserIdentifier() !== $user->getUserIdentifier()) {
-                throw new AccessDeniedException('error.voter.access_denied');
-            }
+        if ($subject instanceof ActivityPlanning && !$this->hasOwnership($subject, $user)) {
+            throw new AccessDeniedException('error.voter.access_denied');
         }
 
         return true;
@@ -71,6 +68,33 @@ class ActivityPlanningVoter extends Voter
             if (in_array($role, $user->getRoles(), true)) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Un planning est créé par le chef de projet TOA, jamais par le
+     * prestataire (R-04) : createdBy ne correspond donc jamais à
+     * l'utilisateur côté prestataire. L'accès est accordé si l'utilisateur
+     * est le créateur (cas chef de projet TOA, comportement historique
+     * inchangé) OU si le planning est assigné à son entreprise (cas
+     * prestataire), à l'instar de PermitTravailVoter::hasOwnership().
+     */
+    private function hasOwnership(ActivityPlanning $planning, User $user): bool
+    {
+        $owner = $planning->getCreatedBy();
+        if ($owner === null) {
+            return true;
+        }
+
+        if ($owner->getUserIdentifier() === $user->getUserIdentifier()) {
+            return true;
+        }
+
+        $entreprise = $user->getEntreprise();
+        if ($entreprise !== null && $planning->getEntreprise()?->getId() === $entreprise->getId()) {
+            return true;
         }
 
         return false;
