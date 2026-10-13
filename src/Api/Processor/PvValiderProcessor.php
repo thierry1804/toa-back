@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\Intervention\Entity\EvaluationRisque;
 use App\Domain\Intervention\Entity\Intervention;
 use App\Domain\Intervention\Entity\SuiviJournalier;
+use App\Domain\Intervention\Enum\StatutIntervention;
 use App\Domain\PermitTravail\Entity\DecisionCdpPvReception;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\DecisionCdpPv;
@@ -52,7 +53,7 @@ final class PvValiderProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('permit_travail.pv_not_genere');
         }
 
-        $this->checkSuiviAndEvaluation($permit);
+        $intervention = $this->checkSuiviAndEvaluation($permit);
 
         $user = $this->tokenStorage->getToken()?->getUser();
         if (!$user instanceof User) {
@@ -78,6 +79,7 @@ final class PvValiderProcessor implements ProcessorInterface
         $decision->setDecidedAt($now);
 
         $permit->setStatut(StatutPermitTravail::PV_VALIDE);
+        $intervention->setStatut(StatutIntervention::TERMINEE);
 
         $this->entityManager->persist($decision);
         $this->entityManager->flush();
@@ -93,7 +95,7 @@ final class PvValiderProcessor implements ProcessorInterface
         return $permit;
     }
 
-    private function checkSuiviAndEvaluation(PermitTravail $permit): void
+    private function checkSuiviAndEvaluation(PermitTravail $permit): Intervention
     {
         $intervention = $this->entityManager->getRepository(Intervention::class)
             ->findOneBy(['permitTravail' => $permit]);
@@ -119,5 +121,7 @@ final class PvValiderProcessor implements ProcessorInterface
         if ($evalCount === 0) {
             throw new UnprocessableEntityHttpException('permit_travail.evaluation_risque_manquante');
         }
+
+        return $intervention;
     }
 }

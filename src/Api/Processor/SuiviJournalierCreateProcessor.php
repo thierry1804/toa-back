@@ -40,7 +40,7 @@ final class SuiviJournalierCreateProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('suivi_journalier.intervention_required');
         }
 
-        if ($intervention->getStatut() !== StatutIntervention::EVALUATION_COMPLETE) {
+        if (!in_array($intervention->getStatut(), [StatutIntervention::EVALUATION_COMPLETE, StatutIntervention::EN_COURS], true)) {
             throw new UnprocessableEntityHttpException('suivi_journalier.evaluation_requise');
         }
 
@@ -64,6 +64,10 @@ final class SuiviJournalierCreateProcessor implements ProcessorInterface
         }
 
         $data->setCreatedBy($user);
+
+        if ($intervention->getStatut() === StatutIntervention::EVALUATION_COMPLETE) {
+            $intervention->setStatut(StatutIntervention::EN_COURS);
+        }
 
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
     }
