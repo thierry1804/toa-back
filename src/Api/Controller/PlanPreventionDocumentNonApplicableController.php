@@ -7,6 +7,7 @@ namespace App\Api\Controller;
 use App\Domain\PlanPrevention\Entity\DocumentPrevention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -49,6 +50,16 @@ class PlanPreventionDocumentNonApplicableController extends AbstractController
         $type = TypeDocumentPrevention::tryFrom((string) $body['type']);
         if ($type === null) {
             throw new UnprocessableEntityHttpException('type_invalid');
+        }
+
+        // R-09 : pour le processus « Nouveau site », les photos installations/équipements
+        // sont de vraies pièces obligatoires -- le marquage N/A n'est pas autorisé dessus.
+        if (
+            $body['nonApplicable'] === true
+            && $plan->getTypeIntervention() === PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE
+            && in_array($type, PlanPreventionSubmissionValidator::REQUIRED_DOCUMENT_TYPES_NOUVEAU_SITE, true)
+        ) {
+            throw new UnprocessableEntityHttpException('non_applicable_non_autorise_nouveau_site');
         }
 
         $existing = array_filter(

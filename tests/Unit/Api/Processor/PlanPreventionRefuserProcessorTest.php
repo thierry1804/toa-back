@@ -8,10 +8,11 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\State\ProcessorInterface;
 use App\Api\Processor\PlanPreventionRefuserProcessor;
 use App\Domain\PlanPrevention\Entity\DecisionHsePlanPrevention;
+use App\Domain\PlanPrevention\Entity\DocumentPrevention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
-use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
+use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,7 +30,6 @@ class PlanPreventionRefuserProcessorTest extends TestCase
     private ProcessorInterface&MockObject $persistProcessor;
     private EntityManagerInterface&MockObject $entityManager;
     private PlanPreventionNotificationService&MockObject $notificationService;
-    private PlanPreventionConsultationGuard&MockObject $consultationGuard;
     private RequestStack $requestStack;
     private TokenStorageInterface&MockObject $tokenStorage;
     private PlanPreventionRefuserProcessor $processor;
@@ -42,7 +42,6 @@ class PlanPreventionRefuserProcessorTest extends TestCase
 
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->notificationService = $this->createMock(PlanPreventionNotificationService::class);
-        $this->consultationGuard = $this->createMock(PlanPreventionConsultationGuard::class);
         $this->requestStack = new RequestStack();
         $this->tokenStorage = $this->createMock(TokenStorageInterface::class);
 
@@ -61,7 +60,6 @@ class PlanPreventionRefuserProcessorTest extends TestCase
             $this->tokenStorage,
             $this->notificationService,
             $this->requestStack,
-            $this->consultationGuard,
         );
     }
 
@@ -70,7 +68,6 @@ class PlanPreventionRefuserProcessorTest extends TestCase
         $plan = $this->planWithId(StatutPlanPrevention::SOUMIS);
         $this->pushCommentaire('Motif chef');
 
-        $this->consultationGuard->expects($this->once())->method('assertAllConsulted')->with($plan);
         $this->entityManager->expects($this->once())
             ->method('persist')
             ->with($this->callback(static function (mixed $decision): bool {
@@ -85,6 +82,25 @@ class PlanPreventionRefuserProcessorTest extends TestCase
         $this->processor->process($plan, new Post());
 
         $this->assertSame(StatutPlanPrevention::A_CORRIGER, $plan->getStatut());
+    }
+
+    /**
+     * R-07 : le refus ne doit plus jamais être bloqué par des pièces non consultées.
+     */
+    public function testRefuseSucceedsEvenWithoutAnyDocumentConsulted(): void
+    {
+        $plan = $this->planWithId(StatutPlanPrevention::SOUMIS);
+        $plan->addDocument((new DocumentPrevention())
+            ->setType(TypeDocumentPrevention::FDS)
+            ->setFilePath('plans-prevention/x/FDS.pdf')
+            ->setMimeType('application/pdf')
+            ->setUploadedAt(new \DateTimeImmutable()));
+        $this->pushCommentaire('Motif');
+
+        $this->processor->process($plan, new Post());
+
+        $this->assertSame(StatutPlanPrevention::A_CORRIGER, $plan->getStatut());
+        $this->assertNull($plan->getDocuments()->first()->getConsultedAt());
     }
 
     public function testRefuseFromExamineSetsACorriger(): void

@@ -134,6 +134,73 @@ class PlanPreventionSubmissionValidatorTest extends TestCase
         $this->validator->assertSubmittable($plan);
     }
 
+    // ===== R-09 : photos installations/équipements obligatoires pour « Nouveau site » =====
+
+    public function testNouveauSitePlanWithoutAnyPhotoIsRefused(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
+
+        try {
+            $this->validator->assertSubmittable($plan);
+            $this->fail('documents_manquants attendu pour les photos installations/equipements');
+        } catch (UnprocessableEntityHttpException $e) {
+            $this->assertStringContainsString('documents_manquants', $e->getMessage());
+            $this->assertStringContainsString(TypeDocumentPrevention::PHOTOS_INSTALLATIONS->value, $e->getMessage());
+            $this->assertStringContainsString(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS->value, $e->getMessage());
+        }
+    }
+
+    public function testNouveauSitePlanWithOnlyInstallationsPhotoStillMissesEquipements(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
+        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS));
+
+        try {
+            $this->validator->assertSubmittable($plan);
+            $this->fail('documents_manquants attendu pour PHOTOS_EQUIPEMENTS');
+        } catch (UnprocessableEntityHttpException $e) {
+            $this->assertStringContainsString('documents_manquants', $e->getMessage());
+            $this->assertStringContainsString(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS->value, $e->getMessage());
+            $this->assertStringNotContainsString(TypeDocumentPrevention::PHOTOS_INSTALLATIONS->value, $e->getMessage());
+        }
+    }
+
+    public function testNouveauSitePlanWithBothPhotosIsAccepted(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
+        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS));
+        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS));
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNonNouveauSitePlanDoesNotRequirePhotos(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention('Vie de Réseau');
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNonNouveauSitePlanAcceptsPhotosMarkedNonApplicable(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention('Infrastructure');
+        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS, nonApplicable: true));
+        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS, nonApplicable: true));
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
     private function planWithAllDocuments(): PlanPrevention
     {
         $plan = new PlanPrevention();

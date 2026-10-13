@@ -50,8 +50,6 @@ final class PlanPreventionExaminerProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('Statut invalide pour examen');
         }
 
-        $this->consultationGuard->assertAllConsulted($plan);
-
         $user = $this->tokenStorage->getToken()?->getUser();
         if (!$user instanceof User) {
             throw new UnprocessableEntityHttpException('plan_prevention.user_not_found');
@@ -60,7 +58,7 @@ final class PlanPreventionExaminerProcessor implements ProcessorInterface
         $commentaire = $this->extractCommentaire();
 
         $plan->setStatut(StatutPlanPrevention::EXAMINE);
-        // Le HSE doit consulter à son tour chaque pièce avant de valider ou refuser.
+        // Historique de consultation remis à zéro pour le nouveau cycle HSE (R-07 : purement informatif, ne bloque plus Valider/Refuser).
         $this->consultationGuard->resetConsultations($plan);
 
         $examen = new ExamenPlanPrevention();

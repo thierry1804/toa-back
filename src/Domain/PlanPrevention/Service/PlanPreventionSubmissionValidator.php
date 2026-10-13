@@ -20,9 +20,29 @@ class PlanPreventionSubmissionValidator
         TypeDocumentPrevention::LISTE_VEHICULES,
     ];
 
+    /**
+     * R-09 : photos des listes installations/matériels et équipements/outillages,
+     * obligatoires uniquement pour le processus « Nouveau site ». Le marquage
+     * « non applicable » (R-18) n'est volontairement pas accepté pour ces 2 types
+     * tant que le plan est « Nouveau site » — cf. PlanPreventionDocumentNonApplicableController.
+     *
+     * @var TypeDocumentPrevention[]
+     */
+    public const REQUIRED_DOCUMENT_TYPES_NOUVEAU_SITE = [
+        TypeDocumentPrevention::PHOTOS_INSTALLATIONS,
+        TypeDocumentPrevention::PHOTOS_EQUIPEMENTS,
+    ];
+
+    public const TYPE_INTERVENTION_NOUVEAU_SITE = 'Nouveau site';
+
     public function assertSubmittable(PlanPrevention $plan): void
     {
-        $missingTypes = $this->findMissingDocumentTypes($plan, self::REQUIRED_DOCUMENT_TYPES);
+        $requiredDocumentTypes = self::REQUIRED_DOCUMENT_TYPES;
+        if ($plan->getTypeIntervention() === self::TYPE_INTERVENTION_NOUVEAU_SITE) {
+            $requiredDocumentTypes = array_merge($requiredDocumentTypes, self::REQUIRED_DOCUMENT_TYPES_NOUVEAU_SITE);
+        }
+
+        $missingTypes = $this->findMissingDocumentTypes($plan, $requiredDocumentTypes);
         if ($missingTypes !== []) {
             throw new UnprocessableEntityHttpException(sprintf(
                 'documents_manquants: %s',
