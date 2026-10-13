@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Api\Controller;
 
 use App\Domain\PermitTravail\Entity\PermitTravail;
-use App\Domain\PermitTravail\Enum\StatutPermitTravail;
+use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
 use App\Domain\PlanPrevention\Entity\ModeOperatoirePlanPrevention;
 use App\Domain\PlanPrevention\Entity\PhasePlanPrevention;
@@ -39,7 +39,6 @@ class PlanPreventionBySiteController extends AbstractController
         $allPlans = $this->entityManager->getRepository(PlanPrevention::class)
             ->findBy(['statut' => StatutPlanPrevention::VALIDE_HSE]);
 
-        $terminalStatuts = [StatutPermitTravail::CLOTURE, StatutPermitTravail::PV_VALIDE];
         $result = [];
 
         foreach ($allPlans as $plan) {
@@ -58,27 +57,31 @@ class PlanPreventionBySiteController extends AbstractController
                 ? $this->groupeRepository->findByCodeSiteAndPlan($codeSite, $plan)
                 : null;
 
+            $permitGeneralId = null;
+
             if ($isNouveauSite) {
                 // Nouveau site : le plan reste sélectionnable tant que la paire
                 // Général + H/E n'est pas complète (2 permis obligatoires).
                 if ($groupe !== null && $groupe->getPermitSpecialise() !== null) {
                     continue;
                 }
+
+                $permitGeneralId = $groupe?->getPermitGeneral()?->getId()?->toRfc4122();
             } else {
-                $existingPermits = $this->entityManager->getRepository(PermitTravail::class)
-                    ->findBy(['codeSite' => $codeSite, 'planPrevention' => $plan]);
+                // Autres processus (VDR/Infra/Energie/Maintenance) : aucune restriction,
+                // le plan reste toujours sélectionnable quels que soient les permis
+                // déjà existants dessus (renouvellements successifs autorisés).
 
-                $hasActivePermit = false;
-                foreach ($existingPermits as $permit) {
-                    if (!in_array($permit->getStatut(), $terminalStatuts, true)) {
-                        $hasActivePermit = true;
-                        break;
-                    }
-                }
+                // On cherche quand même le Général le plus récent sur ce site/plan pour
+                // que le front ne propose que Électrique/Hauteur s'il en existe déjà un.
+                $dernierGeneral = $this->entityManager->getRepository(PermitTravail::class)
+                    ->findBy(
+                        ['codeSite' => $codeSite, 'planPrevention' => $plan, 'type' => TypePermitTravail::GENERAL],
+                        ['createdAt' => 'DESC'],
+                        1,
+                    );
 
-                if ($hasActivePermit) {
-                    continue;
-                }
+                $permitGeneralId = ($dernierGeneral[0] ?? null)?->getId()?->toRfc4122();
             }
 
             $resolvedSites = $plan->getPlanificationSites();
@@ -94,7 +97,7 @@ class PlanPreventionBySiteController extends AbstractController
                 'dateFin'           => $plan->getDateFin()?->format('Y-m-d'),
                 'typeIntervention'  => $plan->getTypeIntervention(),
                 'process'           => $plan->getProcess(),
-                'permitGeneralId'   => $groupe?->getPermitGeneral()?->getId()?->toRfc4122(),
+                'permitGeneralId'   => $permitGeneralId,
                 'planificationSites' => $resolvedSites,
                 'risques'           => array_map(
                     static fn ($r): array => [
