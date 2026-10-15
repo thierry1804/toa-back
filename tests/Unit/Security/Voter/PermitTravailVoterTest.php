@@ -13,6 +13,7 @@ use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
 use App\Domain\Role\Entity\RoleAction;
 use App\Domain\User\Entity\User;
 use App\Security\Voter\PermitTravailVoter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -102,6 +103,36 @@ class PermitTravailVoterTest extends TestCase
             VoterInterface::ACCESS_GRANTED,
             $this->voter->vote($this->mockToken($hse), $permit, [PermitTravailVoter::DELETE]),
         );
+    }
+
+    public function testOnlyAgentTerrainCanCreate(): void
+    {
+        $agent = $this->buildUser('agent@toa.local', 1);
+        $agent->setRoles(['ROLE_AGENT_TERRAIN']);
+        $this->mockRoleActions(bypass: false);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $this->voter->vote($this->mockToken($agent), null, [PermitTravailVoter::CREATE]),
+        );
+    }
+
+    #[DataProvider('nonAgentRoles')]
+    public function testOtherRolesCannotCreate(string $role): void
+    {
+        $user = $this->buildUser('other@toa.local', 2);
+        $user->setRoles([$role]);
+        $this->mockRoleActions(bypass: true);
+
+        $this->expectException(AccessDeniedException::class);
+        $this->voter->vote($this->mockToken($user), null, [PermitTravailVoter::CREATE]);
+    }
+
+    public static function nonAgentRoles(): iterable
+    {
+        foreach (['ROLE_PRESTATAIRE', 'ROLE_CHEF_PROJET_PRESTATAIRE', 'ROLE_HSE', 'ROLE_SUPER_ADMIN', 'ROLE_CHEF_PROJET'] as $role) {
+            yield $role => [$role];
+        }
     }
 
     public function testNoRoleActionAtAllIsDenied(): void

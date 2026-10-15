@@ -87,6 +87,13 @@ class PermitTravailVoter extends Voter
         $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
 
         if ($attribute === self::CREATE) {
+            // R-14 : la création d'un permis est réservée au seul rôle Agent de
+            // terrain, sans exception (prestataire, chef de projet prestataire,
+            // HSE et admin n'y ont accès qu'en lecture).
+            if (!in_array('ROLE_AGENT_TERRAIN', $roles, true)) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
             return true;
         }
 

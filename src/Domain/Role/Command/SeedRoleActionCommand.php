@@ -309,9 +309,6 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_COLLABORATEUR', 'key' => 'permit_travail.view',  'bypass' => true],
         ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.view',   'bypass' => false],
         // permit_travail.create
-        ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.create', 'bypass' => true],
-        ['role' => 'ROLE_HSE',          'key' => 'permit_travail.create', 'bypass' => true],
-        ['role' => 'ROLE_PRESTATAIRE',  'key' => 'permit_travail.create', 'bypass' => true],
         // permit_travail.edit
         ['role' => 'ROLE_SUPER_ADMIN',  'key' => 'permit_travail.edit',   'bypass' => true],
         ['role' => 'ROLE_HSE',          'key' => 'permit_travail.edit',   'bypass' => true],
