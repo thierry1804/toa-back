@@ -222,15 +222,16 @@ class PlanPreventionVoter extends Voter
             return;
         }
 
-        // CHEF_PROJET (can_edit, no can_delete): restrict to plans assigned to them.
-        if ($plan->getChefProjet()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+        // CHEF_PROJET (can_edit, no can_delete): restrict to the plans of their processus
+        // (R-32), or to the plans assigned to them when no processus is configured.
+        if (!$plan->estGereePar($user)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
     }
 
     private function checkOwnershipForChefProjet(PlanPrevention $plan, User $user): void
     {
-        if ($plan->getChefProjet()?->getUserIdentifier() !== $user->getUserIdentifier()) {
+        if (!$plan->estGereePar($user)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
     }

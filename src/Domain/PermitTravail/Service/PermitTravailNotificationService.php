@@ -234,9 +234,16 @@ Accéder au permis : " . $url;
     }
     public function notifierClotureChefProjet(PermitTravail $permit): void
     {
-        $chefProjet = $permit->getPlanPrevention()?->getChefProjet();
+        $plan = $permit->getPlanPrevention();
 
-        if (!$chefProjet instanceof User) {
+        // R-32/R-34 : tous les chefs de projet titulaires du processus valident le PV de clôture ;
+        // à défaut, le chef de projet nominativement assigné au plan.
+        $chefsProjet = $this->userRepository->findChefsProjetByProcessus($plan?->getTypeIntervention());
+        if ($chefsProjet === [] && $plan?->getChefProjet() instanceof User) {
+            $chefsProjet = [$plan->getChefProjet()];
+        }
+
+        if ($chefsProjet === []) {
             $this->logger->warning('[PermitTravail] notifierClotureChefProjet: chef de projet introuvable', [
                 'permit_reference' => $permit->getReference(),
             ]);
@@ -244,26 +251,28 @@ Accéder au permis : " . $url;
             return;
         }
 
-        try {
-            $email = (new Email())
-                ->from($this->fromAddress)
-                ->to((string) $chefProjet->getEmail())
-                ->subject(sprintf('[TOA] Permis de Travail #%s clôturé — vérification requise', $permit->getReference()))
-                ->text($this->withLink($this->buildClotureText($permit, $chefProjet), $permit))
-                ->html($this->buildClotureHtml($permit, $chefProjet));
+        foreach ($chefsProjet as $chefProjet) {
+            try {
+                $email = (new Email())
+                    ->from($this->fromAddress)
+                    ->to((string) $chefProjet->getEmail())
+                    ->subject(sprintf('[TOA] Permis de Travail #%s clôturé — vérification requise', $permit->getReference()))
+                    ->text($this->withLink($this->buildClotureText($permit, $chefProjet), $permit))
+                    ->html($this->buildClotureHtml($permit, $chefProjet));
 
-            $this->mailer->send($email);
+                $this->mailer->send($email);
 
-            $this->logger->info('[PermitTravail] Notification clôture chef de projet envoyée', [
-                'permit_reference' => $permit->getReference(),
-                'recipient'        => $chefProjet->getEmail(),
-            ]);
-        } catch (\Throwable $e) {
-            $this->logger->error('[PermitTravail] Échec envoi notification clôture chef de projet', [
-                'permit_reference' => $permit->getReference(),
-                'recipient'        => $chefProjet->getEmail(),
-                'error'            => $e->getMessage(),
-            ]);
+                $this->logger->info('[PermitTravail] Notification clôture chef de projet envoyée', [
+                    'permit_reference' => $permit->getReference(),
+                    'recipient'        => $chefProjet->getEmail(),
+                ]);
+            } catch (\Throwable $e) {
+                $this->logger->error('[PermitTravail] Échec envoi notification clôture chef de projet', [
+                    'permit_reference' => $permit->getReference(),
+                    'recipient'        => $chefProjet->getEmail(),
+                    'error'            => $e->getMessage(),
+                ]);
+            }
         }
     }
 

@@ -31,7 +31,10 @@ class PlanPreventionChefProjetResolver
 
         $planification = $this->entityManager->find(ActivityPlanning::class, $plan->getPlanificationId());
 
-        return $planification?->getCreatedBy();
+        $createur = $planification?->getCreatedBy();
+
+        // R-32 : le créateur rattaché à des processus n'est plus désigné nominativement.
+        return $createur !== null && $createur->getProcessus() === [] ? $createur : null;
     }
 
     /**

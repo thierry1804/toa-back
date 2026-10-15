@@ -55,6 +55,7 @@ final class PlanPreventionSoumettreProcessor implements ProcessorInterface
         $result = $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
 
         $this->notificationService->notifierChefProjet($plan);
+        $this->notificationService->notifierChefsProjetPrestataire($plan);
 
         return $result;
     }

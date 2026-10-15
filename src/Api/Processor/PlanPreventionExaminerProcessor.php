@@ -72,6 +72,7 @@ final class PlanPreventionExaminerProcessor implements ProcessorInterface
         $result = $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
 
         $this->notificationService->notifyHseUsers($plan, $user);
+        $this->notificationService->informerCoTitulaires($plan, $user, 'examiné');
 
         return $result;
     }

@@ -8,6 +8,9 @@ use ApiPlatform\Doctrine\Orm\Extension\QueryCollectionExtensionInterface;
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Metadata\Operation;
 use App\Domain\Menu\Service\PermissionChecker;
+use App\Domain\PermitTravail\Entity\PermitTravail;
+use App\Domain\PermitTravail\Enum\StatutPermitTravail;
+use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\QueryBuilder;
@@ -48,6 +51,16 @@ class PlanPreventionExtension implements QueryCollectionExtensionInterface
 
         $roles = $user->getRoles();
 
+        // R-32 : un chef de projet TOA rattaché à des processus ne voit que les plans de
+        // ses processus, sans visibilité sur ceux des autres processus.
+        if ($user->getProcessus() !== [] && in_array('ROLE_CHEF_PROJET', $roles, true)) {
+            $queryBuilder
+                ->andWhere(sprintf('%s.typeIntervention IN (:pp_processus)', $root))
+                ->setParameter('pp_processus', $user->getProcessus());
+
+            return;
+        }
+
         // Même règle que PlanPreventionVoter::checkOwnershipForChefProjetView() :
         // hors HSE/admin, un rôle disposant de l'édition ne voit que les plans
         // dont il est chef de projet.
@@ -64,6 +77,20 @@ class PlanPreventionExtension implements QueryCollectionExtensionInterface
         // autres profils, y compris AGENT_TERRAIN : créateur ou collègue de la
         // même entreprise. Auparavant, seuls les PRESTATAIRE étaient filtrés,
         // ce qui exposait toute la collection avant un refus sur le détail.
+        // R-35 : le chef de projet prestataire suit le dossier de la soumission du plan
+        // jusqu'à la clôture du permis général (lecture seule).
+        if (in_array('ROLE_CHEF_PROJET_PRESTATAIRE', $roles, true)) {
+            $queryBuilder
+                ->andWhere(sprintf('%s.soumisAt IS NOT NULL', $root))
+                ->andWhere(sprintf(
+                    'NOT EXISTS (SELECT 1 FROM %s pp_gen WHERE pp_gen.planPrevention = %s AND pp_gen.type = :pp_general AND pp_gen.statut IN (:pp_clotures))',
+                    PermitTravail::class,
+                    $root,
+                ))
+                ->setParameter('pp_general', TypePermitTravail::GENERAL->value)
+                ->setParameter('pp_clotures', [StatutPermitTravail::CLOTURE->value, StatutPermitTravail::PV_VALIDE->value]);
+        }
+
         $queryBuilder->join(sprintf('%s.createdBy', $root), 'pp_user');
 
         if ($user->getEntreprise() !== null) {

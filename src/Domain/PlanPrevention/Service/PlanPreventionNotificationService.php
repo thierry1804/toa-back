@@ -31,43 +31,132 @@ class PlanPreventionNotificationService
         return rtrim($this->frontendUrl, '/') . '/prevention/' . $plan->getId()?->toRfc4122();
     }
 
-    /** Notify the chef de projet assigned to the plan when the prestataire submits it, so they can examine it */
+    /**
+     * Destinataires côté TOA : tous les chefs de projet titulaires du processus du plan (R-32/R-33),
+     * à défaut le chef de projet nominativement assigné au plan.
+     *
+     * @return User[]
+     */
+    private function chefsProjetDuPlan(PlanPrevention $plan): array
+    {
+        $titulaires = $this->userRepository->findChefsProjetByProcessus($plan->getTypeIntervention());
+        if ($titulaires !== []) {
+            return $titulaires;
+        }
+
+        return $plan->getChefProjet() instanceof User ? [$plan->getChefProjet()] : [];
+    }
+
+    /** Notify the chefs de projet titulaires of the plan's processus when the prestataire submits it, so they can examine it */
     public function notifierChefProjet(PlanPrevention $plan): void
     {
-        $chefProjet = $plan->getChefProjet();
+        $chefsProjet = $this->chefsProjetDuPlan($plan);
 
-        if (!$chefProjet instanceof User) {
-            $this->logger->warning('[PlanPrevention] notifierChefProjet: aucun chef de projet assigné au plan', [
+        if ($chefsProjet === []) {
+            $this->logger->warning('[PlanPrevention] notifierChefProjet: aucun chef de projet titulaire ni assigné au plan', [
                 'plan_reference' => $plan->getReference(),
             ]);
 
             return;
         }
 
-        try {
-            $email = (new TemplatedEmail())
-                ->from($this->fromAddress)
-                ->to((string) $chefProjet->getEmail())
-                ->subject(sprintf('[TOA] Plan de Prévention #%s soumis — Examen requis', $plan->getReference()))
-                ->htmlTemplate('email/plan_prevention/soumis.html.twig')
-                ->context([
-                    'plan'      => $plan,
-                    'plan_url'  => $this->planUrl($plan),
-                    'recipient' => $chefProjet,
+        foreach ($chefsProjet as $chefProjet) {
+            try {
+                $email = (new TemplatedEmail())
+                    ->from($this->fromAddress)
+                    ->to((string) $chefProjet->getEmail())
+                    ->subject(sprintf('[TOA] Plan de Prévention #%s soumis — Examen requis', $plan->getReference()))
+                    ->htmlTemplate('email/plan_prevention/soumis.html.twig')
+                    ->context([
+                        'plan'      => $plan,
+                        'plan_url'  => $this->planUrl($plan),
+                        'recipient' => $chefProjet,
+                    ]);
+
+                $this->mailer->send($email);
+
+                $this->logger->info('[PlanPrevention] Notification de soumission envoyée au chef de projet', [
+                    'plan_reference' => $plan->getReference(),
+                    'recipient'      => $chefProjet->getEmail(),
                 ]);
+            } catch (\Throwable $e) {
+                $this->logger->error('[PlanPrevention] Échec envoi notification de soumission au chef de projet', [
+                    'plan_reference' => $plan->getReference(),
+                    'recipient'      => $chefProjet->getEmail(),
+                    'error'          => $e->getMessage(),
+                ]);
+            }
+        }
+    }
 
-            $this->mailer->send($email);
+    /**
+     * R-31/D11 : tous les chefs de projet prestataire de l'entreprise du dossier sont informés
+     * de la soumission (suivi en lecture seule, sans droit de validation).
+     */
+    public function notifierChefsProjetPrestataire(PlanPrevention $plan): void
+    {
+        $entrepriseId = $plan->getCreatedBy()?->getEntreprise()?->getId();
+        if ($entrepriseId === null) {
+            return;
+        }
 
-            $this->logger->info('[PlanPrevention] Notification de soumission envoyée au chef de projet', [
-                'plan_reference' => $plan->getReference(),
-                'recipient'      => $chefProjet->getEmail(),
-            ]);
-        } catch (\Throwable $e) {
-            $this->logger->error('[PlanPrevention] Échec envoi notification de soumission au chef de projet', [
-                'plan_reference' => $plan->getReference(),
-                'recipient'      => $chefProjet->getEmail(),
-                'error'          => $e->getMessage(),
-            ]);
+        foreach ($this->userRepository->findByRoleAndEntreprise('ROLE_CHEF_PROJET_PRESTATAIRE', (string) $entrepriseId) as $cpp) {
+            try {
+                $email = (new \Symfony\Component\Mime\Email())
+                    ->from($this->fromAddress)
+                    ->to((string) $cpp->getEmail())
+                    ->subject(sprintf('[TOA] Plan de Prévention #%s soumis', $plan->getReference()))
+                    ->text(sprintf(
+                        "Bonjour %s,\n\nLe plan de prévention %s de votre entreprise a été soumis. Vous pouvez le suivre en lecture seule.%s\n\nCordialement,\nL'équipe TOA",
+                        trim((string) $cpp->getFirstname()),
+                        $plan->getReference(),
+                        $this->planUrl($plan) !== null ? "\n\nConsulter le plan : " . $this->planUrl($plan) : '',
+                    ));
+
+                $this->mailer->send($email);
+            } catch (\Throwable $e) {
+                $this->logger->error('[PlanPrevention] Échec envoi notification chef de projet prestataire', [
+                    'plan_reference' => $plan->getReference(),
+                    'recipient'      => $cpp->getEmail(),
+                    'error'          => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * R-33 : la première décision d'un titulaire verrouille le dossier ; l'autre titulaire en est informé
+     * (le nom du décideur reste dans l'historique du dossier).
+     */
+    public function informerCoTitulaires(PlanPrevention $plan, User $decideur, string $decision): void
+    {
+        foreach ($this->chefsProjetDuPlan($plan) as $titulaire) {
+            if ($titulaire->getUserIdentifier() === $decideur->getUserIdentifier()) {
+                continue;
+            }
+
+            try {
+                $email = (new \Symfony\Component\Mime\Email())
+                    ->from($this->fromAddress)
+                    ->to((string) $titulaire->getEmail())
+                    ->subject(sprintf('[TOA] Plan de Prévention #%s %s par un autre chef de projet', $plan->getReference(), $decision))
+                    ->text(sprintf(
+                        "Bonjour %s,\n\nLe plan de prévention %s a été %s par %s. Le dossier est désormais verrouillé pour vous.%s\n\nCordialement,\nL'équipe TOA",
+                        trim((string) $titulaire->getFirstname()),
+                        $plan->getReference(),
+                        $decision,
+                        trim($decideur->getFirstname() . ' ' . $decideur->getName()),
+                        $this->planUrl($plan) !== null ? "\n\nConsulter le plan : " . $this->planUrl($plan) : '',
+                    ));
+
+                $this->mailer->send($email);
+            } catch (\Throwable $e) {
+                $this->logger->error('[PlanPrevention] Échec envoi information aux co-titulaires', [
+                    'plan_reference' => $plan->getReference(),
+                    'recipient'      => $titulaire->getEmail(),
+                    'error'          => $e->getMessage(),
+                ]);
+            }
         }
     }
 

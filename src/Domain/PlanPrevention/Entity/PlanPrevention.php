@@ -581,6 +581,21 @@ class PlanPrevention
         return $this;
     }
 
+    /**
+     * R-32 : un dossier n'est plus attribué nominativement mais rattaché à un processus
+     * dont les chefs de projet TOA titulaires le prennent en charge. Un chef de projet
+     * sans processus configuré conserve l'ancienne règle nominative.
+     */
+    public function estGereePar(User $user): bool
+    {
+        $processus = $user->getProcessus();
+        if ($processus !== []) {
+            return $this->typeIntervention !== null && in_array($this->typeIntervention, $processus, true);
+        }
+
+        return $this->chefProjet?->getUserIdentifier() === $user->getUserIdentifier();
+    }
+
     public function getSoumisAt(): ?\DateTimeImmutable
     {
         return $this->soumisAt;

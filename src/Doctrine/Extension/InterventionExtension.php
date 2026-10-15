@@ -41,6 +41,18 @@ class InterventionExtension implements QueryCollectionExtensionInterface
 
         $root = $queryBuilder->getRootAliases()[0];
 
+        // R-32 : un chef de projet TOA rattaché à des processus voit les interventions des
+        // dossiers de ses processus, et uniquement ceux-ci.
+        if ($user->getProcessus() !== [] && $this->security->isGranted('ROLE_CHEF_PROJET')) {
+            $queryBuilder
+                ->join(sprintf('%s.permitTravail', $root), 'int_cp_permit')
+                ->join('int_cp_permit.planPrevention', 'int_cp_plan')
+                ->andWhere('int_cp_plan.typeIntervention IN (:int_cp_processus)')
+                ->setParameter('int_cp_processus', $user->getProcessus());
+
+            return;
+        }
+
         // Prestataire/agent terrain : voir les interventions créées par eux, liées à
         // leur permis, OU appartenant à un collègue de la même entreprise (équipe)
         $queryBuilder

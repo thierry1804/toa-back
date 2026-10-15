@@ -304,8 +304,9 @@ class PermitTravailVoter extends Voter
 
     private function checkChefProjetOwnership(PermitTravail $permit, User $user): void
     {
-        $chefProjet = $permit->getPlanPrevention()?->getChefProjet();
-        if ($chefProjet === null || $chefProjet->getUserIdentifier() !== $user->getUserIdentifier()) {
+        // R-34 : le chef de projet TOA valide le PV de clôture des dossiers de ses processus.
+        $plan = $permit->getPlanPrevention();
+        if ($plan === null || !$plan->estGereePar($user)) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
     }

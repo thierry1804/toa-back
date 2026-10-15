@@ -2,6 +2,7 @@
 
 namespace App\Domain\User\Entity;
 
+use App\Domain\Referentiel\ProcessusReferentiel;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -91,6 +92,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:write'])]
     private bool $isActive = true;
 
+    /**
+     * R-30 : processus pris en charge par un chef de projet TOA (attribut multivalué,
+     * valeurs du référentiel des processus). Vide = pas de rattachement par processus.
+     *
+     * @var list<string>|null
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
+    #[Assert\All([new Assert\Choice(choices: ProcessusReferentiel::VALUES, message: 'processus_invalid')])]
+    private ?array $processus = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['user:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -177,6 +189,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @see UserInterface
      */
+    /** @return list<string> */
+    public function getProcessus(): array
+    {
+        return $this->processus ?? [];
+    }
+
+    /** @param list<string>|null $processus */
+    public function setProcessus(?array $processus): static
+    {
+        $clean = array_values(array_unique(array_map('strval', $processus ?? [])));
+        $this->processus = $clean === [] ? null : $clean;
+
+        return $this;
+    }
+
     public function getRoles(): array
     {
         $roles = $this->roles;

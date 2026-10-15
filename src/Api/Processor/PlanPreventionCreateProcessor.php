@@ -60,8 +60,9 @@ final class PlanPreventionCreateProcessor implements ProcessorInterface
                 $data->setPlanificationSites($rawSites);
 
                 // Le plan de prévention découle d'une planification : le chef de projet est celui
-                // qui l'a créée, sauf si le prestataire en a déjà sélectionné un explicitement.
-                if ($data->getChefProjet() === null && $planification->getCreatedBy() instanceof User) {
+                // qui l'a créée, sauf si le prestataire en a déjà sélectionné un explicitement ; un
+                // chef de projet rattaché à des processus ne désigne plus nominativement (R-32).
+                if ($data->getChefProjet() === null && $planification->getCreatedBy() instanceof User && $planification->getCreatedBy()->getProcessus() === []) {
                     $data->setChefProjet($planification->getCreatedBy());
                 }
             }

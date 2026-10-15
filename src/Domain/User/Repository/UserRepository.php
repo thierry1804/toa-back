@@ -13,6 +13,23 @@ class UserRepository extends ServiceEntityRepository
         parent::__construct($registry, User::class);
     }
 
+    /**
+     * R-32 : chefs de projet TOA actifs titulaires d'un processus (plusieurs possibles, R-33).
+     *
+     * @return User[]
+     */
+    public function findChefsProjetByProcessus(?string $processus): array
+    {
+        if ($processus === null || $processus === '') {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $this->findByRole('ROLE_CHEF_PROJET'),
+            static fn (User $user): bool => $user->isActive() && in_array($processus, $user->getProcessus(), true),
+        ));
+    }
+
     /** @return User[] */
     public function findByRole(string $role): array
     {

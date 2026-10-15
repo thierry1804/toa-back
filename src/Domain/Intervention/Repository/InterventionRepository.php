@@ -206,6 +206,14 @@ class InterventionRepository extends ServiceEntityRepository
             return;
         }
 
+        // R-32 : chef de projet TOA rattaché à des processus -> dossiers de ses processus.
+        if ($currentUser->getProcessus() !== []) {
+            $qb->andWhere('pp.typeIntervention IN (:processus)')
+               ->setParameter('processus', $currentUser->getProcessus());
+
+            return;
+        }
+
         $qb->andWhere('pp.chefProjet = :currentUser')
            ->setParameter('currentUser', $currentUser);
     }

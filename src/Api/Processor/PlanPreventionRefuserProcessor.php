@@ -79,6 +79,7 @@ final class PlanPreventionRefuserProcessor implements ProcessorInterface
         $result = $this->persistProcessor->process($plan, $operation, $uriVariables, $context);
 
         $this->notificationService->notifierPrestataire($plan, $commentaire);
+        $this->notificationService->informerCoTitulaires($plan, $user, 'refusé');
 
         return $result;
     }
