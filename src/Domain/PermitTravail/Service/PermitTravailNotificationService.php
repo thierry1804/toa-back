@@ -660,12 +660,16 @@ Accéder au permis : " . $url;
         ) . $this->accessCtaHtml($permit, 'Ouvrir le permis');
     }
 
+    /**
+     * R-27 : rappel 24 h avant l'échéance, adressé à l'équipe HSE du prestataire et à
+     * l'intervenant, pour inviter au dépôt d'une demande de renouvellement.
+     */
     public function notifierExpirationProchaine(PermitTravail $permit): void
     {
-        $prestataire = $permit->getCreatedBy();
+        $destinataires = $this->destinatairesRappelExpiration($permit);
 
-        if (!$prestataire instanceof User) {
-            $this->logger->warning('[PermitTravail] notifierExpirationProchaine: prestataire introuvable', [
+        if ($destinataires === []) {
+            $this->logger->warning('[PermitTravail] notifierExpirationProchaine: aucun destinataire', [
                 'permit_reference' => $permit->getReference(),
             ]);
 
@@ -674,39 +678,74 @@ Accéder au permis : " . $url;
 
         $dateFinPrevue = $permit->getDateFinPrevue();
 
-        try {
-            $email = (new Email())
-                ->from($this->fromAddress)
-                ->to((string) $prestataire->getEmail())
-                ->subject(sprintf('[TOA] Permis de Travail #%s bientôt expiré', $permit->getReference()))
-                ->text($this->withLink($this->buildExpirationText($permit, $prestataire, $dateFinPrevue), $permit))
-                ->html($this->buildExpirationHtml($permit, $prestataire, $dateFinPrevue));
+        foreach ($destinataires as $destinataire) {
+            try {
+                $email = (new Email())
+                    ->from($this->fromAddress)
+                    ->to((string) $destinataire->getEmail())
+                    ->subject(sprintf('[TOA] Permis de Travail #%s : échéance dans 24 h — renouvellement à demander', $permit->getReference()))
+                    ->text($this->withLink($this->buildExpirationText($permit, $destinataire, $dateFinPrevue), $permit))
+                    ->html($this->buildExpirationHtml($permit, $destinataire, $dateFinPrevue));
 
-            $this->mailer->send($email);
+                $this->mailer->send($email);
 
-            $this->logger->info('[PermitTravail] Notification expiration prochaine envoyée', [
-                'permit_reference' => $permit->getReference(),
-                'recipient'        => $prestataire->getEmail(),
-            ]);
-        } catch (\Throwable $e) {
-            $this->logger->error('[PermitTravail] Échec envoi notification expiration prochaine', [
-                'permit_reference' => $permit->getReference(),
-                'recipient'        => $prestataire->getEmail(),
-                'error'            => $e->getMessage(),
-            ]);
+                $this->logger->info('[PermitTravail] Notification expiration prochaine envoyée', [
+                    'permit_reference' => $permit->getReference(),
+                    'recipient'        => $destinataire->getEmail(),
+                ]);
+            } catch (\Throwable $e) {
+                $this->logger->error('[PermitTravail] Échec envoi notification expiration prochaine', [
+                    'permit_reference' => $permit->getReference(),
+                    'recipient'        => $destinataire->getEmail(),
+                    'error'            => $e->getMessage(),
+                ]);
+            }
         }
+    }
+
+    /** @return User[] sans doublon (par e-mail) */
+    private function destinatairesRappelExpiration(PermitTravail $permit): array
+    {
+        $candidats = [];
+
+        $createur = $permit->getCreatedBy();
+        if ($createur instanceof User) {
+            $candidats[] = $createur;
+
+            $entrepriseId = $createur->getEntreprise()?->getId();
+            if ($entrepriseId !== null) {
+                foreach ($this->userRepository->findByRoleAndEntreprise('ROLE_HSE', (string) $entrepriseId) as $hse) {
+                    $candidats[] = $hse;
+                }
+            }
+        }
+
+        $intervenant = $permit->getIntervention()?->getCreatedBy();
+        if ($intervenant instanceof User) {
+            $candidats[] = $intervenant;
+        }
+
+        $uniques = [];
+        foreach ($candidats as $user) {
+            $email = (string) $user->getEmail();
+            if ($email !== '' && !isset($uniques[$email])) {
+                $uniques[$email] = $user;
+            }
+        }
+
+        return array_values($uniques);
     }
 
     private function buildExpirationText(PermitTravail $permit, User $prestataire, ?\DateTimeImmutable $dateFinPrevue): string
     {
         return sprintf(
             "Bonjour %s %s,\n\n"
-            . "Votre Permis de Travail arrive bientôt à échéance :\n\n"
+            . "Le Permis de Travail suivant arrive à échéance dans environ 24 heures :\n\n"
             . "  Référence      : %s\n"
             . "  Site           : %s\n"
             . "  Type           : %s\n"
             . "  Date fin prévue : %s\n\n"
-            . "Merci de vous assurer que les travaux seront clôturés à temps ou de demander une prolongation si nécessaire.\n\n"
+            . "Sans renouvellement, ce permis sera clôturé automatiquement à l'échéance. Si les travaux se poursuivent, merci de déposer dès maintenant une demande de renouvellement.\n\n"
             . "Cordialement,\nL'équipe TOA",
             $prestataire->getFirstname(),
             $prestataire->getName(),
@@ -726,14 +765,14 @@ Accéder au permis : " . $url;
 <body style="font-family: Arial, sans-serif; padding: 20px;">
     <h2 style="color: #e67e22;">Permis de Travail bientôt expiré</h2>
     <p>Bonjour <strong>%s %s</strong>,</p>
-    <p>Votre Permis de Travail arrive bientôt à échéance :</p>
+    <p>Le Permis de Travail suivant arrive à échéance dans environ 24 heures :</p>
     <table style="border-collapse: collapse; width: 100%%;">
         <tr><td style="padding: 4px 8px;"><strong>Référence</strong></td><td style="padding: 4px 8px;">%s</td></tr>
         <tr><td style="padding: 4px 8px;"><strong>Site</strong></td><td style="padding: 4px 8px;">%s</td></tr>
         <tr><td style="padding: 4px 8px;"><strong>Type</strong></td><td style="padding: 4px 8px;">%s</td></tr>
         <tr><td style="padding: 4px 8px;"><strong>Date fin prévue</strong></td><td style="padding: 4px 8px;">%s</td></tr>
     </table>
-    <p>Merci de vous assurer que les travaux seront clôturés à temps ou de demander une prolongation si nécessaire.</p>
+    <p>Sans renouvellement, ce permis sera clôturé automatiquement à l\'échéance. Si les travaux se poursuivent, merci de déposer dès maintenant une demande de renouvellement.</p>
     <hr>
     <p style="color: #666; font-size: 0.9em;">Cordialement,<br>L\'équipe TOA</p>
 </body>

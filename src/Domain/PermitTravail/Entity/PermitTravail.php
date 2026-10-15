@@ -265,6 +265,16 @@ class PermitTravail
     #[ORM\OneToOne(targetEntity: Intervention::class, mappedBy: 'permitTravail', fetch: 'EXTRA_LAZY')]
     private ?Intervention $intervention = null;
 
+    /** R-24 : permis renouvelé — un renouvellement est un nouveau permis lié à l'origine. */
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(name: 'permis_origine_id', nullable: true, onDelete: 'SET NULL')]
+    private ?self $permisOrigine = null;
+
+    /** R-24 : rang du renouvellement (1 pour R1, 2 pour R2…), null pour un permis d'origine. */
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    #[Groups(['permit_travail:read', 'intervention:read'])]
+    private ?int $numeroRenouvellement = null;
+
     #[ORM\OneToOne(mappedBy: 'permitGeneral', targetEntity: PermitTravailGroupe::class)]
     private ?PermitTravailGroupe $groupeAsGeneral = null;
 
@@ -551,6 +561,47 @@ class PermitTravail
     }
 
     #[Groups(['permit_travail:read'])]
+    public function getIntervention(): ?Intervention
+    {
+        return $this->intervention;
+    }
+
+    public function getPermisOrigine(): ?self
+    {
+        return $this->permisOrigine;
+    }
+
+    public function setPermisOrigine(?self $permisOrigine): static
+    {
+        $this->permisOrigine = $permisOrigine;
+
+        return $this;
+    }
+
+    #[Groups(['permit_travail:read'])]
+    public function getPermisOrigineId(): ?string
+    {
+        return $this->permisOrigine?->getId()?->toRfc4122();
+    }
+
+    public function getNumeroRenouvellement(): ?int
+    {
+        return $this->numeroRenouvellement;
+    }
+
+    public function setNumeroRenouvellement(?int $numeroRenouvellement): static
+    {
+        $this->numeroRenouvellement = $numeroRenouvellement;
+
+        return $this;
+    }
+
+    /** Référence du permis d'origine, sans suffixe de renouvellement (R1, R2…). */
+    public function getReferenceOrigine(): ?string
+    {
+        return $this->reference === null ? null : preg_replace('/-R\d+$/', '', $this->reference);
+    }
+
     public function getInterventionId(): ?string
     {
         return $this->intervention?->getId()?->toRfc4122();

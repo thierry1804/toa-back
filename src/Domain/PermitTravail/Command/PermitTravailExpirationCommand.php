@@ -10,6 +10,7 @@ use App\Domain\PermitTravail\Entity\PvReceptionPdf;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPvReceptionPdf;
 use App\Domain\PermitTravail\Enum\TypeCloturePerm;
+use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Message\GeneratePvReceptionMessage;
 use App\Domain\PermitTravail\Repository\CloturePermRepository;
 use App\Domain\PermitTravail\Repository\PvReceptionPdfRepository;
@@ -58,8 +59,14 @@ class PermitTravailExpirationCommand extends Command
             ->from(PermitTravail::class, 'p')
             ->where('p.dateFinPrevue < :now')
             ->andWhere('p.statut IN (:statuts)')
+            // R-28 : seuls les permis Hauteur et Électrique sont clôturés automatiquement…
+            ->andWhere('p.type IN (:types)')
+            // … en l'absence de renouvellement déposé (un renouvellement soumis suspend la clôture).
+            ->andWhere('NOT EXISTS (SELECT 1 FROM ' . PermitTravail::class . ' r WHERE r.permisOrigine = p AND r.statut = :renouvellementSoumis)')
             ->setParameter('now', $now)
-            ->setParameter('statuts', array_map(fn($s) => $s->value, self::STATUTS_CLOTURABLES));
+            ->setParameter('statuts', array_map(fn($s) => $s->value, self::STATUTS_CLOTURABLES))
+            ->setParameter('types', [TypePermitTravail::HAUTEUR->value, TypePermitTravail::ELECTRIQUE->value])
+            ->setParameter('renouvellementSoumis', StatutPermitTravail::SOUMIS->value);
 
         /** @var PermitTravail[] $permits */
         $permits = $qb->getQuery()->getResult();

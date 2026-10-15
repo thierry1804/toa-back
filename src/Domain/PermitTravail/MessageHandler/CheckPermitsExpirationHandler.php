@@ -19,14 +19,14 @@ class CheckPermitsExpirationHandler
         private readonly PermitTravailNotificationService $notificationService,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
-        private readonly int $seuilExpirationJours = 3,
+        private readonly int $seuilExpirationHeures = 24,
     ) {
     }
 
     public function __invoke(CheckPermitsExpirationMessage $message): void
     {
         $now = new \DateTimeImmutable();
-        $seuil = $now->modify(sprintf('+%d days', $this->seuilExpirationJours));
+        $seuil = $now->modify(sprintf('+%d hours', $this->seuilExpirationHeures));
 
         $permits = $this->permitRepository->findExpirantSansNotification($now, $seuil);
 
