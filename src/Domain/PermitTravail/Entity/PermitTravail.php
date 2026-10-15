@@ -41,7 +41,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: PermitTravailRepository::class)]
 #[ORM\Table(name: '`permit_travail`')]
 #[ORM\HasLifecycleCallbacks]
-#[ApiFilter(SearchFilter::class, properties: ['statut' => 'exact', 'codeSite' => 'exact', 'typePermis' => 'exact'])]
+#[ApiFilter(SearchFilter::class, properties: ['statut' => 'exact', 'codeSite' => 'exact', 'typePermis' => 'exact', 'planPrevention' => 'exact'])]
 #[ApiResource(
     operations: [
         new GetCollection(
