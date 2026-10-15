@@ -38,6 +38,7 @@ class PermitTravailRepository extends ServiceEntityRepository
             ->where('p.statut IN (:statuts)')
             ->andWhere('p.type IN (:types)')
             ->andWhere('p.dateFinPrevue IS NOT NULL')
+            ->andWhere('p.validatedAt IS NOT NULL AND p.dateDebutPrevue = p.validatedAt')
             ->andWhere('p.dateFinPrevue BETWEEN :now AND :seuil')
             ->andWhere('p.notificationExpirationEnvoyeeAt IS NULL')
             ->andWhere(sprintf(

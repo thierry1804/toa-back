@@ -61,6 +61,9 @@ class PermitTravailExpirationCommand extends Command
             ->andWhere('p.statut IN (:statuts)')
             // R-28 : seuls les permis Hauteur et Électrique sont clôturés automatiquement…
             ->andWhere('p.type IN (:types)')
+            // Garde-fou : seuls les permis validés selon la règle R-19/R-20 (début = validation) ont une échéance de validité ;
+            // les permis antérieurs portent encore des dates prévisionnelles et ne doivent pas être clôturés d'office.
+            ->andWhere('p.validatedAt IS NOT NULL AND p.dateDebutPrevue = p.validatedAt')
             // … en l'absence de renouvellement déposé (un renouvellement soumis suspend la clôture).
             ->andWhere('NOT EXISTS (SELECT 1 FROM ' . PermitTravail::class . ' r WHERE r.permisOrigine = p AND r.statut = :renouvellementSoumis)')
             ->setParameter('now', $now)
