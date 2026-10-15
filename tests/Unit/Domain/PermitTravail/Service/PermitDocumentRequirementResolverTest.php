@@ -26,7 +26,8 @@ class PermitDocumentRequirementResolverTest extends TestCase
 
             $this->assertContains(TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX, $required, $process);
             $this->assertContains(TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX, $required, $process);
-            $this->assertContains(TypeDocumentPermitTravail::PV_FIN_TRAVAUX, $required, $process);
+            // R-26 : le PV de fin de travaux n'est plus exigé à la clôture.
+            $this->assertNotContains(TypeDocumentPermitTravail::PV_FIN_TRAVAUX, $required, $process);
         }
     }
 

@@ -25,7 +25,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[AsCommand(
     name: 'app:permit-travail:expire',
-    description: 'Clôture automatiquement les permis de travail dont la date de fin prévue est dépassée',
+    description: 'Clôture automatiquement les permis de travail dont la durée de validité (7 j Nouveau site, 3 j autres) est écoulée',
 )]
 class PermitTravailExpirationCommand extends Command
 {
@@ -85,10 +85,13 @@ class PermitTravailExpirationCommand extends Command
                 $cloture->setPermitTravail($permit);
                 $cloture->setTypeCloture(TypeCloturePerm::AUTOMATIQUE);
                 $cloture->setDateClotureEffective($now);
-                $cloture->setCommentaire('Clôture automatique : date de fin prévue dépassée');
+                $cloture->setCommentaire('Clôture automatique : durée de validité du permis écoulée');
                 $cloture->setAccordClient(false);
 
-                $permit->setStatut(StatutPermitTravail::CLOTURE);
+                // R-28 : la clôture automatique à l'expiration de la validité ne
+                // donne lieu à aucune validation (contrairement à une clôture
+                // demandée avant le terme, soumise au chef de projet TOA).
+                $permit->setStatut(StatutPermitTravail::PV_VALIDE);
 
                 $this->entityManager->persist($cloture);
 

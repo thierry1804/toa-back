@@ -438,6 +438,10 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.create',            'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.edit',              'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.delete',            'bypass' => false],
+        // R-14/R-23/R-26 : l'agent de terrain crée le permis, le soumet et demande sa clôture.
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.submit',            'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.resoumettre',       'bypass' => false],
+        ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'permit_travail.cloturer',          'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.create',              'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.view',                'bypass' => false],
         ['role' => 'ROLE_AGENT_TERRAIN', 'key' => 'intervention.edit',                'bypass' => false],

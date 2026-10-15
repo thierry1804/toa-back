@@ -45,6 +45,8 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('permit_travail.engagement_obligatoire');
         }
 
+        $this->checkEvaluationDangers($permit);
+
         $missingTypes = $this->findMissingDocumentTypes($permit);
         if (!empty($missingTypes)) {
             $missingLabels = array_map(
@@ -82,6 +84,25 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
         return $result;
     }
 
+    /**
+     * Contrôle du 28/08/2026 (R-22) : lorsque l'évaluation des dangers est
+     * renseignée, l'évaluation finale doit traduire une réduction du niveau de
+     * risque par rapport à l'évaluation préliminaire.
+     */
+    private function checkEvaluationDangers(PermitTravail $permit): void
+    {
+        $rang = ['rouge' => 3, 'jaune' => 2, 'vert' => 1];
+
+        foreach ($permit->getDangers() as $entry) {
+            $preliminaire = $rang[$entry['evaluationPreliminaire'] ?? ''] ?? null;
+            $finale = $rang[$entry['evaluationFinale'] ?? ''] ?? null;
+
+            if ($preliminaire !== null && $finale !== null && $finale >= $preliminaire) {
+                throw new UnprocessableEntityHttpException('permit_travail.evaluation_sans_reduction');
+            }
+        }
+    }
+
     /** @return TypeDocumentPermitTravail[] */
     private function findMissingDocumentTypes(PermitTravail $permit): array
     {
@@ -89,8 +110,9 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
     }
 
     /**
-     * Hors « Nouveau site », un permis spécialisé ne peut être soumis que si un
-     * permis Général du même couple site/plan a déjà été soumis.
+     * Hors « Nouveau site » (R-16), un permis spécialisé exige qu'un permis
+     * Général ait été créé pour le même couple site/plan, mais n'attend pas sa
+     * validation : chaque permis suit ensuite son propre circuit.
      */
     private function checkGeneralRequis(PermitTravail $permit): void
     {
@@ -98,20 +120,15 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
             return;
         }
 
-        $generaux = $this->entityManager->getRepository(PermitTravail::class)->findBy([
+        $general = $this->entityManager->getRepository(PermitTravail::class)->findOneBy([
             'codeSite'       => $permit->getCodeSite(),
             'planPrevention' => $permit->getPlanPrevention(),
             'type'           => TypePermitTravail::GENERAL,
         ]);
 
-        $nonSoumis = [StatutPermitTravail::BROUILLON, StatutPermitTravail::REJETE, StatutPermitTravail::REFUSE_HSE];
-        foreach ($generaux as $general) {
-            if (!in_array($general->getStatut(), $nonSoumis, true)) {
-                return;
-            }
+        if ($general === null) {
+            throw new UnprocessableEntityHttpException('permit_travail.general_requis');
         }
-
-        throw new UnprocessableEntityHttpException('permit_travail.general_requis');
     }
 
     private function checkNouveauSitePair(PermitTravail $permit): ?PermitTravail

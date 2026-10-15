@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Domain\PermitTravail\Entity\DecisionHsePermitTravail;
 use App\Domain\PermitTravail\Entity\PermitTravail;
+use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
@@ -69,6 +70,12 @@ final class PermitTravailValiderProcessor implements ProcessorInterface
 
         $permit->setStatut(StatutPermitTravail::VALIDE_HSE);
         $permit->setValidatedAt($now);
+        // R-19/R-20 : la date de début réelle est la date de validation (non
+        // saisissable) ; la validité court 7 jours pour « Nouveau site », 3
+        // jours pour les autres processus, à compter de cette validation.
+        $dureeJours = $permit->getProcessus() === ProcessusPermitTravail::NOUVEAU_SITE ? 7 : 3;
+        $permit->setDateDebutPrevue($now);
+        $permit->setDateFinPrevue($now->modify(sprintf('+%d days', $dureeJours)));
         $permit->addDecisionHse($decision);
 
         $this->entityManager->persist($decision);

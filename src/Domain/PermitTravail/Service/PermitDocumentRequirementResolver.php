@@ -31,13 +31,11 @@ final class PermitDocumentRequirementResolver
     private const CLOTURE_MATRIX = [
         self::NOUVEAU_SITE => [
             TypeDocumentPermitTravail::PV_CLOTURE_ENVIRONNEMENT,
-            TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
             TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
             TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX,
         ],
         self::AUTRES => [
             TypeDocumentPermitTravail::PHOTO_PROPRETE_SITE,
-            TypeDocumentPermitTravail::PV_FIN_TRAVAUX,
             TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
             TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX,
         ],
