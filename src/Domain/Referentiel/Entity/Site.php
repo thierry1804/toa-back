@@ -91,6 +91,10 @@ class Site
     #[Groups(['site:read'])]
     private bool $sourceKmz = false;
 
+    #[ORM\Column(name: 'source_spreadsheet', type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['site:read'])]
+    private bool $sourceSpreadsheet = false;
+
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     #[Groups(['site:read', 'import_kmz_site:read'])]
     private bool $apn = false;
@@ -103,6 +107,11 @@ class Site
     #[ORM\JoinColumn(name: 'import_kmz_id', nullable: true, onDelete: 'SET NULL')]
     #[Groups(['site:read'])]
     private ?ImportKmzSite $importKmz = null;
+
+    #[ORM\ManyToOne(targetEntity: ImportSpreadsheetSite::class, inversedBy: 'sites')]
+    #[ORM\JoinColumn(name: 'import_spreadsheet_id', nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['site:read'])]
+    private ?ImportSpreadsheetSite $importSpreadsheet = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE)]
     #[Groups(['site:read'])]
@@ -328,6 +337,18 @@ class Site
         return $this;
     }
 
+    public function isSourceSpreadsheet(): bool
+    {
+        return $this->sourceSpreadsheet;
+    }
+
+    public function setSourceSpreadsheet(bool $sourceSpreadsheet): static
+    {
+        $this->sourceSpreadsheet = $sourceSpreadsheet;
+
+        return $this;
+    }
+
     public function isApn(): bool
     {
         return $this->apn;
@@ -360,6 +381,18 @@ class Site
     public function setImportKmz(?ImportKmzSite $importKmz): static
     {
         $this->importKmz = $importKmz;
+
+        return $this;
+    }
+
+    public function getImportSpreadsheet(): ?ImportSpreadsheetSite
+    {
+        return $this->importSpreadsheet;
+    }
+
+    public function setImportSpreadsheet(?ImportSpreadsheetSite $importSpreadsheet): static
+    {
+        $this->importSpreadsheet = $importSpreadsheet;
 
         return $this;
     }

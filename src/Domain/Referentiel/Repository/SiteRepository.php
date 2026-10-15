@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Referentiel\Repository;
 
 use App\Domain\Referentiel\Entity\ImportKmzSite;
+use App\Domain\Referentiel\Entity\ImportSpreadsheetSite;
 use App\Domain\Referentiel\Entity\Site;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -23,6 +24,15 @@ class SiteRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('s')
             ->where('s.importKmz = :import')
+            ->setParameter('import', $import)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findByImportSpreadsheet(ImportSpreadsheetSite $import): array
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.importSpreadsheet = :import')
             ->setParameter('import', $import)
             ->getQuery()
             ->getResult();
@@ -93,6 +103,25 @@ class SiteRepository extends ServiceEntityRepository
                 . '|' . ($site->getCommune() ?? '')
                 . '|' . ($site->getDistrict() ?? '');
             $map[$key] = $site;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Charge tous les sites en 1 requête et retourne un tableau indexé par codeSite (minuscule).
+     * Utilisé pour l'import CSV/XLSX bulk afin d'éviter le N+1.
+     *
+     * @return array<string, Site>
+     */
+    public function buildLookupMapByCode(): array
+    {
+        /** @var Site[] $all */
+        $all = $this->createQueryBuilder('s')->getQuery()->getResult();
+
+        $map = [];
+        foreach ($all as $site) {
+            $map[strtolower($site->getCodeSite())] = $site;
         }
 
         return $map;
