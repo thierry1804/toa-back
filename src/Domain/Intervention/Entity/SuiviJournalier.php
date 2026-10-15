@@ -111,6 +111,16 @@ class SuiviJournalier
     #[Groups(['suivi_journalier:read', 'suivi_journalier:write', 'intervention:read'])]
     private ?string $commentaire = null;
 
+    /**
+     * R-29 : questionnaire des risques saisi en fin de formulaire, au même format
+     * que celui du permis de travail (dangers, moyens de maîtrise, évaluations).
+     *
+     * @var list<array{dangers: ?string, moyensMaitrise: ?string, evaluationPreliminaire: ?string, evaluationFinale: ?string}>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['suivi_journalier:read', 'suivi_journalier:write', 'intervention:read'])]
+    private ?array $evaluationRisques = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['suivi_journalier:read', 'intervention:read'])]
@@ -220,6 +230,20 @@ class SuiviJournalier
     public function setCommentaire(?string $commentaire): static
     {
         $this->commentaire = $commentaire;
+
+        return $this;
+    }
+
+    /** @return list<array{dangers: ?string, moyensMaitrise: ?string, evaluationPreliminaire: ?string, evaluationFinale: ?string}>|null */
+    public function getEvaluationRisques(): ?array
+    {
+        return $this->evaluationRisques;
+    }
+
+    /** @param list<array{dangers: ?string, moyensMaitrise: ?string, evaluationPreliminaire: ?string, evaluationFinale: ?string}>|null $evaluationRisques */
+    public function setEvaluationRisques(?array $evaluationRisques): static
+    {
+        $this->evaluationRisques = $evaluationRisques;
 
         return $this;
     }
