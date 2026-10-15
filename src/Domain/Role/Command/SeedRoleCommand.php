@@ -28,6 +28,7 @@ class SeedRoleCommand extends Command
         ['name' => 'ROLE_COLLABORATEUR', 'label' => 'Collaborateur'],
         ['name' => 'ROLE_PRESTATAIRE',   'label' => 'Prestataire'],
         ['name' => 'ROLE_AGENT_TERRAIN', 'label' => 'Agent de terrain'],
+        ['name' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'label' => 'Chef de projet Prestataire'],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)

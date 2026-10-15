@@ -25,13 +25,14 @@ class PermitDocumentRequirementResolverTest extends TestCase
             );
 
             $this->assertContains(TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX, $required, $process);
-            $this->assertContains(TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX, $required, $process);
+            // R-26 : plus de photo après travaux exigée à la clôture.
+            $this->assertNotContains(TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX, $required, $process);
             // R-26 : le PV de fin de travaux n'est plus exigé à la clôture.
             $this->assertNotContains(TypeDocumentPermitTravail::PV_FIN_TRAVAUX, $required, $process);
         }
     }
 
-    public function testMissingClotureDocumentsListBothPhotos(): void
+    public function testMissingClotureDocumentsListPhotoAvantTravaux(): void
     {
         $permit = $this->permit(TypePermitTravail::GENERAL, ProcessusPermitTravail::MAINTENANCE, 'Maintenance préventive');
         $permit->addDocument($this->document(TypeDocumentPermitTravail::PV_FIN_TRAVAUX));
@@ -40,7 +41,7 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $missing = $this->resolver(null)->findMissingClotureDocumentTypes($permit);
 
         $this->assertEqualsCanonicalizing(
-            [TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX, TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX],
+            [TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX],
             $missing,
         );
     }

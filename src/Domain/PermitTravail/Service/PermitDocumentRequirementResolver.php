@@ -32,12 +32,10 @@ final class PermitDocumentRequirementResolver
         self::NOUVEAU_SITE => [
             TypeDocumentPermitTravail::PV_CLOTURE_ENVIRONNEMENT,
             TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
-            TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX,
         ],
         self::AUTRES => [
             TypeDocumentPermitTravail::PHOTO_PROPRETE_SITE,
             TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
-            TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX,
         ],
     ];
 
