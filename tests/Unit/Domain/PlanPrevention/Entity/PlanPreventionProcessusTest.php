@@ -9,20 +9,20 @@ use App\Domain\Referentiel\ProcessusReferentiel;
 use App\Domain\User\Entity\User;
 use PHPUnit\Framework\TestCase;
 
-/** R-30/R-32 : rattachement des dossiers à un processus plutôt qu\x27à un chef de projet nominatif. */
+/** R-30/R-32 : rattachement des dossiers à un processus plutôt qu'à un chef de projet nominatif. */
 class PlanPreventionProcessusTest extends TestCase
 {
     public function testTitulaireDuProcessusGereLeDossier(): void
     {
         $plan = (new PlanPrevention())->setTypeIntervention(ProcessusReferentiel::ENERGIE);
-        $titulaire = $this->chefProjet(\x27a@toa.local\x27, [ProcessusReferentiel::ENERGIE, ProcessusReferentiel::INFRASTRUCTURE]);
+        $titulaire = $this->chefProjet('a@toa.local', [ProcessusReferentiel::ENERGIE, ProcessusReferentiel::INFRASTRUCTURE]);
 
         $this->assertTrue($plan->estGereePar($titulaire));
     }
 
     public function testChefDUnAutreProcessusNeVoitPasLeDossierMemeSiDesigneNominativement(): void
     {
-        $autre = $this->chefProjet(\x27b@toa.local\x27, [ProcessusReferentiel::NOUVEAU_SITE]);
+        $autre = $this->chefProjet('b@toa.local', [ProcessusReferentiel::NOUVEAU_SITE]);
         $plan = (new PlanPrevention())->setTypeIntervention(ProcessusReferentiel::ENERGIE)->setChefProjet($autre);
 
         $this->assertFalse($plan->estGereePar($autre));
@@ -32,17 +32,17 @@ class PlanPreventionProcessusTest extends TestCase
     {
         $plan = (new PlanPrevention())->setTypeIntervention(ProcessusReferentiel::VIE_DE_RESEAU);
 
-        $this->assertTrue($plan->estGereePar($this->chefProjet(\x27a@toa.local\x27, [ProcessusReferentiel::VIE_DE_RESEAU])));
-        $this->assertTrue($plan->estGereePar($this->chefProjet(\x27b@toa.local\x27, [ProcessusReferentiel::VIE_DE_RESEAU])));
+        $this->assertTrue($plan->estGereePar($this->chefProjet('a@toa.local', [ProcessusReferentiel::VIE_DE_RESEAU])));
+        $this->assertTrue($plan->estGereePar($this->chefProjet('b@toa.local', [ProcessusReferentiel::VIE_DE_RESEAU])));
     }
 
     public function testSansProcessusLaRegleNominativeSAppliqueEncore(): void
     {
-        $nominatif = $this->chefProjet(\x27c@toa.local\x27, []);
+        $nominatif = $this->chefProjet('c@toa.local', []);
         $plan = (new PlanPrevention())->setTypeIntervention(ProcessusReferentiel::ENERGIE)->setChefProjet($nominatif);
 
         $this->assertTrue($plan->estGereePar($nominatif));
-        $this->assertFalse($plan->estGereePar($this->chefProjet(\x27d@toa.local\x27, [])));
+        $this->assertFalse($plan->estGereePar($this->chefProjet('d@toa.local', [])));
     }
 
     /** @param list<string> $processus */
@@ -50,9 +50,9 @@ class PlanPreventionProcessusTest extends TestCase
     {
         $user = new User();
         $user->setEmail($email);
-        $user->setName(\x27Test\x27);
-        $user->setFirstname(\x27CP\x27);
-        $user->setRoles([\x27ROLE_CHEF_PROJET\x27]);
+        $user->setName('Test');
+        $user->setFirstname('CP');
+        $user->setRoles(['ROLE_CHEF_PROJET']);
         $user->setProcessus($processus);
 
         return $user;
