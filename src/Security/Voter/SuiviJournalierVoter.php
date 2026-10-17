@@ -19,6 +19,8 @@ class SuiviJournalierVoter extends Voter
     public const EDIT       = 'SUIVI_JOURNALIER_EDIT';
     public const DELETE_DOC = 'SUIVI_JOURNALIER_DELETE_DOC';
 
+    private const MENU_ROUTE = '/interventions/suivis';
+
     private const ACTION_KEY_MAP = [
         self::CREATE     => 'suivi_journalier.create',
         self::VIEW       => 'suivi_journalier.view',
@@ -48,19 +50,32 @@ class SuiviJournalierVoter extends Voter
             return false;
         }
 
-        $roles       = $user->getRoles();
+        $roles = $user->getRoles();
+
+        // Création et modification suivent la matrice des menus (réglage admin),
+        // pas une liste figée de rôles.
+        if ($attribute === self::CREATE) {
+            if (!$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'CREATE')) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            return true;
+        }
+
+        if ($attribute === self::EDIT || $attribute === self::DELETE_DOC) {
+            if (!$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'EDIT')) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+        }
+
         $actionKey   = self::ACTION_KEY_MAP[$attribute];
         $roleActions = $this->permissionChecker->getRoleActions($roles, $actionKey);
 
-        if (empty($roleActions)) {
+        if ($attribute === self::VIEW && $roleActions === []) {
             throw new AccessDeniedException('error.voter.access_denied');
         }
 
         $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
-
-        if ($attribute === self::CREATE) {
-            return true;
-        }
 
         if ($attribute === self::VIEW) {
             if ($subject === null) {

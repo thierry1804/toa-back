@@ -60,7 +60,8 @@ class SeedMenuCommand extends Command
                 'ROLE_HSE'          => ['view' => true,  'create' => false, 'edit' => true,  'delete' => true],
                 'ROLE_CHEF_PROJET'  => ['view' => true,  'create' => false, 'edit' => true,  'delete' => false],
                 'ROLE_PRESTATAIRE'  => ['view' => true,  'create' => true,  'edit' => false, 'delete' => false],
-                // Le profil terrain n'a pas de menu Plans de prévention par défaut (ajustable dans la matrice des rôles).
+                // Consultation seule : création et modification se règlent dans la matrice admin.
+                'ROLE_AGENT_TERRAIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
                 'ROLE_CHEF_PROJET_PRESTATAIRE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
             ],
         ],
@@ -110,9 +111,9 @@ class SeedMenuCommand extends Command
             'position'    => 1,
             'parentRoute' => '/interventions',
             'roles'       => [
-                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-                'ROLE_PRESTATAIRE' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-                'ROLE_AGENT_TERRAIN' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'ROLE_PRESTATAIRE' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
+                'ROLE_AGENT_TERRAIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false],
             ],
         ],
         [
