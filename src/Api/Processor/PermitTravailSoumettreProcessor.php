@@ -10,7 +10,6 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
-use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
@@ -59,12 +58,12 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
             );
         }
 
-        // NOUVEAU_SITE: both GENERAL + specialise must be submitted together
+        // NOUVEAU_SITE: both GENERAL + specialise must be submitted together.
+        // Hors Nouveau site : chaque type (Général / Électrique / Hauteur) se
+        // soumet indépendamment — plus d'exigence de Général préalable.
         $companion = null;
         if ($permit->getProcessus() === ProcessusPermitTravail::NOUVEAU_SITE) {
             $companion = $this->checkNouveauSitePair($permit);
-        } else {
-            $this->checkGeneralRequis($permit);
         }
 
         $permit->setStatut(StatutPermitTravail::SOUMIS);
@@ -107,28 +106,6 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
     private function findMissingDocumentTypes(PermitTravail $permit): array
     {
         return $this->documentRequirementResolver->findMissingDocumentTypes($permit);
-    }
-
-    /**
-     * Hors « Nouveau site » (R-16), un permis spécialisé exige qu'un permis
-     * Général ait été créé pour le même couple site/plan, mais n'attend pas sa
-     * validation : chaque permis suit ensuite son propre circuit.
-     */
-    private function checkGeneralRequis(PermitTravail $permit): void
-    {
-        if ($permit->getType() === TypePermitTravail::GENERAL) {
-            return;
-        }
-
-        $general = $this->entityManager->getRepository(PermitTravail::class)->findOneBy([
-            'codeSite'       => $permit->getCodeSite(),
-            'planPrevention' => $permit->getPlanPrevention(),
-            'type'           => TypePermitTravail::GENERAL,
-        ]);
-
-        if ($general === null) {
-            throw new UnprocessableEntityHttpException('permit_travail.general_requis');
-        }
     }
 
     private function checkNouveauSitePair(PermitTravail $permit): ?PermitTravail

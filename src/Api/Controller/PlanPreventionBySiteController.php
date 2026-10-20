@@ -68,12 +68,13 @@ class PlanPreventionBySiteController extends AbstractController
 
                 $permitGeneralId = $groupe?->getPermitGeneral()?->getId()?->toRfc4122();
             } else {
-                // Autres processus (VDR/Infra/Energie/Maintenance) : aucune restriction,
-                // le plan reste toujours sélectionnable quels que soient les permis
-                // déjà existants dessus (renouvellements successifs autorisés).
-
-                // On cherche quand même le Général le plus récent sur ce site/plan pour
-                // que le front ne propose que Électrique/Hauteur s'il en existe déjà un.
+                // Autres processus (VDR/Infra/Energie/Maintenance) : aucune restriction.
+                // Le plan reste sélectionnable quels que soient les permis déjà créés
+                // (statut inclus) : on peut enchaîner Général / Électrique / Hauteur
+                // sans attendre la validation d'un autre permis du même site.
+                // permitGeneralId reste informatif pour le front (Nouveau site uniquement
+                // s'en sert pour le séquençage) ; hors Nouveau site tous les types
+                // restent proposés.
                 $dernierGeneral = $this->entityManager->getRepository(PermitTravail::class)
                     ->findBy(
                         ['codeSite' => $codeSite, 'planPrevention' => $plan, 'type' => TypePermitTravail::GENERAL],
