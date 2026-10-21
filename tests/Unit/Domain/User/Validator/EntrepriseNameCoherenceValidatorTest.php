@@ -79,6 +79,13 @@ class EntrepriseNameCoherenceValidatorTest extends ConstraintValidatorTestCase
         $this->assertNoViolation();
     }
 
+    public function testChefProjetPrestataireWithEntrepriseNameIsValid(): void
+    {
+        $user = $this->buildUser(['ROLE_CHEF_PROJET_PRESTATAIRE'], 'Acme Corp');
+        $this->validator->validate($user, new EntrepriseNameCoherence());
+        $this->assertNoViolation();
+    }
+
     public function testCollaborateurWithEntrepriseNameIsInvalid(): void
     {
         $user = $this->buildUser(['ROLE_COLLABORATEUR'], 'Acme Corp');

@@ -23,7 +23,10 @@ class EntrepriseNameCoherenceValidator extends ConstraintValidator
         $isPrestataire   = in_array('ROLE_PRESTATAIRE', $value->getRoles(), true);
         $isHse           = in_array('ROLE_HSE', $value->getRoles(), true);
         $isAgentTerrain  = in_array('ROLE_AGENT_TERRAIN', $value->getRoles(), true);
-        $canHaveEntreprise = $isPrestataire || $isHse || $isAgentTerrain;
+        // R-01 : le chef de projet prestataire appartient lui aussi à l'équipe
+        // d'une entreprise prestataire.
+        $isChefProjetPrestataire = in_array('ROLE_CHEF_PROJET_PRESTATAIRE', $value->getRoles(), true);
+        $canHaveEntreprise = $isPrestataire || $isHse || $isAgentTerrain || $isChefProjetPrestataire;
 
         if ($value->getEntrepriseName() !== null && !$canHaveEntreprise) {
             $this->context->buildViolation($constraint->message)
