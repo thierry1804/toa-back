@@ -21,10 +21,12 @@ class PlanPreventionSubmissionValidator
     ];
 
     /**
-     * R-09 : photos des listes installations/matériels et équipements/outillages,
-     * obligatoires uniquement pour le processus « Nouveau site ». Le marquage
-     * « non applicable » (R-18) n'est volontairement pas accepté pour ces 2 types
-     * tant que le plan est « Nouveau site » — cf. PlanPreventionDocumentNonApplicableController.
+     * R-09 : types des photos jointes ligne par ligne aux listes installations/
+     * matériels et équipements/outillages (onglet « Installations & Équipements »),
+     * obligatoires uniquement pour le processus « Nouveau site » (cf.
+     * assertRowPhotos). Le marquage « non applicable » (R-18) n'est pas accepté
+     * pour ces 2 types tant que le plan est « Nouveau site » — cf.
+     * PlanPreventionDocumentNonApplicableController.
      *
      * @var TypeDocumentPrevention[]
      */
@@ -37,17 +39,16 @@ class PlanPreventionSubmissionValidator
 
     public function assertSubmittable(PlanPrevention $plan): void
     {
-        $requiredDocumentTypes = self::REQUIRED_DOCUMENT_TYPES;
-        if ($plan->getTypeIntervention() === self::TYPE_INTERVENTION_NOUVEAU_SITE) {
-            $requiredDocumentTypes = array_merge($requiredDocumentTypes, self::REQUIRED_DOCUMENT_TYPES_NOUVEAU_SITE);
-        }
-
-        $missingTypes = $this->findMissingDocumentTypes($plan, $requiredDocumentTypes);
+        $missingTypes = $this->findMissingDocumentTypes($plan, self::REQUIRED_DOCUMENT_TYPES);
         if ($missingTypes !== []) {
             throw new UnprocessableEntityHttpException(sprintf(
                 'documents_manquants: %s',
                 implode(', ', array_map(static fn (TypeDocumentPrevention $t) => $t->value, $missingTypes)),
             ));
+        }
+
+        if ($plan->getTypeIntervention() === self::TYPE_INTERVENTION_NOUVEAU_SITE) {
+            $this->assertRowPhotos($plan);
         }
 
         $missingRiskTypes = array_diff($this->requiredRiskTypes($plan), $this->presentRiskTypes($plan));
@@ -56,6 +57,50 @@ class PlanPreventionSubmissionValidator
                 sprintf('risque_apn_api_obligatoire: %s', implode(', ', $missingRiskTypes)),
             );
         }
+    }
+
+    /**
+     * R-09 : pour « Nouveau site », chaque ligne des deux listes porte sa photo
+     * (photoDocumentId → document du plan du type attendu, fichier réel).
+     * Message : photos_lignes_manquantes: installations:1,3; equipements:2
+     * (numéros de ligne à partir de 1).
+     */
+    private function assertRowPhotos(PlanPrevention $plan): void
+    {
+        $missing = [];
+        foreach ([
+            'installations' => [$plan->getInstallations(), TypeDocumentPrevention::PHOTOS_INSTALLATIONS],
+            'equipements'   => [$plan->getEquipements(), TypeDocumentPrevention::PHOTOS_EQUIPEMENTS],
+        ] as $list => [$rows, $type]) {
+            $photoIds = $this->photoDocumentIds($plan, $type);
+            $lines = [];
+            foreach (array_values($rows) as $index => $row) {
+                $photoId = is_array($row) ? (string) ($row['photoDocumentId'] ?? '') : '';
+                if ($photoId === '' || !in_array($photoId, $photoIds, true)) {
+                    $lines[] = $index + 1;
+                }
+            }
+            if ($lines !== []) {
+                $missing[] = sprintf('%s:%s', $list, implode(',', $lines));
+            }
+        }
+
+        if ($missing !== []) {
+            throw new UnprocessableEntityHttpException('photos_lignes_manquantes: ' . implode('; ', $missing));
+        }
+    }
+
+    /** @return list<string> */
+    private function photoDocumentIds(PlanPrevention $plan, TypeDocumentPrevention $type): array
+    {
+        $ids = [];
+        foreach ($plan->getDocuments() as $document) {
+            if ($document->getType() === $type && !$document->isNonApplicable() && $document->getId() !== null) {
+                $ids[] = (string) $document->getId();
+            }
+        }
+
+        return $ids;
     }
 
     /** @return list<string> Types d'aire protégée (APN, API) portés par les sites du plan. */

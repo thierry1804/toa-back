@@ -134,45 +134,71 @@ class PlanPreventionSubmissionValidatorTest extends TestCase
         $this->validator->assertSubmittable($plan);
     }
 
-    // ===== R-09 : photos installations/équipements obligatoires pour « Nouveau site » =====
+    // ===== R-09 : une photo par ligne installations/équipements pour « Nouveau site » =====
 
-    public function testNouveauSitePlanWithoutAnyPhotoIsRefused(): void
+    public function testNouveauSiteRowsWithoutPhotoAreRefusedWithLineNumbers(): void
     {
         $plan = $this->planWithAllDocuments();
         $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
+        $photo = $this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS, withId: true);
+        $plan->addDocument($photo);
+        $plan->setInstallations([
+            ['description' => 'Groupe', 'conditionsUtilisation' => '', 'photoDocumentId' => (string) $photo->getId()],
+            ['description' => 'Pylône', 'conditionsUtilisation' => ''],
+        ]);
+        $plan->setEquipements([['description' => 'Harnais', 'conditionsUtilisation' => '', 'photoDocumentId' => 'inconnu']]);
 
-        try {
-            $this->validator->assertSubmittable($plan);
-            $this->fail('documents_manquants attendu pour les photos installations/equipements');
-        } catch (UnprocessableEntityHttpException $e) {
-            $this->assertStringContainsString('documents_manquants', $e->getMessage());
-            $this->assertStringContainsString(TypeDocumentPrevention::PHOTOS_INSTALLATIONS->value, $e->getMessage());
-            $this->assertStringContainsString(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS->value, $e->getMessage());
-        }
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectExceptionMessage('photos_lignes_manquantes: installations:2; equipements:1');
+
+        $this->validator->assertSubmittable($plan);
     }
 
-    public function testNouveauSitePlanWithOnlyInstallationsPhotoStillMissesEquipements(): void
+    public function testNouveauSitePhotoOfWrongTypeDoesNotCount(): void
     {
         $plan = $this->planWithAllDocuments();
         $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
-        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS));
+        $photo = $this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS, withId: true);
+        $plan->addDocument($photo);
+        $plan->setEquipements([['description' => 'Harnais', 'conditionsUtilisation' => '', 'photoDocumentId' => (string) $photo->getId()]]);
 
-        try {
-            $this->validator->assertSubmittable($plan);
-            $this->fail('documents_manquants attendu pour PHOTOS_EQUIPEMENTS');
-        } catch (UnprocessableEntityHttpException $e) {
-            $this->assertStringContainsString('documents_manquants', $e->getMessage());
-            $this->assertStringContainsString(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS->value, $e->getMessage());
-            $this->assertStringNotContainsString(TypeDocumentPrevention::PHOTOS_INSTALLATIONS->value, $e->getMessage());
-        }
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectExceptionMessage('photos_lignes_manquantes: equipements:1');
+
+        $this->validator->assertSubmittable($plan);
     }
 
-    public function testNouveauSitePlanWithBothPhotosIsAccepted(): void
+    public function testNouveauSiteWithAPhotoOnEveryRowIsAccepted(): void
     {
         $plan = $this->planWithAllDocuments();
         $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
-        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS));
-        $plan->addDocument($this->document(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS));
+        $installation = $this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS, withId: true);
+        $equipement = $this->document(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS, withId: true);
+        $plan->addDocument($installation);
+        $plan->addDocument($equipement);
+        $plan->setInstallations([['description' => 'Groupe', 'conditionsUtilisation' => '', 'photoDocumentId' => (string) $installation->getId()]]);
+        $plan->setEquipements([['description' => 'Harnais', 'conditionsUtilisation' => '', 'photoDocumentId' => (string) $equipement->getId()]]);
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNouveauSiteNoLongerRequiresPhotoDocumentsInTheDocumentsStep(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testNonNouveauSiteRowsNeedNoPhoto(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention('Vie de Réseau');
+        $plan->setEquipements([['description' => 'Harnais', 'conditionsUtilisation' => '']]);
 
         $this->validator->assertSubmittable($plan);
 
@@ -211,14 +237,20 @@ class PlanPreventionSubmissionValidatorTest extends TestCase
         return $plan;
     }
 
-    private function document(TypeDocumentPrevention $type, bool $nonApplicable = false): DocumentPrevention
+    private function document(TypeDocumentPrevention $type, bool $nonApplicable = false, bool $withId = false): DocumentPrevention
     {
-        return (new DocumentPrevention())
+        $document = (new DocumentPrevention())
             ->setType($type)
             ->setFilePath($nonApplicable ? '' : 'plans-prevention/x/' . $type->value . '.pdf')
             ->setMimeType($nonApplicable ? '' : 'application/pdf')
             ->setUploadedAt(new \DateTimeImmutable())
             ->setNonApplicable($nonApplicable);
+
+        if ($withId) {
+            (new \ReflectionProperty(DocumentPrevention::class, 'id'))->setValue($document, \Symfony\Component\Uid\Uuid::v7());
+        }
+
+        return $document;
     }
 
     private function risqueWithCategory(CategorieRisque $categorie): RisquePrevention
