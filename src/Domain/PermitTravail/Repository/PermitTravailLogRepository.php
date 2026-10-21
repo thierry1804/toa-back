@@ -9,6 +9,7 @@ use App\Domain\PermitTravail\Entity\PermitTravailLog;
 use App\Domain\PermitTravail\Enum\ActionPermitTravailLog;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\QueryBuilder;
 
 /**
  * @extends ServiceEntityRepository<PermitTravailLog>
@@ -39,25 +40,33 @@ class PermitTravailLogRepository extends ServiceEntityRepository
     }
 
     /** @return PermitTravailLog[] */
-    public function findRecentByCodeSite(string $codeSite, int $limit = 10): array
+    /** @param (\Closure(QueryBuilder, string): void)|null $scope restreint aux permis visibles */
+    public function findRecentByCodeSite(string $codeSite, int $limit = 10, ?\Closure $scope = null): array
     {
-        return $this->createQueryBuilder('l')
+        $qb = $this->createQueryBuilder('l')
             ->where('l.codeSite = :codeSite')
             ->setParameter('codeSite', $codeSite)
             ->orderBy('l.createdAt', 'DESC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+        if ($scope !== null) {
+            $scope($qb, 'l');
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     /** @return PermitTravailLog[] */
-    public function findRecent(int $limit = 10): array
+    /** @param (\Closure(QueryBuilder, string): void)|null $scope restreint aux permis visibles */
+    public function findRecent(int $limit = 10, ?\Closure $scope = null): array
     {
-        return $this->createQueryBuilder('l')
+        $qb = $this->createQueryBuilder('l')
             ->orderBy('l.createdAt', 'DESC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults($limit);
+        if ($scope !== null) {
+            $scope($qb, 'l');
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     public function countByActionAndDate(
@@ -65,6 +74,7 @@ class PermitTravailLogRepository extends ServiceEntityRepository
         \DateTimeImmutable $date,
         ?string $codeSite = null,
         ?string $typePermis = null,
+        ?\Closure $scope = null,
     ): int {
         $start = $date->setTime(0, 0, 0);
         $end   = $date->setTime(23, 59, 59);
@@ -84,6 +94,10 @@ class PermitTravailLogRepository extends ServiceEntityRepository
 
         if ($typePermis !== null) {
             $qb->andWhere('l.typePermis = :typePermis')->setParameter('typePermis', $typePermis);
+        }
+
+        if ($scope !== null) {
+            $scope($qb, 'l');
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();

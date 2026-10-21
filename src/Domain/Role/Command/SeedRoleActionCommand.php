@@ -464,6 +464,8 @@ class SeedRoleActionCommand extends Command
         ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'suivi_journalier.view',          'bypass' => false],
         ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'intervention.suivi.dashboard',   'bypass' => false],
         ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'intervention.suivi.detail',      'bypass' => false],
+        // R-35 : suivi des permis, restreint aux permis visibles (PermitTravailVisibility).
+        ['role' => 'ROLE_CHEF_PROJET_PRESTATAIRE', 'key' => 'permit_travail.suivi',           'bypass' => false],
     ];
 
     public function __construct(private EntityManagerInterface $entityManager)

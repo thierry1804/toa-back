@@ -11,6 +11,7 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ActionPermitTravailLog;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailLogRepository;
+use App\Domain\PermitTravail\Service\PermitTravailVisibility;
 use Doctrine\ORM\EntityManagerInterface;
 
 class PermitTravailStatsJournalieresProvider implements ProviderInterface
@@ -18,6 +19,7 @@ class PermitTravailStatsJournalieresProvider implements ProviderInterface
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PermitTravailLogRepository $logRepository,
+        private readonly PermitTravailVisibility $visibility,
     ) {}
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): PermitTravailStatsJournalieres
@@ -40,12 +42,15 @@ class PermitTravailStatsJournalieresProvider implements ProviderInterface
         }
 
         $output = new PermitTravailStatsJournalieres();
+        // Compteurs limités aux permis visibles par l'utilisateur.
+        $scope = $this->visibility->restrictLogs(...);
 
         $output->nbConsultations = $this->logRepository->countByActionAndDate(
             ActionPermitTravailLog::CONSULTE,
             $date,
             $codeSite,
             $typePermis,
+            $scope,
         );
 
         $output->nbChangementsStatut = $this->logRepository->countByActionAndDate(
@@ -53,6 +58,7 @@ class PermitTravailStatsJournalieresProvider implements ProviderInterface
             $date,
             $codeSite,
             $typePermis,
+            $scope,
         );
 
         $output->nbTelechargements = $this->logRepository->countByActionAndDate(
@@ -60,11 +66,13 @@ class PermitTravailStatsJournalieresProvider implements ProviderInterface
             $date,
             $codeSite,
             $typePermis,
+            $scope,
         ) + $this->logRepository->countByActionAndDate(
             ActionPermitTravailLog::PDF_GENERE,
             $date,
             $codeSite,
             $typePermis,
+            $scope,
         );
 
         $output->permisActifs = $this->countPermisActifs($codeSite, $typePermis);
@@ -91,6 +99,7 @@ class PermitTravailStatsJournalieresProvider implements ProviderInterface
         if ($typePermis !== null && $typePermis !== '') {
             $qb->andWhere('p.type = :typePermis')->setParameter('typePermis', $typePermis);
         }
+        $this->visibility->restrictPermits($qb);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }

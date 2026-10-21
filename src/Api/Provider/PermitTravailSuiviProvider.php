@@ -11,6 +11,7 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailLogRepository;
+use App\Domain\PermitTravail\Service\PermitTravailVisibility;
 use Doctrine\ORM\EntityManagerInterface;
 
 class PermitTravailSuiviProvider implements ProviderInterface
@@ -18,6 +19,7 @@ class PermitTravailSuiviProvider implements ProviderInterface
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PermitTravailLogRepository $logRepository,
+        private readonly PermitTravailVisibility $visibility,
     ) {}
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): PermitTravailSuivi
@@ -41,6 +43,7 @@ class PermitTravailSuiviProvider implements ProviderInterface
             ->select('COUNT(p.id)')
             ->from(PermitTravail::class, 'p');
         $this->applyFilters($qb, 'p', $codeSite, $typeEnum, $statutEnum, $dateDebut, $dateFin);
+        $this->visibility->restrictPermits($qb);
         $output->totalPermis = (int) $qb->getQuery()->getSingleScalarResult();
 
         // Per statut
@@ -49,6 +52,7 @@ class PermitTravailSuiviProvider implements ProviderInterface
             ->from(PermitTravail::class, 'p')
             ->groupBy('p.statut');
         $this->applyFilters($qb, 'p', $codeSite, $typeEnum, null, $dateDebut, $dateFin);
+        $this->visibility->restrictPermits($qb);
         $parStatut = [];
         foreach ($qb->getQuery()->getResult() as $row) {
             $parStatut[$row['statut']->value] = (int) $row['nb'];
@@ -61,6 +65,7 @@ class PermitTravailSuiviProvider implements ProviderInterface
             ->from(PermitTravail::class, 'p')
             ->groupBy('p.type');
         $this->applyFilters($qb, 'p', $codeSite, null, $statutEnum, $dateDebut, $dateFin);
+        $this->visibility->restrictPermits($qb);
         $parType = [];
         foreach ($qb->getQuery()->getResult() as $row) {
             $parType[$row['type']->value] = (int) $row['nb'];
@@ -73,6 +78,7 @@ class PermitTravailSuiviProvider implements ProviderInterface
             ->from(PermitTravail::class, 'p')
             ->groupBy('p.codeSite');
         $this->applyFilters($qb, 'p', null, $typeEnum, $statutEnum, $dateDebut, $dateFin);
+        $this->visibility->restrictPermits($qb);
         $parSite = [];
         foreach ($qb->getQuery()->getResult() as $row) {
             $parSite[$row['codeSite']] = (int) $row['nb'];
@@ -91,12 +97,14 @@ class PermitTravailSuiviProvider implements ProviderInterface
             ->setParameter('in7days', $in7days)
             ->orderBy('p.dateFinPrevue', 'ASC');
         $this->applyFilters($qb, 'p', $codeSite, $typeEnum, $statutEnum);
+        $this->visibility->restrictPermits($qb);
         $output->expirantSous7j = $qb->getQuery()->getResult();
 
-        // Recent logs
+        // Recent logs — limités aux permis visibles par l'utilisateur
+        $scope = $this->visibility->restrictLogs(...);
         $output->logsRecents = $codeSite !== null
-            ? $this->logRepository->findRecentByCodeSite($codeSite)
-            : $this->logRepository->findRecent();
+            ? $this->logRepository->findRecentByCodeSite($codeSite, scope: $scope)
+            : $this->logRepository->findRecent(scope: $scope);
 
         return $output;
     }
