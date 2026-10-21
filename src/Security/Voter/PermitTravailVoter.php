@@ -16,8 +16,9 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
- * All operations resolved via ActionKey/RoleAction records (permit_travail.*)
- * using PermissionChecker — no hardcoded ROLE_* constants.
+ * Operations resolved via ActionKey/RoleAction records (permit_travail.*)
+ * using PermissionChecker, except CREATE which follows the admin menu matrix
+ * (MenuAccess on /permits-travail), restricted to ROLE_AGENT_TERRAIN (R-14).
  * The spec references RoleMenuCacheService which does not exist in this codebase;
  * PermissionChecker->hasAction() / getRoleActions() is the actual equivalent.
  */
@@ -37,6 +38,8 @@ class PermitTravailVoter extends Voter
     public const PV_VALIDER   = 'PERMIT_TRAVAIL_PV_VALIDER';
     public const PV_REFUSER   = 'PERMIT_TRAVAIL_PV_REFUSER';
     public const DELETE       = 'PERMIT_TRAVAIL_DELETE';
+
+    private const MENU_ROUTE = '/permits-travail';
 
     private const ACTION_KEY_MAP = [
         self::VIEW         => 'permit_travail.view',
@@ -77,6 +80,21 @@ class PermitTravailVoter extends Voter
         }
 
         $roles      = $user->getRoles();
+
+        if ($attribute === self::CREATE) {
+            // R-14 : la création d'un permis est réservée au seul rôle Agent de
+            // terrain, sans exception (prestataire, chef de projet prestataire,
+            // HSE et admin n'y ont accès qu'en lecture). Le droit lui-même se
+            // règle dans la matrice des menus (case « Créer » de /permits-travail),
+            // comme côté front : la retirer bloque aussi l'API.
+            if (!in_array('ROLE_AGENT_TERRAIN', $roles, true)
+                || !$this->permissionChecker->isGranted($roles, self::MENU_ROUTE, 'CREATE')) {
+                throw new AccessDeniedException('error.voter.access_denied');
+            }
+
+            return true;
+        }
+
         $actionKey  = self::ACTION_KEY_MAP[$attribute];
         $roleActions = $this->permissionChecker->getRoleActions($roles, $actionKey);
 
@@ -85,17 +103,6 @@ class PermitTravailVoter extends Voter
         }
 
         $canBypass = array_filter($roleActions, fn($ra) => $ra->isBypassOwnership());
-
-        if ($attribute === self::CREATE) {
-            // R-14 : la création d'un permis est réservée au seul rôle Agent de
-            // terrain, sans exception (prestataire, chef de projet prestataire,
-            // HSE et admin n'y ont accès qu'en lecture).
-            if (!in_array('ROLE_AGENT_TERRAIN', $roles, true)) {
-                throw new AccessDeniedException('error.voter.access_denied');
-            }
-
-            return true;
-        }
 
         if ($attribute === self::VIEW && $subject === null) {
             // GetCollection: at least one matching role_action exists → grant list access

@@ -27,7 +27,8 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
 {
     /**
      * Rôles qu'un prestataire scoped peut attribuer à un membre de son
-     * équipe. Toute autre valeur soumise retombe sur ROLE_PRESTATAIRE.
+     * équipe. À la création, toute autre valeur est refusée (422) ; en
+     * édition, elle retombe sur ROLE_PRESTATAIRE.
      *
      * Arbitrage client formel (D1, retour client R-02) : ROLE_HSE a été
      * retiré de cette liste — un prestataire ne peut plus attribuer ROLE_HSE
@@ -66,7 +67,15 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
                 return;
             }
 
-            $data->setRoles([$this->resolveAssignableRole($data)]);
+            // Un rôle hors ASSIGNABLE_ROLES est refusé à la création plutôt que
+            // ramené en silence sur ROLE_PRESTATAIRE, qui donnerait au nouveau
+            // compte plus de droits que demandé (ex. CP Prestataire créé en
+            // Prestataire).
+            $submitted = $data->getRoles()[0] ?? null;
+            if (!in_array($submitted, self::ASSIGNABLE_ROLES, true)) {
+                throw new UnprocessableEntityHttpException('user.role_not_assignable');
+            }
+            $data->setRoles([$submitted]);
             $data->setEntreprise($actor->getEntreprise());
             $this->pinDisplayFieldsToActor($data, $actor);
 

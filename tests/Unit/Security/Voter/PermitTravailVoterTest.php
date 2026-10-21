@@ -105,16 +105,42 @@ class PermitTravailVoterTest extends TestCase
         );
     }
 
-    public function testOnlyAgentTerrainCanCreate(): void
+    public function testAgentTerrainCanCreateWhenMatrixAllows(): void
     {
         $agent = $this->buildUser('agent@toa.local', 1);
         $agent->setRoles(['ROLE_AGENT_TERRAIN']);
-        $this->mockRoleActions(bypass: false);
+        $this->mockMatrixCreate(true);
 
         $this->assertSame(
             VoterInterface::ACCESS_GRANTED,
             $this->voter->vote($this->mockToken($agent), null, [PermitTravailVoter::CREATE]),
         );
+    }
+
+    public function testAgentTerrainCanCreateWithoutRoleAction(): void
+    {
+        // Le droit de création se règle dans la matrice des menus : aucune
+        // ligne role_action permit_travail.create n'est nécessaire.
+        $agent = $this->buildUser('agent@toa.local', 1);
+        $agent->setRoles(['ROLE_AGENT_TERRAIN']);
+        $this->permissionChecker->method('getRoleActions')->willReturn([]);
+        $this->mockMatrixCreate(true);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $this->voter->vote($this->mockToken($agent), null, [PermitTravailVoter::CREATE]),
+        );
+    }
+
+    public function testAgentTerrainCannotCreateWhenMatrixDenies(): void
+    {
+        $agent = $this->buildUser('agent@toa.local', 1);
+        $agent->setRoles(['ROLE_AGENT_TERRAIN']);
+        $this->mockRoleActions(bypass: false);
+        $this->mockMatrixCreate(false);
+
+        $this->expectException(AccessDeniedException::class);
+        $this->voter->vote($this->mockToken($agent), null, [PermitTravailVoter::CREATE]);
     }
 
     #[DataProvider('nonAgentRoles')]
@@ -123,6 +149,7 @@ class PermitTravailVoterTest extends TestCase
         $user = $this->buildUser('other@toa.local', 2);
         $user->setRoles([$role]);
         $this->mockRoleActions(bypass: true);
+        $this->mockMatrixCreate(true);
 
         $this->expectException(AccessDeniedException::class);
         $this->voter->vote($this->mockToken($user), null, [PermitTravailVoter::CREATE]);
@@ -143,6 +170,13 @@ class PermitTravailVoterTest extends TestCase
 
         $this->expectException(AccessDeniedException::class);
         $this->voter->vote($this->mockToken($owner), $permit, [PermitTravailVoter::DELETE]);
+    }
+
+    private function mockMatrixCreate(bool $canCreate): void
+    {
+        $this->permissionChecker->method('isGranted')
+            ->with($this->anything(), '/permits-travail', 'CREATE')
+            ->willReturn($canCreate);
     }
 
     private function mockRoleActions(bool $bypass): void

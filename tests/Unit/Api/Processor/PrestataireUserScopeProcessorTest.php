@@ -11,6 +11,7 @@ use App\Api\Processor\PrestataireUserScopeProcessor;
 use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\User\Entity\User;
 use App\Domain\User\Repository\UserRepository;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -39,7 +40,7 @@ class PrestataireUserScopeProcessorTest extends TestCase
         );
     }
 
-    public function testCreateIgnoresSubmittedRoleAndEntreprise(): void
+    public function testCreateIgnoresSubmittedEntreprise(): void
     {
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
@@ -49,14 +50,14 @@ class PrestataireUserScopeProcessorTest extends TestCase
 
         $otherEntreprise = $this->buildEntreprise();
         $newUser = new User();
-        $newUser->setRoles(['ROLE_SUPER_ADMIN']);
+        $newUser->setRoles(['ROLE_AGENT_TERRAIN']);
         $newUser->setEntreprise($otherEntreprise);
         $newUser->setEntrepriseName('Boite Rivale');
         $newUser->setQualiteRepresentant('PDG');
 
         $result = $this->processor->process($newUser, new Post());
 
-        $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
+        $this->assertEqualsCanonicalizing(['ROLE_AGENT_TERRAIN', 'ROLE_USER'], $result->getRoles());
         $this->assertSame($ownEntreprise, $result->getEntreprise());
         $this->assertSame('Ma Boite', $result->getEntrepriseName());
         $this->assertSame('Gerant', $result->getQualiteRepresentant());
@@ -83,21 +84,32 @@ class PrestataireUserScopeProcessorTest extends TestCase
     /**
      * Arbitrage client formel (D1, retour client R-02) : un prestataire ne
      * peut plus attribuer ROLE_HSE a un subordonne (il le pouvait avant).
-     * Toute tentative, a la creation, retombe sur ROLE_PRESTATAIRE.
+     * A la creation, tout role hors de l'ensemble attribuable est refuse
+     * (422) au lieu de retomber en silence sur ROLE_PRESTATAIRE.
      */
-    public function testCreateRejectsHseAndFallsBackToPrestataire(): void
+    #[DataProvider('unassignableRolesOnCreate')]
+    public function testCreateRejectsUnassignableRole(string $role): void
     {
         $ownEntreprise = $this->buildEntreprise();
         $actor = $this->buildPrestataire($ownEntreprise, id: 1);
         $this->setActor($actor);
 
         $newUser = new User();
-        $newUser->setRoles(['ROLE_HSE']);
+        $newUser->setRoles([$role]);
         $newUser->setEntreprise($ownEntreprise);
 
-        $result = $this->processor->process($newUser, new Post());
+        $this->inner->expects($this->never())->method('process');
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectExceptionMessage('user.role_not_assignable');
 
-        $this->assertEqualsCanonicalizing(['ROLE_PRESTATAIRE', 'ROLE_USER'], $result->getRoles());
+        $this->processor->process($newUser, new Post());
+    }
+
+    public static function unassignableRolesOnCreate(): iterable
+    {
+        foreach (['ROLE_PRESTATAIRE', 'ROLE_HSE', 'ROLE_SUPER_ADMIN', 'ROLE_ADMIN'] as $role) {
+            yield $role => [$role];
+        }
     }
 
     public function testEditingTeammateIgnoresSubmittedRoleAndEntreprise(): void
