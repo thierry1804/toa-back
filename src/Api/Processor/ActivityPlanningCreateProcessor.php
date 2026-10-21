@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\ActivityPlanning\Message\ActivityPlanningCreatedNotification;
+use App\Domain\ActivityPlanning\Service\PlanningEntrepriseResolver;
 use App\Domain\User\Entity\User;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -23,6 +24,7 @@ final class ActivityPlanningCreateProcessor implements ProcessorInterface
         private readonly TokenStorageInterface $tokenStorage,
         private readonly MessageBusInterface $messageBus,
         private readonly LoggerInterface $logger,
+        private readonly PlanningEntrepriseResolver $entrepriseResolver,
     ) {
     }
 
@@ -38,6 +40,8 @@ final class ActivityPlanningCreateProcessor implements ProcessorInterface
         }
 
         $data->setCreatedBy($user);
+        // R-04 : rattache le planning à l'entreprise du prestataire désigné.
+        $this->entrepriseResolver->apply($data);
 
         $result = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
 

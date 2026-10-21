@@ -7,6 +7,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\ActivityPlanning\Message\ActivityPlanningUpdatedNotification;
 use App\Domain\ActivityPlanning\Service\AuditLogger;
+use App\Domain\ActivityPlanning\Service\PlanningEntrepriseResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -32,6 +33,7 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
         private TokenStorageInterface $tokenStorage,
         private MessageBusInterface $messageBus,
         private LoggerInterface $logger,
+        private PlanningEntrepriseResolver $entrepriseResolver,
     ) {
     }
 
@@ -84,6 +86,15 @@ final class ActivityPlanningUpdateProcessor implements ProcessorInterface
 
         $this->applyActualDates($existing, $originalData);
         $this->checkLockedFields($existing, $originalData);
+
+        // R-04 : l'entreprise suit le prestataire désigné. Recalculée seulement
+        // s'il change (ou si elle manque) pour ne pas effacer un rattachement
+        // existant quand le compte prestataire n'est plus retrouvé.
+        $providerChanged = (string) $existing->getProvider() !== (string) ($originalData['provider'] ?? '')
+            || (string) $existing->getProviderEmail() !== (string) ($originalData['providerEmail'] ?? '');
+        if ($providerChanged || $existing->getEntreprise() === null) {
+            $this->entrepriseResolver->apply($existing);
+        }
 
         $result = $this->persistProcessor->process($existing, $operation, $uriVariables, $context);
 
