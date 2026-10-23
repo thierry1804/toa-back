@@ -113,8 +113,15 @@ final class PermitDocumentRequirementResolver
                 ],
             ],
             TypePermitTravail::ELECTRIQUE->value => [
-                0 => [],
-                1 => [],
+                0 => [
+                    TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE,
+                    TypeDocumentPermitTravail::PHOTO_EQUIPEMENTS_ISOLANTS,
+                    TypeDocumentPermitTravail::TROUSSE_SECOURS,
+                ],
+                1 => [
+                    TypeDocumentPermitTravail::PHOTO_AVANCEMENT_CHANTIER,
+                    TypeDocumentPermitTravail::PHOTO_EPI_SPECIFIQUE,
+                ],
             ],
         ],
         self::AUTRES => [

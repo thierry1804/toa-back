@@ -80,6 +80,17 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $this->assertNotContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS, $this->resolver($site)->getRequiredDocumentTypes($permit));
     }
 
+    public function testElectriqueOnNouveauSiteRequiresDocuments(): void
+    {
+        $permit = $this->permit(TypePermitTravail::ELECTRIQUE, ProcessusPermitTravail::NOUVEAU_SITE, 'Nouveau site');
+
+        $soumission = $this->resolver(null)->getRequiredDocumentTypes($permit);
+
+        $this->assertNotEmpty($soumission);
+        $this->assertContains(TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE, $soumission);
+        $this->assertContains(TypeDocumentPermitTravail::PHOTO_EQUIPEMENTS_ISOLANTS, $soumission);
+    }
+
     public function testNonApplicableMarkerSatisfiesEnvironmentalRequirement(): void
     {
         $permit = $this->permit(TypePermitTravail::GENERAL, ProcessusPermitTravail::MAINTENANCE, 'Maintenance préventive');
