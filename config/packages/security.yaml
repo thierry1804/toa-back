@@ -40,6 +40,9 @@ security:
 
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
         refresh:
             pattern: ^/api/token/refresh
             stateless: true
