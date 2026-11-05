@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\PlanPrevention\Service;
 
 use App\Domain\PlanPrevention\Entity\DocumentPrevention;
+use App\Domain\PlanPrevention\Entity\ModeOperatoirePlanPrevention;
+use App\Domain\PlanPrevention\Entity\PhasePlanPrevention;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Entity\RisquePrevention;
 use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
 use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
 use App\Domain\Referentiel\Entity\CategorieRisque;
+use App\Domain\User\Entity\User;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -225,6 +228,68 @@ class PlanPreventionSubmissionValidatorTest extends TestCase
         $this->validator->assertSubmittable($plan);
 
         $this->addToAssertionCount(1);
+    }
+
+    // ===== MODOP obligatoire pour les plans créés par un prestataire =====
+
+    public function testPrestataireCreatedPlanWithoutModeOperatoireIsRefused(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setCreatedBy($this->prestataire());
+
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectExceptionMessage('mode_operatoire_requis');
+
+        $this->validator->assertSubmittable($plan);
+    }
+
+    public function testPrestataireCreatedPlanWithEmptySectionIsRefused(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setCreatedBy($this->prestataire());
+        $plan->addSection((new PhasePlanPrevention())->setLibelle('Phase 1'));
+
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->expectExceptionMessage('mode_operatoire_requis');
+
+        $this->validator->assertSubmittable($plan);
+    }
+
+    public function testPrestataireCreatedPlanWithAModeOperatoireIsAccepted(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setCreatedBy($this->prestataire());
+        $phase = (new PhasePlanPrevention())->setLibelle('Phase 1');
+        $phase->addModeOperatoire((new ModeOperatoirePlanPrevention())->setTache('Montage'));
+        $plan->addSection($phase);
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testAdminCreatedPlanWithoutModeOperatoireIsAccepted(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setCreatedBy((new User())->setRoles(['ROLE_ADMIN']));
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testPlanWithoutCreatedByIsAccepted(): void
+    {
+        $plan = $this->planWithAllDocuments();
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
+    }
+
+    private function prestataire(): User
+    {
+        return (new User())->setRoles(['ROLE_PRESTATAIRE']);
     }
 
     private function planWithAllDocuments(): PlanPrevention

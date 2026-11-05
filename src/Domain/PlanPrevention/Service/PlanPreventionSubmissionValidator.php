@@ -39,6 +39,8 @@ class PlanPreventionSubmissionValidator
 
     public function assertSubmittable(PlanPrevention $plan): void
     {
+        $this->assertHasModeOperatoire($plan);
+
         $missingTypes = $this->findMissingDocumentTypes($plan, self::REQUIRED_DOCUMENT_TYPES);
         if ($missingTypes !== []) {
             throw new UnprocessableEntityHttpException(sprintf(
@@ -57,6 +59,26 @@ class PlanPreventionSubmissionValidator
                 sprintf('risque_apn_api_obligatoire: %s', implode(', ', $missingRiskTypes)),
             );
         }
+    }
+
+    /**
+     * Ne concerne que les plans créés par un prestataire (ROLE_ADMIN/ROLE_SUPER_ADMIN
+     * peuvent créer un plan sans passer par l'assistant pas-à-pas qui impose un MODOP).
+     */
+    private function assertHasModeOperatoire(PlanPrevention $plan): void
+    {
+        $roles = $plan->getCreatedBy()?->getRoles() ?? [];
+        if (!in_array('ROLE_PRESTATAIRE', $roles, true)) {
+            return;
+        }
+
+        foreach ($plan->getSections() as $section) {
+            if (!$section->getModesOperatoires()->isEmpty()) {
+                return;
+            }
+        }
+
+        throw new UnprocessableEntityHttpException('mode_operatoire_requis');
     }
 
     /**
