@@ -259,43 +259,74 @@ class PlanPreventionNotificationService
         return $this->userRepository->findByRole('ROLE_HSE');
     }
 
-    /** Notify the prestataire when their plan is validated by the HSE team */
+    /**
+     * Toute l'équipe de l'entreprise prestataire concernée par le plan
+     * (prestataires, chefs de projet prestataire, agents de terrain), à
+     * défaut le seul créateur si son entreprise n'est pas renseignée.
+     *
+     * @return User[]
+     */
+    private function equipeEntrepriseDuPlan(PlanPrevention $plan): array
+    {
+        $createdBy = $plan->getCreatedBy();
+        $entrepriseId = $createdBy?->getEntreprise()?->getId();
+        if ($entrepriseId === null) {
+            return $createdBy instanceof User ? [$createdBy] : [];
+        }
+
+        $users = array_merge(
+            $this->userRepository->findByRoleAndEntreprise('ROLE_PRESTATAIRE', $entrepriseId),
+            $this->userRepository->findByRoleAndEntreprise('ROLE_CHEF_PROJET_PRESTATAIRE', $entrepriseId),
+            $this->userRepository->findByRoleAndEntreprise('ROLE_AGENT_TERRAIN', $entrepriseId),
+        );
+
+        $byId = [];
+        foreach ($users as $user) {
+            $byId[(string) $user->getId()] = $user;
+        }
+
+        return array_values($byId);
+    }
+
+    /** Notify the whole prestataire-side team (prestataire, chef de projet prestataire, agent de terrain) when the plan is validated by the HSE team */
     public function notifierValidation(PlanPrevention $plan): void
     {
-        $prestataire = $plan->getCreatedBy();
+        $recipients = $this->equipeEntrepriseDuPlan($plan);
 
-        if (!$prestataire instanceof User) {
-            $this->logger->warning('[PlanPrevention] notifierValidation: prestataire introuvable', [
+        if ($recipients === []) {
+            $this->logger->warning('[PlanPrevention] notifierValidation: aucun destinataire trouvé pour l\'entreprise du plan', [
                 'plan_reference' => $plan->getReference(),
             ]);
 
             return;
         }
 
-        try {
-            $email = (new TemplatedEmail())
-                ->from($this->fromAddress)
-                ->to((string) $prestataire->getEmail())
-                ->subject(sprintf('[TOA] Plan de Prévention #%s validé', $plan->getReference()))
-                ->htmlTemplate('email/plan_prevention/valide.html.twig')
-                ->context([
-                    'plan'      => $plan,
-                    'plan_url'  => $this->planUrl($plan),
-                    'recipient' => $prestataire,
+        foreach ($recipients as $recipient) {
+            try {
+                $email = (new TemplatedEmail())
+                    ->from($this->fromAddress)
+                    ->to((string) $recipient->getEmail())
+                    ->subject(sprintf('[TOA] Plan de Prévention #%s validé', $plan->getReference()))
+                    ->htmlTemplate('email/plan_prevention/valide.html.twig')
+                    ->context([
+                        'plan'      => $plan,
+                        'plan_url'  => $this->planUrl($plan),
+                        'recipient' => $recipient,
+                    ]);
+
+                $this->mailer->send($email);
+
+                $this->logger->info('[PlanPrevention] Notification validation envoyée', [
+                    'plan_reference' => $plan->getReference(),
+                    'recipient'      => $recipient->getEmail(),
                 ]);
-
-            $this->mailer->send($email);
-
-            $this->logger->info('[PlanPrevention] Notification validation envoyée au prestataire', [
-                'plan_reference' => $plan->getReference(),
-                'recipient'      => $prestataire->getEmail(),
-            ]);
-        } catch (\Throwable $e) {
-            $this->logger->error('[PlanPrevention] Échec envoi notification validation prestataire', [
-                'plan_reference' => $plan->getReference(),
-                'recipient'      => $prestataire->getEmail(),
-                'error'          => $e->getMessage(),
-            ]);
+            } catch (\Throwable $e) {
+                $this->logger->error('[PlanPrevention] Échec envoi notification validation', [
+                    'plan_reference' => $plan->getReference(),
+                    'recipient'      => $recipient->getEmail(),
+                    'error'          => $e->getMessage(),
+                ]);
+            }
         }
     }
 

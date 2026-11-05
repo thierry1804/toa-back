@@ -123,4 +123,65 @@ class PlanPreventionNotificationServiceTest extends TestCase
 
         $this->service->notifierValidation(new PlanPrevention());
     }
+
+    public function testNotifierValidationNotifiesWholeEntrepriseTeamWhenEntrepriseIsKnown(): void
+    {
+        $entreprise = (new Entreprise())->setNom('ACME');
+        $idProp = new \ReflectionProperty(Entreprise::class, 'id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($entreprise, \Symfony\Component\Uid\Uuid::v7());
+
+        $prestataire = $this->userWithId(1, (new User())->setEmail('presta@acme.mg')->setRoles(['ROLE_PRESTATAIRE'])->setEntreprise($entreprise));
+        $chefPresta = $this->userWithId(2, (new User())->setEmail('chef.presta@acme.mg'));
+        $agentTerrain = $this->userWithId(3, (new User())->setEmail('agent.terrain@acme.mg'));
+        $plan = (new PlanPrevention())->setCreatedBy($prestataire);
+
+        $this->userRepository->expects($this->exactly(3))
+            ->method('findByRoleAndEntreprise')
+            ->willReturnCallback(function (string $role, mixed $entrepriseId) use ($entreprise, $prestataire, $chefPresta, $agentTerrain) {
+                $this->assertSame((string) $entreprise->getId(), (string) $entrepriseId);
+
+                return match ($role) {
+                    'ROLE_PRESTATAIRE' => [$prestataire],
+                    'ROLE_CHEF_PROJET_PRESTATAIRE' => [$chefPresta],
+                    'ROLE_AGENT_TERRAIN' => [$agentTerrain],
+                    default => [],
+                };
+            });
+        $recipients = $this->captureRecipients();
+
+        $this->service->notifierValidation($plan);
+
+        $this->assertSame(
+            ['presta@acme.mg', 'chef.presta@acme.mg', 'agent.terrain@acme.mg'],
+            $recipients->getArrayCopy(),
+        );
+    }
+
+    public function testNotifierValidationDedupesAUserReturnedByMultipleRoleQueries(): void
+    {
+        $entreprise = (new Entreprise())->setNom('ACME');
+        $idProp = new \ReflectionProperty(Entreprise::class, 'id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($entreprise, \Symfony\Component\Uid\Uuid::v7());
+
+        $prestataire = $this->userWithId(42, (new User())->setEmail('presta@acme.mg')->setEntreprise($entreprise));
+        $plan = (new PlanPrevention())->setCreatedBy($prestataire);
+
+        $this->userRepository->method('findByRoleAndEntreprise')->willReturn([$prestataire]);
+        $recipients = $this->captureRecipients();
+
+        $this->service->notifierValidation($plan);
+
+        $this->assertSame(['presta@acme.mg'], $recipients->getArrayCopy());
+    }
+
+    private function userWithId(int $id, User $user): User
+    {
+        $idProp = new \ReflectionProperty(User::class, 'id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($user, $id);
+
+        return $user;
+    }
 }
