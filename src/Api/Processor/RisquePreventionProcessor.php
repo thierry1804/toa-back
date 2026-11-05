@@ -36,8 +36,25 @@ final class RisquePreventionProcessor implements ProcessorInterface
 
         $data->setPlanPrevention($plan);
         $this->assertModeOperatoireBelongsToPlan($data, $plan);
+        $this->assertHasSousRisque($data);
 
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+    }
+
+    /**
+     * La catégorie racine seule reste trop vague pour pré-remplir les permis
+     * de travail ("Quels sont les dangers ?") : au moins une sous-catégorie
+     * (catégorie enfant) doit être sélectionnée.
+     */
+    private function assertHasSousRisque(RisquePrevention $risque): void
+    {
+        foreach ($risque->getCategoriesRisque() as $categorie) {
+            if ($categorie->getParent() !== null) {
+                return;
+            }
+        }
+
+        throw new UnprocessableEntityHttpException('sous_risque_requis');
     }
 
     /**
