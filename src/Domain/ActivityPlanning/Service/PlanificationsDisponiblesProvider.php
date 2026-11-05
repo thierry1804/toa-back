@@ -24,15 +24,23 @@ class PlanificationsDisponiblesProvider
     /** @return list<array<string, mixed>> */
     public function forUser(User $user): array
     {
-        $planifications = $this->em
+        $entrepriseId = $user->getEntreprise()?->getId();
+
+        $condition = 'ap.providerEmail = :email OR (ap.providerEmail IS NULL AND ap.provider = :entrepriseName)';
+        if ($entrepriseId !== null) {
+            // Une planification affectée à l'entreprise (via le contact résolu par
+            // PlanningEntrepriseResolver) doit rester visible à tous ses prestataires,
+            // pas seulement au contact nommé dans providerEmail.
+            $condition .= ' OR ap.entreprise = :entrepriseId';
+        }
+
+        $qb = $this->em
             ->getRepository(ActivityPlanning::class)
             ->createQueryBuilder('ap')
             ->leftJoin('ap.sections', 's')
             ->leftJoin('s.taches', 't')
             ->addSelect('s', 't')
-            ->where(
-                'ap.providerEmail = :email OR (ap.providerEmail IS NULL AND ap.provider = :entrepriseName)'
-            )
+            ->where($condition)
             ->andWhere('ap.status IN (:statuses)')
             ->setParameter('email', $user->getEmail())
             ->setParameter('entrepriseName', $user->getEntrepriseName() ?? '')
@@ -41,9 +49,13 @@ class PlanificationsDisponiblesProvider
                 ActivityPlanning::STATUS_EN_COURS,
                 ActivityPlanning::STATUS_VALIDE,
             ])
-            ->orderBy('ap.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->orderBy('ap.createdAt', 'DESC');
+
+        if ($entrepriseId !== null) {
+            $qb->setParameter('entrepriseId', $entrepriseId);
+        }
+
+        $planifications = $qb->getQuery()->getResult();
 
         $usedIds = array_map(
             static fn(array $row): int => (int) $row['planificationId'],
