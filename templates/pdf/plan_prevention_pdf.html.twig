@@ -294,29 +294,6 @@
   </div>
   {% endif %}
 
-  <!-- ===== INSTALLATIONS ===== -->
-  {% if plan.installations|length > 0 %}
-  <div class="section">
-    <div class="section-title">Installations ({{ plan.installations|length }})</div>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:45%;">Description</th>
-          <th style="width:55%;">Conditions d'utilisation</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for installation in plan.installations %}
-        <tr>
-          <td>{{ installation.description ?? '—' }}</td>
-          <td style="white-space:pre-wrap;">{{ installation.conditionsUtilisation ?? '—' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
-
   <!-- ===== ÉQUIPEMENTS ===== -->
   {% if plan.equipements|length > 0 %}
   <div class="section">
