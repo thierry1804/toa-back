@@ -21,17 +21,21 @@ class PlanPreventionSubmissionValidator
     ];
 
     /**
-     * R-09 : types des photos jointes ligne par ligne aux listes installations/
-     * matériels et équipements/outillages (onglet « Installations & Équipements »),
-     * obligatoires uniquement pour le processus « Nouveau site » (cf.
+     * R-09 : type des photos jointes ligne par ligne à la liste matériels/
+     * équipements/outillages (onglet « Installations & Équipements »),
+     * obligatoire uniquement pour le processus « Nouveau site » (cf.
      * assertRowPhotos). Le marquage « non applicable » (R-18) n'est pas accepté
-     * pour ces 2 types tant que le plan est « Nouveau site » — cf.
+     * pour ce type tant que le plan est « Nouveau site » — cf.
      * PlanPreventionDocumentNonApplicableController.
+     *
+     * La liste des installations et matériels utilisés (et sa photo par
+     * ligne, PHOTOS_INSTALLATIONS) a été déplacée vers le permis de travail
+     * Général (Nouveau site) : plus exigée ici, les plans déjà créés avec
+     * cette donnée la conservent en lecture.
      *
      * @var TypeDocumentPrevention[]
      */
     public const REQUIRED_DOCUMENT_TYPES_NOUVEAU_SITE = [
-        TypeDocumentPrevention::PHOTOS_INSTALLATIONS,
         TypeDocumentPrevention::PHOTOS_EQUIPEMENTS,
     ];
 
@@ -91,8 +95,7 @@ class PlanPreventionSubmissionValidator
     {
         $missing = [];
         foreach ([
-            'installations' => [$plan->getInstallations(), TypeDocumentPrevention::PHOTOS_INSTALLATIONS],
-            'equipements'   => [$plan->getEquipements(), TypeDocumentPrevention::PHOTOS_EQUIPEMENTS],
+            'equipements' => [$plan->getEquipements(), TypeDocumentPrevention::PHOTOS_EQUIPEMENTS],
         ] as $list => [$rows, $type]) {
             $photoIds = $this->photoDocumentIds($plan, $type);
             $lines = [];

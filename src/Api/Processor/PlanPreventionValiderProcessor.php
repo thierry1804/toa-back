@@ -11,6 +11,7 @@ use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use App\Domain\PlanPrevention\Enum\TypeDocumentPrevention;
+use App\Domain\PlanPrevention\Service\PlanPreventionConsultationGuard;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\PlanPrevention\Service\PlanPreventionSubmissionValidator;
 use App\Domain\User\Entity\User;
@@ -36,6 +37,7 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
         private readonly TokenStorageInterface $tokenStorage,
         private readonly PlanPreventionSubmissionValidator $submissionValidator,
         private readonly PlanPreventionNotificationService $notificationService,
+        private readonly PlanPreventionConsultationGuard $consultationGuard,
     ) {
     }
 
@@ -64,6 +66,8 @@ final class PlanPreventionValiderProcessor implements ProcessorInterface
                 sprintf('documents_manquants: %s', implode(', ', $missingLabels)),
             );
         }
+
+        $this->consultationGuard->assertAllConsulted($plan);
 
         $user = $this->tokenStorage->getToken()?->getUser();
         if (!$user instanceof User) {

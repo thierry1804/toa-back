@@ -12,6 +12,7 @@ use ApiPlatform\Metadata\Post;
 use App\Api\Processor\PermitTravailDocumentDeleteProcessor;
 use App\Api\Processor\PermitTravailDocumentUploadProcessor;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
+use App\Domain\User\Entity\User;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -102,6 +103,14 @@ class PermitTravailDocument
     #[Groups(['permit_travail_document:read', 'permit_travail:read'])]
     private bool $nonApplicable = false;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    #[Groups(['permit_travail_document:read', 'permit_travail:read'])]
+    private ?\DateTimeImmutable $consultedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?User $consultedBy = null;
+
     public function getId(): ?Uuid
     {
         return $this->id;
@@ -187,6 +196,34 @@ class PermitTravailDocument
     public function setNonApplicable(bool $nonApplicable): static
     {
         $this->nonApplicable = $nonApplicable;
+
+        return $this;
+    }
+
+    public function getConsultedAt(): ?\DateTimeImmutable
+    {
+        return $this->consultedAt;
+    }
+
+    public function getConsultedBy(): ?User
+    {
+        return $this->consultedBy;
+    }
+
+    public function markConsulted(User $user, \DateTimeImmutable $at): static
+    {
+        if ($this->consultedAt === null) {
+            $this->consultedAt = $at;
+            $this->consultedBy = $user;
+        }
+
+        return $this;
+    }
+
+    public function resetConsultation(): static
+    {
+        $this->consultedAt = null;
+        $this->consultedBy = null;
 
         return $this;
     }

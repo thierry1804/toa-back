@@ -28,6 +28,10 @@ enum TypeDocumentPermitTravail: string
     // R-22 : photos jointes au formulaire d'évaluation des dangers (facultatives).
     case PHOTO_DANGERS               = 'PHOTO_DANGERS';
 
+    // Photo par ligne de la liste des installations et matériels utilisés
+    // (Permis Général, Nouveau site uniquement — déplacé depuis le plan de prévention).
+    case PHOTOS_INSTALLATIONS        = 'PHOTOS_INSTALLATIONS';
+
     // Pièces environnementales — sites APN / API — permis général (avant travaux), Nouveau site.
     case ENV_TRI_DECHETS               = 'ENV_TRI_DECHETS';
     case ENV_DELIMITATION_SITE         = 'ENV_DELIMITATION_SITE';

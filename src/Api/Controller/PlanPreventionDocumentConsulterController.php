@@ -23,7 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
 )]
 class PlanPreventionDocumentConsulterController extends AbstractController
 {
-    private const REVIEWER_ROLES = ['ROLE_CHEF_PROJET', 'ROLE_HSE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN'];
+    private const REVIEWER_ROLES = ['ROLE_HSE'];
 
     public function __construct(private readonly EntityManagerInterface $entityManager)
     {

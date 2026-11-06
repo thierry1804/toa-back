@@ -10,6 +10,7 @@ use App\Domain\PermitTravail\Entity\DecisionHsePermitTravail;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
+use App\Domain\PermitTravail\Service\PermitTravailConsultationGuard;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\User\Entity\User;
@@ -25,6 +26,7 @@ final class PermitTravailValiderProcessor implements ProcessorInterface
         private readonly TokenStorageInterface $tokenStorage,
         private readonly RequestStack $requestStack,
         private readonly PermitTravailNotificationService $notificationService,
+        private readonly PermitTravailConsultationGuard $consultationGuard,
     ) {
     }
 
@@ -41,6 +43,8 @@ final class PermitTravailValiderProcessor implements ProcessorInterface
         if ($permit->getStatut() !== StatutPermitTravail::SOUMIS) {
             throw new UnprocessableEntityHttpException('permit_travail.statut_not_soumis');
         }
+
+        $this->consultationGuard->assertAllConsulted($permit);
 
         $body = $this->parseRequestBody();
 

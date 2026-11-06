@@ -210,6 +210,17 @@ class PermitTravail
     #[Groups(['permit_travail:read', 'permit_travail:write'])]
     private ?array $dangers = null;
 
+    /**
+     * Installations et matériels utilisés (Permis Général, Nouveau site
+     * uniquement) : chaque ligne porte sa description, ses conditions
+     * d'utilisation et l'id du document photo qui lui est associé.
+     *
+     * @var list<array{description: ?string, conditionsUtilisation: ?string, photoDocumentId: ?string}>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['permit_travail:read', 'permit_travail:write'])]
+    private ?array $installations = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['permit_travail:read'])]
     private ?\DateTimeImmutable $soumisAt = null;
@@ -453,6 +464,20 @@ class PermitTravail
         return $this;
     }
 
+    /** @return list<array{description: ?string, conditionsUtilisation: ?string, photoDocumentId: ?string}> */
+    public function getInstallations(): array
+    {
+        return $this->installations ?? [];
+    }
+
+    /** @param list<array{description: ?string, conditionsUtilisation: ?string, photoDocumentId: ?string}>|null $installations */
+    public function setInstallations(?array $installations): static
+    {
+        $this->installations = $installations;
+
+        return $this;
+    }
+
     public function getSoumisAt(): ?\DateTimeImmutable
     {
         return $this->soumisAt;
@@ -502,6 +527,18 @@ class PermitTravail
     public function getDocuments(): Collection
     {
         return $this->documents;
+    }
+
+    #[Groups(['permit_travail:read'])]
+    public function isTousDocumentsConsultes(): bool
+    {
+        foreach ($this->documents as $document) {
+            if (!$document->isNonApplicable() && $document->getConsultedAt() === null) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function addDocument(PermitTravailDocument $document): static

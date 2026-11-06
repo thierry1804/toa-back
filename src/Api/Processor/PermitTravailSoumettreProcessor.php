@@ -10,6 +10,7 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
+use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
@@ -45,6 +46,7 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
         }
 
         $this->checkEvaluationDangers($permit);
+        $this->assertInstallationsRowPhotos($permit);
 
         $missingTypes = $this->findMissingDocumentTypes($permit);
         if (!empty($missingTypes)) {
@@ -106,6 +108,38 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
     private function findMissingDocumentTypes(PermitTravail $permit): array
     {
         return $this->documentRequirementResolver->findMissingDocumentTypes($permit);
+    }
+
+    /**
+     * Permis Général, Nouveau site : chaque ligne de la liste des
+     * installations et matériels utilisés porte sa propre photo (déplacé
+     * depuis le plan de prévention, même règle — cf. R-09).
+     */
+    private function assertInstallationsRowPhotos(PermitTravail $permit): void
+    {
+        if ($permit->getType() !== TypePermitTravail::GENERAL || $permit->getPlanProcess() !== 'Nouveau site') {
+            return;
+        }
+
+        $photoIds = array_map(
+            static fn ($doc) => (string) $doc->getId(),
+            array_filter(
+                $permit->getDocuments()->toArray(),
+                static fn ($doc) => $doc->getType() === TypeDocumentPermitTravail::PHOTOS_INSTALLATIONS && !$doc->isNonApplicable(),
+            ),
+        );
+
+        $lines = [];
+        foreach (array_values($permit->getInstallations()) as $index => $row) {
+            $photoId = is_array($row) ? (string) ($row['photoDocumentId'] ?? '') : '';
+            if ($photoId === '' || !in_array($photoId, $photoIds, true)) {
+                $lines[] = $index + 1;
+            }
+        }
+
+        if ($lines !== []) {
+            throw new UnprocessableEntityHttpException('photos_installations_manquantes: ' . implode(',', $lines));
+        }
     }
 
     private function checkNouveauSitePair(PermitTravail $permit): ?PermitTravail

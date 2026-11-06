@@ -12,6 +12,7 @@ use App\Domain\PermitTravail\Enum\StatutPermitTravail;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Repository\VersionPermitTravailRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
+use App\Domain\PermitTravail\Service\PermitTravailConsultationGuard;
 use App\Domain\PermitTravail\Service\PermitTravailNotificationService;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
 use App\Domain\User\Entity\User;
@@ -32,6 +33,7 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
         private readonly PermitTravailNotificationService $notificationService,
         private readonly RequestStack $requestStack,
         private readonly PermitDocumentRequirementResolver $documentRequirementResolver,
+        private readonly PermitTravailConsultationGuard $consultationGuard,
     ) {
     }
 
@@ -97,6 +99,8 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
         $version->setMotifResoumission($motif !== '' && $motif !== null ? $motif : null);
 
         $this->entityManager->persist($version);
+
+        $this->consultationGuard->resetConsultations($permit);
 
         $permit->setStatut(StatutPermitTravail::SOUMIS);
         $permit->setSoumisAt(new \DateTimeImmutable());

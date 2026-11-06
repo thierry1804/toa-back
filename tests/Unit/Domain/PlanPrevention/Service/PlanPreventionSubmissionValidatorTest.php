@@ -137,24 +137,38 @@ class PlanPreventionSubmissionValidatorTest extends TestCase
         $this->validator->assertSubmittable($plan);
     }
 
-    // ===== R-09 : une photo par ligne installations/équipements pour « Nouveau site » =====
+    // ===== R-09 : une photo par ligne équipements pour « Nouveau site » =====
+    // (la liste installations a été déplacée vers le permis de travail Général)
 
     public function testNouveauSiteRowsWithoutPhotoAreRefusedWithLineNumbers(): void
     {
         $plan = $this->planWithAllDocuments();
         $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
-        $photo = $this->document(TypeDocumentPrevention::PHOTOS_INSTALLATIONS, withId: true);
-        $plan->addDocument($photo);
-        $plan->setInstallations([
-            ['description' => 'Groupe', 'conditionsUtilisation' => '', 'photoDocumentId' => (string) $photo->getId()],
-            ['description' => 'Pylône', 'conditionsUtilisation' => ''],
+        $plan->setEquipements([
+            ['description' => 'Harnais', 'conditionsUtilisation' => '', 'photoDocumentId' => 'inconnu'],
+            ['description' => 'Casque', 'conditionsUtilisation' => ''],
         ]);
-        $plan->setEquipements([['description' => 'Harnais', 'conditionsUtilisation' => '', 'photoDocumentId' => 'inconnu']]);
 
         $this->expectException(UnprocessableEntityHttpException::class);
-        $this->expectExceptionMessage('photos_lignes_manquantes: installations:2; equipements:1');
+        $this->expectExceptionMessage('photos_lignes_manquantes: equipements:1,2');
 
         $this->validator->assertSubmittable($plan);
+    }
+
+    public function testNouveauSiteInstallationsAreNoLongerChecked(): void
+    {
+        $plan = $this->planWithAllDocuments();
+        $plan->setTypeIntervention(PlanPreventionSubmissionValidator::TYPE_INTERVENTION_NOUVEAU_SITE);
+        $plan->setEquipements([['description' => 'Harnais', 'conditionsUtilisation' => '']]);
+        $equipement = $this->document(TypeDocumentPrevention::PHOTOS_EQUIPEMENTS, withId: true);
+        $plan->addDocument($equipement);
+        $plan->setEquipements([['description' => 'Harnais', 'conditionsUtilisation' => '', 'photoDocumentId' => (string) $equipement->getId()]]);
+        // Installations sans aucune photo : ne doit plus bloquer la soumission.
+        $plan->setInstallations([['description' => 'Groupe électrogène', 'conditionsUtilisation' => '']]);
+
+        $this->validator->assertSubmittable($plan);
+
+        $this->addToAssertionCount(1);
     }
 
     public function testNouveauSitePhotoOfWrongTypeDoesNotCount(): void
