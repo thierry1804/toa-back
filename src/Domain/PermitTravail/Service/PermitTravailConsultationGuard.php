@@ -14,7 +14,7 @@ class PermitTravailConsultationGuard
         $pending = [];
         foreach ($permit->getDocuments() as $document) {
             if (!$document->isNonApplicable() && $document->getConsultedAt() === null) {
-                $pending[$document->getType()?->value ?? 'DOCUMENT'] = true;
+                $pending[$document->getType() ?? 'DOCUMENT'] = true;
             }
         }
 

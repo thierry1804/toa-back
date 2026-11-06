@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Api\Controller;
 
 use App\Domain\PermitTravail\Entity\PermitTravail;
-use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,14 +34,10 @@ class PermitTravailDocumentsRequisController extends AbstractController
 
         $this->denyAccessUnlessGranted('PERMIT_TRAVAIL_VIEW', $permit);
 
-        $values = static fn (array $types): array => array_map(
-            static fn (TypeDocumentPermitTravail $type): string => $type->value,
-            $types,
-        );
-
         return new JsonResponse([
-            'soumission' => $values($this->resolver->getRequiredDocumentTypes($permit)),
-            'cloture' => $values($this->resolver->getRequiredClotureDocumentTypes($permit)),
+            'soumission' => $this->resolver->soumission($permit),
+            'cloture' => $this->resolver->cloture($permit),
+            'dangers' => $this->resolver->dangers($permit),
             'apnApi' => $this->resolver->isApnApiSite($permit),
         ]);
     }

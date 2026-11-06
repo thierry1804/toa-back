@@ -11,6 +11,7 @@ use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Entity\PermitTravailDocument;
 use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Service\PermitDocumentAccessGuard;
+use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -31,6 +32,7 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
         #[Autowire('@default.storage')]
         private readonly FilesystemOperator $storage,
         private readonly PermitDocumentAccessGuard $accessGuard,
+        private readonly PermitDocumentRequirementResolver $requirements,
     ) {
     }
 
@@ -52,11 +54,7 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('type_required');
         }
 
-        $type = TypeDocumentPermitTravail::tryFrom($typeValue);
-        if ($type === null) {
-            $validValues = implode(', ', array_column(TypeDocumentPermitTravail::cases(), 'value'));
-            throw new UnprocessableEntityHttpException(sprintf('type_invalid: %s', $validValues));
-        }
+        $type = (string) $typeValue;
 
         if (!in_array($file->getMimeType(), UploadRules::ALLOWED_MIME_TYPES, true)) {
             throw new UnprocessableEntityHttpException('file_mime_type_invalid');
@@ -72,13 +70,17 @@ final class PermitTravailDocumentUploadProcessor implements ProcessorInterface
             throw new UnprocessableEntityHttpException('permit_travail.not_found');
         }
 
+        if ($type !== TypeDocumentPermitTravail::PHOTOS_INSTALLATIONS->value && $this->requirements->findRegle($permit, $type) === null) {
+            throw new UnprocessableEntityHttpException('type_invalid');
+        }
+
         $this->accessGuard->assertCanModify($permit, $type);
 
         $extension = $file->guessExtension() ?? 'bin';
         $filePath  = sprintf(
             'permits-travail/%s/%s/%s.%s',
             $permit->getId(),
-            $type->value,
+            $type,
             bin2hex(random_bytes(8)),
             $extension,
         );

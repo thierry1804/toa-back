@@ -207,6 +207,16 @@ class SeedMenuCommand extends Command
             ],
         ],
         [
+            'name'        => 'Documents des permis',
+            'icon'        => 'FileText',
+            'route'       => '/referentiel/documents-permis',
+            'position'    => 5,
+            'parentRoute' => 'referentiel',
+            'roles'       => [
+                'ROLE_SUPER_ADMIN' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
+            ],
+        ],
+        [
             'name'        => 'Entreprises',
             'icon'        => 'Building2',
             'route'       => '/referentiel/entreprises',

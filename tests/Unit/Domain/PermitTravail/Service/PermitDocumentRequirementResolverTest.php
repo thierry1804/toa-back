@@ -24,11 +24,11 @@ class PermitDocumentRequirementResolverTest extends TestCase
                 $this->permit(TypePermitTravail::GENERAL, ProcessusPermitTravail::NOUVEAU_SITE, $process),
             );
 
-            $this->assertContains(TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX, $required, $process);
+            $this->assertContains(TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX->value, $required, $process);
             // R-26 : plus de photo après travaux exigée à la clôture.
-            $this->assertNotContains(TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX, $required, $process);
+            $this->assertNotContains(TypeDocumentPermitTravail::PHOTO_APRES_TRAVAUX->value, $required, $process);
             // R-26 : le PV de fin de travaux n'est plus exigé à la clôture.
-            $this->assertNotContains(TypeDocumentPermitTravail::PV_FIN_TRAVAUX, $required, $process);
+            $this->assertNotContains(TypeDocumentPermitTravail::PV_FIN_TRAVAUX->value, $required, $process);
         }
     }
 
@@ -41,7 +41,7 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $missing = $this->resolver(null)->findMissingClotureDocumentTypes($permit);
 
         $this->assertEqualsCanonicalizing(
-            [TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX],
+            [TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX->value],
             $missing,
         );
     }
@@ -53,9 +53,9 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $standard = $this->resolver((new Site())->setCodeSite('ANK-001'))->getRequiredDocumentTypes($permit);
         $protected = $this->resolver((new Site())->setCodeSite('ANK-001')->setApn(true))->getRequiredDocumentTypes($permit);
 
-        $this->assertNotContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS, $standard);
-        $this->assertContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS, $protected);
-        $this->assertContains(TypeDocumentPermitTravail::ENV_INVENTAIRE_ESPECES, $protected);
+        $this->assertNotContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS->value, $standard);
+        $this->assertContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS->value, $protected);
+        $this->assertContains(TypeDocumentPermitTravail::ENV_INVENTAIRE_ESPECES->value, $protected);
     }
 
     public function testEnvironmentalDocumentsFollowTheProcess(): void
@@ -66,10 +66,10 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $soumission = $this->resolver($site)->getRequiredDocumentTypes($permit);
         $cloture = $this->resolver($site)->getRequiredClotureDocumentTypes($permit);
 
-        $this->assertContains(TypeDocumentPermitTravail::ENV_MATERIELS_DEVERSEMENT, $soumission);
-        $this->assertNotContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS, $soumission);
-        $this->assertContains(TypeDocumentPermitTravail::ENV_QUANTITE_DECHETS, $cloture);
-        $this->assertNotContains(TypeDocumentPermitTravail::ENV_REGISTRE_DECHETS, $cloture);
+        $this->assertContains(TypeDocumentPermitTravail::ENV_MATERIELS_DEVERSEMENT->value, $soumission);
+        $this->assertNotContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS->value, $soumission);
+        $this->assertContains(TypeDocumentPermitTravail::ENV_QUANTITE_DECHETS->value, $cloture);
+        $this->assertNotContains(TypeDocumentPermitTravail::ENV_REGISTRE_DECHETS->value, $cloture);
     }
 
     public function testEnvironmentalDocumentsAreNotRequiredOnSpecialisedPermits(): void
@@ -77,7 +77,7 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $permit = $this->permit(TypePermitTravail::HAUTEUR, ProcessusPermitTravail::NOUVEAU_SITE, 'Nouveau site');
         $site = (new Site())->setCodeSite('ANK-001')->setApn(true);
 
-        $this->assertNotContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS, $this->resolver($site)->getRequiredDocumentTypes($permit));
+        $this->assertNotContains(TypeDocumentPermitTravail::ENV_TRI_DECHETS->value, $this->resolver($site)->getRequiredDocumentTypes($permit));
     }
 
     public function testElectriqueOnNouveauSiteRequiresDocuments(): void
@@ -87,11 +87,11 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $soumission = $this->resolver(null)->getRequiredDocumentTypes($permit);
 
         $this->assertNotEmpty($soumission);
-        $this->assertContains(TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE, $soumission);
-        $this->assertContains(TypeDocumentPermitTravail::PHOTO_EQUIPEMENTS_ISOLANTS, $soumission);
+        $this->assertContains(TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE->value, $soumission);
+        $this->assertContains(TypeDocumentPermitTravail::PHOTO_EQUIPEMENTS_ISOLANTS->value, $soumission);
     }
 
-    public function testNonApplicableMarkerSatisfiesEnvironmentalRequirement(): void
+    public function testNonApplicableMarkerDoesNotSatisfyAnObligatoryDocument(): void
     {
         $permit = $this->permit(TypePermitTravail::GENERAL, ProcessusPermitTravail::MAINTENANCE, 'Maintenance préventive');
         $site = (new Site())->setCodeSite('ANK-001')->setApn(true);
@@ -99,8 +99,17 @@ class PermitDocumentRequirementResolverTest extends TestCase
 
         $missing = $this->resolver($site)->findMissingDocumentTypes($permit);
 
-        $this->assertNotContains(TypeDocumentPermitTravail::ENV_PROPRETE_AVANT, $missing);
-        $this->assertContains(TypeDocumentPermitTravail::ENV_MATERIELS_DEVERSEMENT, $missing);
+        $this->assertContains(TypeDocumentPermitTravail::ENV_PROPRETE_AVANT->value, $missing);
+        $this->assertContains(TypeDocumentPermitTravail::ENV_MATERIELS_DEVERSEMENT->value, $missing);
+    }
+
+    public function testDangerPhotosAreOptionalAndAbsentFromSubmission(): void
+    {
+        $permit = $this->permit(TypePermitTravail::GENERAL, ProcessusPermitTravail::NOUVEAU_SITE, 'Nouveau site');
+        $resolver = $this->resolver(null);
+
+        $this->assertNotContains(TypeDocumentPermitTravail::PHOTO_DANGERS->value, $resolver->getRequiredDocumentTypes($permit));
+        $this->assertFalse($resolver->dangers($permit)['obligatoire']);
     }
 
     private function resolver(?Site $site): PermitDocumentRequirementResolver

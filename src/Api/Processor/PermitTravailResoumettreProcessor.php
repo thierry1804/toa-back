@@ -9,7 +9,6 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Entity\VersionPermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
-use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Repository\VersionPermitTravailRepository;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\PermitTravail\Service\PermitTravailConsultationGuard;
@@ -79,7 +78,7 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
         if (!empty($missingTypes)) {
             throw new UnprocessableEntityHttpException(sprintf(
                 'documents_manquants: %s',
-                implode(', ', array_map(static fn(TypeDocumentPermitTravail $t) => $t->value, $missingTypes)),
+                implode(', ', $missingTypes),
             ));
         }
 
@@ -115,7 +114,7 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
         return $result;
     }
 
-    /** @return TypeDocumentPermitTravail[] */
+    /** @return string[] */
     private function findMissingDocumentTypes(PermitTravail $permit): array
     {
         return $this->documentRequirementResolver->findMissingDocumentTypes($permit);
@@ -134,7 +133,7 @@ final class PermitTravailResoumettreProcessor implements ProcessorInterface
             'dateFinPrevue'     => $permit->getDateFinPrevue()?->format(\DateTimeInterface::ATOM),
             'documents'         => array_map(
                 static fn($d) => [
-                    'type'     => $d->getType()->value,
+                    'type'     => $d->getType(),
                     'filePath' => $d->getFilePath(),
                 ],
                 $permit->getDocuments()->toArray(),

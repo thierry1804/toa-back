@@ -11,7 +11,6 @@ use App\Domain\PermitTravail\Entity\PermitTravailPdf;
 use App\Domain\PermitTravail\Entity\PvReceptionPdf;
 use App\Domain\PermitTravail\Enum\StatutPermitTravailPdf;
 use App\Domain\PermitTravail\Enum\StatutPvReceptionPdf;
-use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use App\Domain\PlanPrevention\Entity\PlanPreventionPdf;
 use App\Domain\PlanPrevention\Enum\StatutPlanPreventionPdf;
@@ -49,11 +48,6 @@ class OfflineSnapshotExtrasController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $values = static fn (array $types): array => array_map(
-            static fn (TypeDocumentPermitTravail $type): string => $type->value,
-            $types,
-        );
-
         $permitsDocumentsRequis = [];
         $generatedPdfs = [];
         if ($this->dataProvider->isEntityModuleAccessible('permitsTravail')) {
@@ -62,8 +56,9 @@ class OfflineSnapshotExtrasController extends AbstractController
             foreach ($permits as $permit) {
                 $permitsDocumentsRequis[] = [
                     'id' => (string) $permit->getId(),
-                    'soumission' => $values($this->requirementResolver->getRequiredDocumentTypes($permit)),
-                    'cloture' => $values($this->requirementResolver->getRequiredClotureDocumentTypes($permit)),
+                    'soumission' => $this->requirementResolver->soumission($permit),
+                    'cloture' => $this->requirementResolver->cloture($permit),
+                    'dangers' => $this->requirementResolver->dangers($permit),
                     'apnApi' => $this->requirementResolver->isApnApiSite($permit),
                 ];
             }

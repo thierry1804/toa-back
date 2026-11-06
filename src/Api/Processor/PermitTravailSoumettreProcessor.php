@@ -50,10 +50,7 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
 
         $missingTypes = $this->findMissingDocumentTypes($permit);
         if (!empty($missingTypes)) {
-            $missingLabels = array_map(
-                static fn(TypeDocumentPermitTravail $t) => $t->value,
-                $missingTypes,
-            );
+            $missingLabels = $missingTypes;
 
             throw new UnprocessableEntityHttpException(
                 sprintf('documents_manquants: %s', implode(', ', $missingLabels)),
@@ -125,7 +122,7 @@ final class PermitTravailSoumettreProcessor implements ProcessorInterface
             static fn ($doc) => (string) $doc->getId(),
             array_filter(
                 $permit->getDocuments()->toArray(),
-                static fn ($doc) => $doc->getType() === TypeDocumentPermitTravail::PHOTOS_INSTALLATIONS && !$doc->isNonApplicable(),
+                static fn ($doc) => $doc->getType() === TypeDocumentPermitTravail::PHOTOS_INSTALLATIONS->value && !$doc->isNonApplicable(),
             ),
         );
 

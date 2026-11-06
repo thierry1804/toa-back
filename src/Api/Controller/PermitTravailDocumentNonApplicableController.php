@@ -6,8 +6,8 @@ namespace App\Api\Controller;
 
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Entity\PermitTravailDocument;
-use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
 use App\Domain\PermitTravail\Service\PermitDocumentAccessGuard;
+use App\Domain\PermitTravail\Service\PermitDocumentRequirementResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +29,7 @@ class PermitTravailDocumentNonApplicableController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PermitDocumentAccessGuard $accessGuard,
+        private readonly PermitDocumentRequirementResolver $requirements,
         #[Autowire('@default.storage')]
         private readonly FilesystemOperator $storage,
     ) {
@@ -48,9 +49,10 @@ class PermitTravailDocumentNonApplicableController extends AbstractController
             throw new UnprocessableEntityHttpException('type_and_non_applicable_required');
         }
 
-        $type = TypeDocumentPermitTravail::tryFrom((string) $body['type']);
-        if ($type === null) {
-            throw new UnprocessableEntityHttpException('type_invalid');
+        $type = (string) $body['type'];
+        $regle = $this->requirements->findRegle($permit, $type);
+        if ($regle === null || $regle->isObligatoire()) {
+            throw new UnprocessableEntityHttpException('document_obligatoire');
         }
 
         $this->accessGuard->assertCanModify($permit, $type);
@@ -100,7 +102,7 @@ class PermitTravailDocumentNonApplicableController extends AbstractController
 
         return new JsonResponse([
             'id' => (string) $marker->getId(),
-            'type' => $type->value,
+            'type' => $type,
             'filePath' => '',
             'mimeType' => '',
             'uploadedAt' => $now->format(\DateTimeInterface::ATOM),

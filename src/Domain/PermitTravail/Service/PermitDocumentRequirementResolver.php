@@ -6,176 +6,85 @@ namespace App\Domain\PermitTravail\Service;
 
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
-use App\Domain\PermitTravail\Enum\TypeDocumentPermitTravail;
-use App\Domain\PermitTravail\Enum\TypePermitTravail;
+use App\Domain\Referentiel\Entity\DocumentPermisRegle;
+use App\Domain\Referentiel\Repository\DocumentPermisRegleRepository;
 use App\Domain\Referentiel\Repository\SiteRepository;
+use App\Domain\Referentiel\Service\DocumentPermisCatalogue;
 
 /**
- * Résout la liste des documents obligatoires pour un permis de travail, en
- * fonction du processus du plan de prévention rattaché (Nouveau site vs les
- * 4 autres processus regroupés), du type de permis et du fait qu'il s'agisse
- * d'une première demande ou d'un renouvellement — cf. tableau de la recette
- * interne (section "Demande de permis").
+ * Liste des documents d'un permis, lue dans le référentiel.
+ * Tant que la table est vide, la liste de départ du catalogue s'applique.
  */
 final class PermitDocumentRequirementResolver
 {
-    private const NOUVEAU_SITE = 'NOUVEAU_SITE';
-    private const AUTRES       = 'AUTRES';
-
-    /**
-     * Documents de clôture, exigés à la clôture manuelle d'un permis —
-     * cf. tableau de la recette interne, étape "Fin" / "Validation Fin".
-     *
-     * @var array<string, TypeDocumentPermitTravail[]>
-     */
-    private const CLOTURE_MATRIX = [
-        self::NOUVEAU_SITE => [
-            TypeDocumentPermitTravail::PV_CLOTURE_ENVIRONNEMENT,
-            TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
-        ],
-        self::AUTRES => [
-            TypeDocumentPermitTravail::PHOTO_PROPRETE_SITE,
-            TypeDocumentPermitTravail::PHOTO_AVANT_TRAVAUX,
-        ],
-    ];
-
-    /**
-     * Pièces environnementales exigées à la soumission du permis général, pour les
-     * sites en aire protégée (APN / API).
-     *
-     * @var array<string, TypeDocumentPermitTravail[]>
-     */
-    private const ENV_SOUMISSION_MATRIX = [
-        self::NOUVEAU_SITE => [
-            TypeDocumentPermitTravail::ENV_TRI_DECHETS,
-            TypeDocumentPermitTravail::ENV_DELIMITATION_SITE,
-            TypeDocumentPermitTravail::ENV_ACCES_EXISTANT,
-            TypeDocumentPermitTravail::ENV_AUTORISATION_CEF_DREDD,
-            TypeDocumentPermitTravail::ENV_FICHE_TOOLBOX,
-            TypeDocumentPermitTravail::ENV_INVENTAIRE_ESPECES,
-        ],
-        self::AUTRES => [
-            TypeDocumentPermitTravail::ENV_MATERIELS_DEVERSEMENT,
-            TypeDocumentPermitTravail::ENV_MOYENS_URGENCE_POLLUTION,
-            TypeDocumentPermitTravail::ENV_PROPRETE_AVANT,
-        ],
-    ];
-
-    /**
-     * Pièces environnementales exigées à la clôture du permis général, pour les
-     * sites en aire protégée (APN / API).
-     *
-     * @var array<string, TypeDocumentPermitTravail[]>
-     */
-    private const ENV_CLOTURE_MATRIX = [
-        self::NOUVEAU_SITE => [
-            TypeDocumentPermitTravail::ENV_PHOTO_GENERATEUR_SUPERSILENT,
-            TypeDocumentPermitTravail::ENV_LUTTE_EROSION,
-            TypeDocumentPermitTravail::ENV_REGISTRE_DECHETS,
-            TypeDocumentPermitTravail::ENV_PROPRETE_SITE,
-            TypeDocumentPermitTravail::ENV_REGISTRE_PLAINTES,
-        ],
-        self::AUTRES => [
-            TypeDocumentPermitTravail::ENV_QUANTITE_DECHETS,
-            TypeDocumentPermitTravail::ENV_ENLEVEMENT_DECHETS,
-            TypeDocumentPermitTravail::ENV_PROPRETE_APRES,
-        ],
-    ];
-
-    /** @var array<string, array<string, array<int, TypeDocumentPermitTravail[]>>> */
-    private const MATRIX = [
-        self::NOUVEAU_SITE => [
-            TypePermitTravail::GENERAL->value => [
-                0 => [
-                    TypeDocumentPermitTravail::TROUSSE_SECOURS,
-                    TypeDocumentPermitTravail::PV_SENSIBILISATION_HSE,
-                    TypeDocumentPermitTravail::PHOTO_EPI_BASE,
-                    TypeDocumentPermitTravail::PV_KICKOFF_AUTORITES,
-                    TypeDocumentPermitTravail::PV_ENVIRONNEMENT,
-                ],
-                1 => [
-                    TypeDocumentPermitTravail::PHOTO_AVANCEMENT_CHANTIER,
-                    TypeDocumentPermitTravail::PHOTO_EPI_BASE,
-                ],
-            ],
-            TypePermitTravail::HAUTEUR->value => [
-                0 => [
-                    TypeDocumentPermitTravail::PLAN_SAUVETAGE_HAUTEUR,
-                    TypeDocumentPermitTravail::KIT_SAUVETAGE_HAUTEUR,
-                    TypeDocumentPermitTravail::HARNAIS_SECURITE,
-                    TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE,
-                    TypeDocumentPermitTravail::TROUSSE_SECOURS,
-                    TypeDocumentPermitTravail::MESURE_VITESSE_VENT,
-                ],
-                1 => [
-                    TypeDocumentPermitTravail::PHOTO_AVANCEMENT_CHANTIER,
-                    TypeDocumentPermitTravail::PHOTO_EPI_SPECIFIQUE,
-                ],
-            ],
-            TypePermitTravail::ELECTRIQUE->value => [
-                0 => [
-                    TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE,
-                    TypeDocumentPermitTravail::PHOTO_EQUIPEMENTS_ISOLANTS,
-                    TypeDocumentPermitTravail::TROUSSE_SECOURS,
-                ],
-                1 => [
-                    TypeDocumentPermitTravail::PHOTO_AVANCEMENT_CHANTIER,
-                    TypeDocumentPermitTravail::PHOTO_EPI_SPECIFIQUE,
-                ],
-            ],
-        ],
-        self::AUTRES => [
-            TypePermitTravail::GENERAL->value => [
-                0 => [
-                    TypeDocumentPermitTravail::TROUSSE_SECOURS,
-                    TypeDocumentPermitTravail::PHOTO_EPI_BASE,
-                    TypeDocumentPermitTravail::PV_SENSIBILISATION_HSE,
-                ],
-                1 => [
-                    TypeDocumentPermitTravail::PHOTO_AVANCEMENT_CHANTIER,
-                    TypeDocumentPermitTravail::PHOTO_EPI_BASE,
-                ],
-            ],
-            TypePermitTravail::HAUTEUR->value => [
-                0 => [
-                    TypeDocumentPermitTravail::PLAN_SAUVETAGE_HAUTEUR,
-                    TypeDocumentPermitTravail::KIT_SAUVETAGE_HAUTEUR,
-                    TypeDocumentPermitTravail::HARNAIS_SECURITE,
-                    TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE,
-                    TypeDocumentPermitTravail::TROUSSE_SECOURS,
-                    TypeDocumentPermitTravail::MESURE_VITESSE_VENT,
-                ],
-                1 => [],
-            ],
-            TypePermitTravail::ELECTRIQUE->value => [
-                0 => [
-                    TypeDocumentPermitTravail::PIECE_IDENTITE_HABILITE,
-                    TypeDocumentPermitTravail::PHOTO_EQUIPEMENTS_ISOLANTS,
-                    TypeDocumentPermitTravail::TROUSSE_SECOURS,
-                ],
-                1 => [
-                    TypeDocumentPermitTravail::PHOTO_AVANCEMENT_CHANTIER,
-                    TypeDocumentPermitTravail::PHOTO_EPI_SPECIFIQUE,
-                ],
-            ],
-        ],
-    ];
-
-    public function __construct(private readonly SiteRepository $siteRepository)
-    {
+    public function __construct(
+        private readonly SiteRepository $siteRepository,
+        private readonly ?DocumentPermisRegleRepository $regles = null,
+    ) {
     }
 
-    /** @return TypeDocumentPermitTravail[] */
+    /** @return list<array{code: string, libelle: string, obligatoire: bool, ordre: int}> */
+    public function soumission(PermitTravail $permit): array
+    {
+        return $this->lignes($permit, DocumentPermisCatalogue::MOMENT_SOUMISSION);
+    }
+
+    /** @return list<array{code: string, libelle: string, obligatoire: bool, ordre: int}> */
+    public function cloture(PermitTravail $permit): array
+    {
+        return $this->lignes($permit, DocumentPermisCatalogue::MOMENT_CLOTURE);
+    }
+
+    /** @return array{code: string, libelle: string, obligatoire: bool, ordre: int}|null */
+    public function dangers(PermitTravail $permit): ?array
+    {
+        return $this->lignes($permit, DocumentPermisCatalogue::MOMENT_DANGERS)[0] ?? null;
+    }
+
+    /** @return string[] codes obligatoires */
     public function getRequiredDocumentTypes(PermitTravail $permit): array
     {
-        $isRenouvellement = $permit->getProcessus() === ProcessusPermitTravail::RENOUVELLEMENT ? 1 : 0;
-        $required = self::MATRIX[$this->bucket($permit)][$permit->getType()->value ?? ''][$isRenouvellement] ?? [];
+        return $this->codesObligatoires($this->soumission($permit));
+    }
 
-        if ($permit->getType() === TypePermitTravail::GENERAL && $this->isApnApiSite($permit)) {
-            $required = array_merge($required, self::ENV_SOUMISSION_MATRIX[$this->bucket($permit)]);
+    /** @return string[] codes obligatoires */
+    public function getRequiredClotureDocumentTypes(PermitTravail $permit): array
+    {
+        return $this->codesObligatoires($this->cloture($permit));
+    }
+
+    /** @return string[] */
+    public function findMissingDocumentTypes(PermitTravail $permit): array
+    {
+        return $this->findMissing($permit, $this->getRequiredDocumentTypes($permit));
+    }
+
+    /** @return string[] */
+    public function findMissingClotureDocumentTypes(PermitTravail $permit): array
+    {
+        return $this->findMissing($permit, $this->getRequiredClotureDocumentTypes($permit));
+    }
+
+    public function findRegle(PermitTravail $permit, string $code): ?DocumentPermisRegle
+    {
+        foreach ($this->correspondantes($permit) as $regle) {
+            if ($regle->getCode() === $code) {
+                return $regle;
+            }
         }
 
-        return $required;
+        return null;
+    }
+
+    public function isClotureCode(PermitTravail $permit, string $code): bool
+    {
+        foreach ($this->correspondantes($permit, DocumentPermisCatalogue::MOMENT_CLOTURE) as $regle) {
+            if ($regle->getCode() === $code) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function isApnApiSite(PermitTravail $permit): bool
@@ -190,49 +99,117 @@ final class PermitDocumentRequirementResolver
         return $site !== null && ($site->isApn() || $site->isApi());
     }
 
-    /** @return TypeDocumentPermitTravail[] */
-    public function findMissingDocumentTypes(PermitTravail $permit): array
+    /** @return list<array{code: string, libelle: string, obligatoire: bool, ordre: int}> */
+    private function lignes(PermitTravail $permit, string $moment): array
     {
-        return $this->findMissing($permit, $this->getRequiredDocumentTypes($permit));
-    }
-
-    /** @return TypeDocumentPermitTravail[] */
-    public function getRequiredClotureDocumentTypes(PermitTravail $permit): array
-    {
-        $required = self::CLOTURE_MATRIX[$this->bucket($permit)];
-
-        if ($permit->getType() === TypePermitTravail::GENERAL && $this->isApnApiSite($permit)) {
-            $required = array_merge($required, self::ENV_CLOTURE_MATRIX[$this->bucket($permit)]);
+        $lignes = [];
+        foreach ($this->correspondantes($permit, $moment) as $regle) {
+            $lignes[] = $regle->toLigne();
         }
 
-        return $required;
+        return $lignes;
     }
 
-    /** @return TypeDocumentPermitTravail[] */
-    public function findMissingClotureDocumentTypes(PermitTravail $permit): array
+    /** @return DocumentPermisRegle[] */
+    private function correspondantes(PermitTravail $permit, ?string $moment = null): array
     {
-        return $this->findMissing($permit, $this->getRequiredClotureDocumentTypes($permit));
+        $bucket = $permit->getPlanProcess() === 'Nouveau site'
+            ? DocumentPermisCatalogue::NOUVEAU_SITE
+            : DocumentPermisCatalogue::AUTRES;
+        $demande = $permit->getProcessus() === ProcessusPermitTravail::RENOUVELLEMENT
+            ? DocumentPermisCatalogue::RENOUVELLEMENT
+            : DocumentPermisCatalogue::PREMIERE;
+        $type = $permit->getType()?->value ?? '';
+        $apn = $this->isApnApiSite($permit);
+
+        $matched = [];
+        foreach ($this->source() as $regle) {
+            if (!$regle->isActif()) {
+                continue;
+            }
+            if ($moment !== null && $regle->getMoment() !== $moment) {
+                continue;
+            }
+            if (!in_array($regle->getProcessus(), [$bucket, DocumentPermisCatalogue::TOUS], true)) {
+                continue;
+            }
+            if (!in_array($regle->getTypePermis(), [$type, DocumentPermisCatalogue::TOUS], true)) {
+                continue;
+            }
+            if (!in_array($regle->getDemande(), [$demande, DocumentPermisCatalogue::TOUTES], true)) {
+                continue;
+            }
+            if ($regle->isApnApiUniquement() && !$apn) {
+                continue;
+            }
+            $matched[] = $regle;
+        }
+
+        usort($matched, static fn (DocumentPermisRegle $a, DocumentPermisRegle $b): int => $a->getOrdre() <=> $b->getOrdre());
+
+        return $matched;
     }
 
-    private function bucket(PermitTravail $permit): string
+    /** @return DocumentPermisRegle[] */
+    private function source(): array
     {
-        return $permit->getPlanProcess() === 'Nouveau site' ? self::NOUVEAU_SITE : self::AUTRES;
+        if ($this->regles !== null && $this->regles->countAll() > 0) {
+            return $this->regles->findActives();
+        }
+
+        $built = [];
+        foreach (DocumentPermisCatalogue::definitions() as $row) {
+            $built[] = (new DocumentPermisRegle())
+                ->setCode($row['code'])
+                ->setLibelle($row['libelle'])
+                ->setMoment($row['moment'])
+                ->setProcessus($row['processus'])
+                ->setTypePermis($row['typePermis'])
+                ->setDemande($row['demande'])
+                ->setApnApiUniquement($row['apnApiUniquement'])
+                ->setObligatoire($row['obligatoire'])
+                ->setOrdre($row['ordre'])
+                ->setActif(true);
+        }
+
+        return $built;
     }
 
     /**
-     * @param TypeDocumentPermitTravail[] $required
-     * @return TypeDocumentPermitTravail[]
+     * @param list<array{code: string, obligatoire: bool}> $lignes
+     * @return string[]
+     */
+    private function codesObligatoires(array $lignes): array
+    {
+        $codes = [];
+        foreach ($lignes as $ligne) {
+            if ($ligne['obligatoire']) {
+                $codes[] = $ligne['code'];
+            }
+        }
+
+        return $codes;
+    }
+
+    /**
+     * Une case N/A ne remplace pas un document obligatoire.
+     *
+     * @param string[] $required
+     * @return string[]
      */
     private function findMissing(PermitTravail $permit, array $required): array
     {
-        $presentTypes = array_map(
-            static fn ($doc) => $doc->getType(),
-            $permit->getDocuments()->toArray(),
-        );
+        $present = [];
+        foreach ($permit->getDocuments() as $document) {
+            if ($document->isNonApplicable() || $document->getFilePath() === null || $document->getFilePath() === '') {
+                continue;
+            }
+            $present[] = $document->getType();
+        }
 
         return array_values(array_filter(
             $required,
-            static fn (TypeDocumentPermitTravail $req) => !in_array($req, $presentTypes, true),
+            static fn (string $code): bool => !in_array($code, $present, true),
         ));
     }
 }

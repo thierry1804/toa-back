@@ -79,9 +79,9 @@ class PermitTravailDocument
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?PermitTravail $permitTravail = null;
 
-    #[ORM\Column(length: 100, enumType: TypeDocumentPermitTravail::class)]
+    #[ORM\Column(length: 100)]
     #[Groups(['permit_travail_document:read', 'permit_travail:read'])]
-    private ?TypeDocumentPermitTravail $type = null;
+    private ?string $type = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Groups(['permit_travail_document:read', 'permit_travail:read'])]
@@ -128,14 +128,14 @@ class PermitTravailDocument
         return $this;
     }
 
-    public function getType(): ?TypeDocumentPermitTravail
+    public function getType(): ?string
     {
         return $this->type;
     }
 
-    public function setType(TypeDocumentPermitTravail $type): static
+    public function setType(TypeDocumentPermitTravail|string $type): static
     {
-        $this->type = $type;
+        $this->type = $type instanceof TypeDocumentPermitTravail ? $type->value : $type;
 
         return $this;
     }

@@ -59,7 +59,7 @@ class ClotureManuelleProcessor extends AbstractController
 
         $missingTypes = $this->documentRequirementResolver->findMissingClotureDocumentTypes($permit);
         if (!empty($missingTypes)) {
-            $missingLabels = array_map(static fn ($t) => $t->value, $missingTypes);
+            $missingLabels = $missingTypes;
             throw new UnprocessableEntityHttpException(
                 sprintf('documents_manquants: %s', implode(', ', $missingLabels)),
             );
