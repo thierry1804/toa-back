@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Doctrine\Extension;
 
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
 use App\Doctrine\Extension\CurrentUserExtension;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\User\Entity\User;
@@ -36,7 +37,7 @@ final class CurrentUserExtensionTest extends TestCase
         $security = $this->securityFor($user, [$role]);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new CurrentUserExtension($security))->applyToCollection(
+        (new CurrentUserExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             PermitTravail::class,
@@ -67,7 +68,7 @@ final class CurrentUserExtensionTest extends TestCase
         $security = $this->securityFor($user, []);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new CurrentUserExtension($security))->applyToCollection(
+        (new CurrentUserExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             PermitTravail::class,
@@ -99,7 +100,7 @@ final class CurrentUserExtensionTest extends TestCase
         $security = $this->securityFor($user, []);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new CurrentUserExtension($security))->applyToCollection(
+        (new CurrentUserExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             PermitTravail::class,
@@ -120,7 +121,7 @@ final class CurrentUserExtensionTest extends TestCase
         $queryBuilder = $this->buildQueryBuilder();
         $dqlBefore = $queryBuilder->getDQL();
 
-        (new CurrentUserExtension($security))->applyToCollection(
+        (new CurrentUserExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             \App\Domain\PlanPrevention\Entity\PlanPrevention::class,

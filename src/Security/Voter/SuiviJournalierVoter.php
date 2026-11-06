@@ -6,6 +6,7 @@ namespace App\Security\Voter;
 
 use App\Domain\Intervention\Entity\SuiviJournalier;
 use App\Domain\Intervention\Entity\SuiviJournalierDocument;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -28,7 +29,10 @@ class SuiviJournalierVoter extends Voter
         self::DELETE_DOC => 'suivi_journalier.delete_document',
     ];
 
-    public function __construct(private readonly PermissionChecker $permissionChecker) {}
+    public function __construct(
+        private readonly PermissionChecker $permissionChecker,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -153,6 +157,11 @@ class SuiviJournalierVoter extends Voter
      */
     private function hasOwnership(SuiviJournalier $suivi, User $user): bool
     {
+        $planificationId = $suivi->getIntervention()?->getPermitTravail()?->getPlanPrevention()?->getPlanificationId();
+        if (!$this->agentScope->allows($user, $planificationId)) {
+            return false;
+        }
+
         $uid                    = $user->getUserIdentifier();
         $isCreator              = $suivi->getCreatedBy()?->getUserIdentifier() === $uid;
         $isInterventionCreator  = $suivi->getIntervention()?->getCreatedBy()?->getUserIdentifier() === $uid;

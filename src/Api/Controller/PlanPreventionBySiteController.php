@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Api\Controller;
 
+use App\Domain\User\Entity\User;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Repository\PermitTravailGroupeRepository;
 use App\Domain\PlanPrevention\Entity\ModeOperatoirePlanPrevention;
 use App\Domain\PlanPrevention\Entity\PhasePlanPrevention;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\StatutPlanPrevention;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,6 +27,7 @@ class PlanPreventionBySiteController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PermitTravailGroupeRepository $groupeRepository,
+        private readonly AgentProjetScope $agentScope,
     ) {
     }
 
@@ -48,7 +51,7 @@ class PlanPreventionBySiteController extends AbstractController
             $matchesSite = in_array($codeSite, $siteCodes, true)
                 || $plan->getCodeSite() === $codeSite;
 
-            if (!$matchesSite) {
+            if (!$matchesSite || !$this->visibleToCurrentUser($plan)) {
                 continue;
             }
 
@@ -140,5 +143,27 @@ class PlanPreventionBySiteController extends AbstractController
         }
 
         return $this->json(['plans' => $result]);
+    }
+
+    private function visibleToCurrentUser(PlanPrevention $plan): bool
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        foreach (['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_DIRECTION', 'ROLE_HSE', 'ROLE_CHEF_PROJET'] as $role) {
+            if (in_array($role, $user->getRoles(), true)) {
+                return true;
+            }
+        }
+
+        $userEntreprise = $user->getEntreprise()?->getId();
+        $planEntreprise = $plan->getCreatedBy()?->getEntreprise()?->getId();
+        if ($userEntreprise === null || $planEntreprise === null || (string) $userEntreprise !== (string) $planEntreprise) {
+            return false;
+        }
+
+        return $this->agentScope->allows($user, $plan->getPlanificationId());
     }
 }

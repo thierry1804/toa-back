@@ -15,6 +15,7 @@ use App\Api\Processor\ActivityPlanningCreateProcessor;
 use App\Api\Processor\ActivityPlanningUpdateProcessor;
 use App\Domain\ActivityPlanning\Validator\CoherentDates;
 use App\Domain\Entreprise\Entity\Entreprise;
+use App\Domain\Entreprise\Entity\SousTraitant;
 use App\Domain\User\Entity\User;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -176,10 +177,17 @@ class ActivityPlanning
     #[Groups(['activity_planning:read', 'activity_planning:write'])]
     private ?Entreprise $entreprise = null;
 
+    /** Sous-traitants dont les agents voient les dossiers issus de cette planification. */
+    #[ORM\ManyToMany(targetEntity: SousTraitant::class)]
+    #[ORM\JoinTable(name: 'activity_planning_sous_traitant')]
+    #[Groups(['activity_planning:read'])]
+    private Collection $sousTraitants;
+
     public function __construct()
     {
         $this->auditLogs = new ArrayCollection();
         $this->sections  = new ArrayCollection();
+        $this->sousTraitants = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -429,6 +437,21 @@ class ActivityPlanning
     public function getEntreprise(): ?Entreprise
     {
         return $this->entreprise;
+    }
+
+    /** @return Collection<int, SousTraitant> */
+    public function getSousTraitants(): Collection
+    {
+        return $this->sousTraitants;
+    }
+
+    public function addSousTraitant(SousTraitant $sousTraitant): static
+    {
+        if (!$this->sousTraitants->contains($sousTraitant)) {
+            $this->sousTraitants->add($sousTraitant);
+        }
+
+        return $this;
     }
 
     public function setEntreprise(?Entreprise $entreprise): static

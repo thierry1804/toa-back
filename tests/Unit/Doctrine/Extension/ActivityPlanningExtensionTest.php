@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Doctrine\Extension;
 
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
 use App\Doctrine\Extension\ActivityPlanningExtension;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\User\Entity\User;
@@ -37,7 +38,7 @@ final class ActivityPlanningExtensionTest extends TestCase
         $security = $this->securityFor($user, [$role]);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new ActivityPlanningExtension($security))->applyToCollection(
+        (new ActivityPlanningExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             ActivityPlanning::class,
@@ -69,7 +70,7 @@ final class ActivityPlanningExtensionTest extends TestCase
         $security = $this->securityFor($user, []);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new ActivityPlanningExtension($security))->applyToCollection(
+        (new ActivityPlanningExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             ActivityPlanning::class,
@@ -91,7 +92,7 @@ final class ActivityPlanningExtensionTest extends TestCase
         $security = $this->securityFor($user, []);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new ActivityPlanningExtension($security))->applyToCollection(
+        (new ActivityPlanningExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             ActivityPlanning::class,
@@ -112,7 +113,7 @@ final class ActivityPlanningExtensionTest extends TestCase
         $queryBuilder = $this->buildQueryBuilder();
         $dqlBefore = $queryBuilder->getDQL();
 
-        (new ActivityPlanningExtension($security))->applyToCollection(
+        (new ActivityPlanningExtension($security, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             \App\Domain\PlanPrevention\Entity\PlanPrevention::class,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\PlanPrevention\Service;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\Entreprise\Entity\Entreprise;
@@ -29,6 +30,10 @@ class PlanPreventionNotificationServiceTest extends TestCase
             $this->mailer,
             $this->userRepository,
             new NullLogger(),
+            new AgentProjetScope(
+                $this->createMock(\Symfony\Bundle\SecurityBundle\Security::class),
+                $this->createMock(\Doctrine\ORM\EntityManagerInterface::class),
+            ),
         );
     }
 
@@ -124,7 +129,7 @@ class PlanPreventionNotificationServiceTest extends TestCase
         $this->service->notifierValidation(new PlanPrevention());
     }
 
-    public function testNotifierValidationNotifiesWholeEntrepriseTeamWhenEntrepriseIsKnown(): void
+    public function testNotifierValidationSkipsAgentsWhenThePlanHasNoPlanification(): void
     {
         $entreprise = (new Entreprise())->setNom('ACME');
         $idProp = new \ReflectionProperty(Entreprise::class, 'id');
@@ -153,7 +158,7 @@ class PlanPreventionNotificationServiceTest extends TestCase
         $this->service->notifierValidation($plan);
 
         $this->assertSame(
-            ['presta@acme.mg', 'chef.presta@acme.mg', 'agent.terrain@acme.mg'],
+            ['presta@acme.mg', 'chef.presta@acme.mg'],
             $recipients->getArrayCopy(),
         );
     }

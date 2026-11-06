@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\Voter;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Intervention\Entity\ControleJournalier;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
@@ -23,7 +24,10 @@ class ControleJournalierVoter extends Voter
         self::EDIT   => 'controle_journalier.edit',
     ];
 
-    public function __construct(private readonly PermissionChecker $permissionChecker) {}
+    public function __construct(
+        private readonly PermissionChecker $permissionChecker,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -113,6 +117,11 @@ class ControleJournalierVoter extends Voter
      */
     private function hasOwnership(ControleJournalier $controle, User $user): bool
     {
+        $planificationId = $controle->getIntervention()?->getPermitTravail()?->getPlanPrevention()?->getPlanificationId();
+        if (!$this->agentScope->allows($user, $planificationId)) {
+            return false;
+        }
+
         $uid                   = $user->getUserIdentifier();
         $isCreator             = $controle->getCreatedBy()?->getUserIdentifier() === $uid;
         $isInterventionCreator = $controle->getIntervention()?->getCreatedBy()?->getUserIdentifier() === $uid;

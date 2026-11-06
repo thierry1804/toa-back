@@ -8,6 +8,7 @@ use ApiPlatform\Doctrine\Orm\Extension\QueryCollectionExtensionInterface;
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Metadata\Operation;
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\QueryBuilder;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -21,7 +22,10 @@ class ActivityPlanningExtension implements QueryCollectionExtensionInterface
         'ROLE_DG',
     ];
 
-    public function __construct(private readonly Security $security) {}
+    public function __construct(
+        private readonly Security $security,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     public function applyToCollection(
         QueryBuilder $queryBuilder,
@@ -58,6 +62,7 @@ class ActivityPlanningExtension implements QueryCollectionExtensionInterface
             $queryBuilder
                 ->andWhere(sprintf('%s.entreprise = :ap_current_entreprise', $root))
                 ->setParameter('ap_current_entreprise', $entreprise);
+            $this->agentScope->restrictPlanning($queryBuilder, $root);
 
             return;
         }

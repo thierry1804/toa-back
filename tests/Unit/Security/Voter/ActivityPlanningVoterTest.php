@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Security\Voter;
 
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
@@ -31,7 +32,13 @@ final class ActivityPlanningVoterTest extends TestCase
     protected function setUp(): void
     {
         $this->permissionChecker = $this->createMock(PermissionChecker::class);
-        $this->voter = new ActivityPlanningVoter($this->permissionChecker);
+        $this->voter = new ActivityPlanningVoter(
+            $this->permissionChecker,
+            new AgentProjetScope(
+                $this->createMock(\Symfony\Bundle\SecurityBundle\Security::class),
+                $this->createMock(\Doctrine\ORM\EntityManagerInterface::class),
+            ),
+        );
     }
 
     public function testCreatorCanViewOwnPlanning(): void

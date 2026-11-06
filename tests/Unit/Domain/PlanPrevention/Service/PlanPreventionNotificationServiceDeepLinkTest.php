@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\PlanPrevention\Service;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Service\PlanPreventionNotificationService;
 use App\Domain\User\Entity\User;
@@ -96,6 +97,10 @@ class PlanPreventionNotificationServiceDeepLinkTest extends TestCase
             $this->mailer,
             $this->userRepository,
             new NullLogger(),
+            new AgentProjetScope(
+                $this->createMock(\Symfony\Bundle\SecurityBundle\Security::class),
+                $this->createMock(\Doctrine\ORM\EntityManagerInterface::class),
+            ),
             'noreply@toa.app',
             $frontendUrl,
         );

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\PermitTravail\Service;
 
 use App\Doctrine\Extension\CurrentUserExtension;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Entreprise\Entity\Entreprise;
 use App\Domain\PermitTravail\Entity\PermitTravailLog;
 use App\Domain\PermitTravail\Service\PermitTravailVisibility;
@@ -65,6 +66,6 @@ class PermitTravailVisibilityTest extends TestCase
         $em->method('getExpressionBuilder')->willReturn(new Expr());
         $em->method('createQueryBuilder')->willReturnCallback(fn () => new QueryBuilder($em));
 
-        return [new PermitTravailVisibility(new CurrentUserExtension($security), $em), $em];
+        return [new PermitTravailVisibility(new CurrentUserExtension($security, new AgentProjetScope($security, $em)), $em), $em];
     }
 }

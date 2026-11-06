@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\PlanPrevention\Service;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\User\Entity\User;
 use App\Domain\User\Repository\UserRepository;
@@ -17,6 +18,7 @@ class PlanPreventionNotificationService
         private readonly MailerInterface $mailer,
         private readonly UserRepository $userRepository,
         private readonly LoggerInterface $logger,
+        private readonly AgentProjetScope $agentScope,
         private readonly string $fromAddress = 'noreply@toa.app',
         private readonly string $frontendUrl = '',
     ) {
@@ -274,10 +276,15 @@ class PlanPreventionNotificationService
             return $createdBy instanceof User ? [$createdBy] : [];
         }
 
+        $agents = array_values(array_filter(
+            $this->userRepository->findByRoleAndEntreprise('ROLE_AGENT_TERRAIN', $entrepriseId),
+            fn (User $user): bool => $this->agentScope->includeInValidationMail($user, $plan->getPlanificationId()),
+        ));
+
         $users = array_merge(
             $this->userRepository->findByRoleAndEntreprise('ROLE_PRESTATAIRE', $entrepriseId),
             $this->userRepository->findByRoleAndEntreprise('ROLE_CHEF_PROJET_PRESTATAIRE', $entrepriseId),
-            $this->userRepository->findByRoleAndEntreprise('ROLE_AGENT_TERRAIN', $entrepriseId),
+            $agents,
         );
 
         $byId = [];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Security\Voter;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\ProcessusPermitTravail;
@@ -32,7 +33,14 @@ class PermitTravailVoterTest extends TestCase
     {
         $this->permissionChecker = $this->createMock(PermissionChecker::class);
         $this->pvRepository = $this->createMock(PvReceptionPdfRepository::class);
-        $this->voter = new PermitTravailVoter($this->permissionChecker, $this->pvRepository);
+        $this->voter = new PermitTravailVoter(
+            $this->permissionChecker,
+            $this->pvRepository,
+            new AgentProjetScope(
+                $this->createMock(\Symfony\Bundle\SecurityBundle\Security::class),
+                $this->createMock(\Doctrine\ORM\EntityManagerInterface::class),
+            ),
+        );
     }
 
     public function testCreatorCanDeleteOwnBrouillon(): void

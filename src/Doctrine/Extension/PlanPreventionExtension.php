@@ -7,6 +7,7 @@ namespace App\Doctrine\Extension;
 use ApiPlatform\Doctrine\Orm\Extension\QueryCollectionExtensionInterface;
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Metadata\Operation;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
@@ -23,6 +24,7 @@ class PlanPreventionExtension implements QueryCollectionExtensionInterface
     public function __construct(
         private readonly Security $security,
         private readonly PermissionChecker $permissionChecker,
+        private readonly AgentProjetScope $agentScope,
     ) {}
 
     public function applyToCollection(
@@ -97,6 +99,7 @@ class PlanPreventionExtension implements QueryCollectionExtensionInterface
             $queryBuilder
                 ->andWhere('pp_user.entreprise = :pp_entreprise')
                 ->setParameter('pp_entreprise', $user->getEntreprise());
+            $this->agentScope->restrictByPlanificationId($queryBuilder, sprintf('%s.planificationId', $root));
 
             return;
         }
@@ -104,5 +107,6 @@ class PlanPreventionExtension implements QueryCollectionExtensionInterface
         $queryBuilder
             ->andWhere('pp_user.email = :pp_current_user')
             ->setParameter('pp_current_user', $user->getUserIdentifier());
+        $this->agentScope->restrictByPlanificationId($queryBuilder, sprintf('%s.planificationId', $root));
     }
 }

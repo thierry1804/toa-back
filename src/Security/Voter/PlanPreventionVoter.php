@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\Voter;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\PlanPrevention\Enum\DecisionHse;
@@ -42,7 +43,10 @@ class PlanPreventionVoter extends Voter
         self::GENERATE_PDF => 'EDIT',
     ];
 
-    public function __construct(private readonly PermissionChecker $permissionChecker) {}
+    public function __construct(
+        private readonly PermissionChecker $permissionChecker,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -191,6 +195,10 @@ class PlanPreventionVoter extends Voter
     /** Créateur, ou collègue de la même entreprise (aligné sur PermitTravailVoter et PlanPreventionExtension). */
     private function hasOwnership(PlanPrevention $plan, User $user): bool
     {
+        if (!$this->agentScope->allows($user, $plan->getPlanificationId())) {
+            return false;
+        }
+
         $creator = $plan->getCreatedBy();
         if ($creator?->getUserIdentifier() === $user->getUserIdentifier()) {
             return true;

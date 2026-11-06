@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\Voter;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Intervention\Entity\Take5Record;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
@@ -21,7 +22,10 @@ class Take5RecordVoter extends Voter
         self::VIEW   => 'take5_record.view',
     ];
 
-    public function __construct(private readonly PermissionChecker $permissionChecker) {}
+    public function __construct(
+        private readonly PermissionChecker $permissionChecker,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -82,6 +86,11 @@ class Take5RecordVoter extends Voter
      */
     private function hasOwnership(Take5Record $take5, User $user): bool
     {
+        $planificationId = $take5->getIntervention()?->getPermitTravail()?->getPlanPrevention()?->getPlanificationId();
+        if (!$this->agentScope->allows($user, $planificationId)) {
+            return false;
+        }
+
         $uid                   = $user->getUserIdentifier();
         $isCreator             = $take5->getCreatedBy()?->getUserIdentifier() === $uid;
         $isInterventionCreator = $take5->getIntervention()?->getCreatedBy()?->getUserIdentifier() === $uid;

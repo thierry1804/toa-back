@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Doctrine\Extension;
 
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\User\Entity\User;
@@ -27,7 +28,7 @@ final class PlanPreventionExtensionTest extends TestCase
         $permissions->method('isGranted')->willReturn(false);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new PlanPreventionExtension($security, $permissions))->applyToCollection(
+        (new PlanPreventionExtension($security, $permissions, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             PlanPrevention::class,
@@ -48,7 +49,7 @@ final class PlanPreventionExtensionTest extends TestCase
         $permissions->method('isGranted')->willReturn(true);
         $queryBuilder = $this->buildQueryBuilder();
 
-        (new PlanPreventionExtension($security, $permissions))->applyToCollection(
+        (new PlanPreventionExtension($security, $permissions, new AgentProjetScope($security, $this->createMock(EntityManagerInterface::class))))->applyToCollection(
             $queryBuilder,
             new QueryNameGenerator(),
             PlanPrevention::class,

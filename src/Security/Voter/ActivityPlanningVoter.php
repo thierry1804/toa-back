@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security\Voter;
 
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -26,7 +27,10 @@ class ActivityPlanningVoter extends Voter
         self::DELETE => 'DELETE',
     ];
 
-    public function __construct(private PermissionChecker $permissionChecker) {}
+    public function __construct(
+        private PermissionChecker $permissionChecker,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -83,6 +87,10 @@ class ActivityPlanningVoter extends Voter
      */
     private function hasOwnership(ActivityPlanning $planning, User $user): bool
     {
+        if (!$this->agentScope->allows($user, $planning->getId())) {
+            return false;
+        }
+
         $owner = $planning->getCreatedBy();
         if ($owner === null) {
             return true;

@@ -5,6 +5,7 @@ namespace App\Doctrine\Extension;
 use ApiPlatform\Doctrine\Orm\Extension\QueryCollectionExtensionInterface;
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Metadata\Operation;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\TypePermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
@@ -14,7 +15,10 @@ use Symfony\Bundle\SecurityBundle\Security;
 
 class CurrentUserExtension implements QueryCollectionExtensionInterface
 {
-    public function __construct(private Security $security) {}
+    public function __construct(
+        private Security $security,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     public function applyToCollection(QueryBuilder $queryBuilder, QueryNameGeneratorInterface $queryNameGenerator, string $resourceClass, Operation $operation = null, array $context = []): void
     {
@@ -89,6 +93,10 @@ class CurrentUserExtension implements QueryCollectionExtensionInterface
                 ->join(sprintf('%s.createdBy', $rootAlias), 'cue_creator')
                 ->andWhere('cue_creator.entreprise = :current_entreprise')
                 ->setParameter('current_entreprise', $entreprise);
+            if ($this->agentScope->restricts($user)) {
+                $queryBuilder->join(sprintf('%s.planPrevention', $rootAlias), 'agent_scope_plan');
+                $this->agentScope->restrictByPlanificationId($queryBuilder, 'agent_scope_plan.planificationId');
+            }
 
             return;
         }

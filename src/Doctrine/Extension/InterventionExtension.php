@@ -7,6 +7,7 @@ namespace App\Doctrine\Extension;
 use ApiPlatform\Doctrine\Orm\Extension\QueryCollectionExtensionInterface;
 use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Metadata\Operation;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Intervention\Entity\Intervention;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\QueryBuilder;
@@ -14,7 +15,10 @@ use Symfony\Bundle\SecurityBundle\Security;
 
 class InterventionExtension implements QueryCollectionExtensionInterface
 {
-    public function __construct(private readonly Security $security) {}
+    public function __construct(
+        private readonly Security $security,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     public function applyToCollection(
         QueryBuilder $queryBuilder,
@@ -75,5 +79,9 @@ class InterventionExtension implements QueryCollectionExtensionInterface
         $queryBuilder
             ->andWhere($queryBuilder->expr()->orX(...$ownershipConditions))
             ->setParameter('int_current_user', $user->getUserIdentifier());
+        if ($this->agentScope->restricts($user)) {
+            $queryBuilder->join('int_permit.planPrevention', 'agent_scope_plan');
+            $this->agentScope->restrictByPlanificationId($queryBuilder, 'agent_scope_plan.planificationId');
+        }
     }
 }

@@ -19,6 +19,7 @@ use App\Api\Provider\PrestataireProvider;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Domain\Entreprise\Entity\Entreprise;
+use App\Domain\Entreprise\Entity\SousTraitant;
 use App\Domain\User\Validator\EntrepriseNameCoherence;
 use App\Domain\User\Validator\UniqueEmail;
 
@@ -119,6 +120,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['user:read', 'user:write', 'plan_prevention:read', 'permit_travail:read', 'intervention:read', 'activity_planning:read'])]
     private ?Entreprise $entreprise = null;
+
+    #[ORM\ManyToOne(targetEntity: SousTraitant::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['user:read', 'user:write'])]
+    private ?SousTraitant $sousTraitant = null;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
@@ -317,6 +323,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEntreprise(?Entreprise $entreprise): static
     {
         $this->entreprise = $entreprise;
+
+        return $this;
+    }
+
+    public function getSousTraitant(): ?SousTraitant
+    {
+        return $this->sousTraitant;
+    }
+
+    public function setSousTraitant(?SousTraitant $sousTraitant): static
+    {
+        $this->sousTraitant = $sousTraitant;
 
         return $this;
     }

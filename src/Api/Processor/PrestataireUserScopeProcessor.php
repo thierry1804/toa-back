@@ -7,6 +7,7 @@ namespace App\Api\Processor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\State\ProcessorInterface;
+use App\Domain\Entreprise\Entity\SousTraitant;
 use App\Domain\User\Entity\User;
 use App\Domain\User\Repository\UserRepository;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -49,6 +50,7 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
     {
         if ($data instanceof User) {
             $this->enforceScope($data, $operation, $uriVariables, $context);
+            $this->assertSousTraitant($data);
         }
 
         return $this->inner->process($data, $operation, $uriVariables, $context);
@@ -200,6 +202,26 @@ final class PrestataireUserScopeProcessor implements ProcessorInterface
         }
 
         return false;
+    }
+
+    private function assertSousTraitant(User $user): void
+    {
+        if (!in_array('ROLE_AGENT_TERRAIN', $user->getRoles(), true)) {
+            $user->setSousTraitant(null);
+
+            return;
+        }
+
+        $sousTraitant = $user->getSousTraitant();
+        if (!$sousTraitant instanceof SousTraitant) {
+            return;
+        }
+
+        $userEntreprise = $user->getEntreprise()?->getId();
+        $sousTraitantEntreprise = $sousTraitant->getEntreprise()?->getId();
+        if ($userEntreprise === null || (string) $userEntreprise !== (string) $sousTraitantEntreprise) {
+            throw new UnprocessableEntityHttpException('user.sous_traitant_entreprise');
+        }
     }
 
     private function isPrestataireScoped(User $user): bool

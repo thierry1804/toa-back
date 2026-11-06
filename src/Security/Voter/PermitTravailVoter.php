@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\Voter;
 
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\PermitTravail\Entity\PermitTravail;
 use App\Domain\PermitTravail\Enum\StatutPermitTravail;
@@ -61,6 +62,7 @@ class PermitTravailVoter extends Voter
     public function __construct(
         private readonly PermissionChecker $permissionChecker,
         private readonly PvReceptionPdfRepository $pvRepository,
+        private readonly AgentProjetScope $agentScope,
     ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
@@ -276,6 +278,10 @@ class PermitTravailVoter extends Voter
      */
     private function hasOwnership(PermitTravail $permit, User $user): bool
     {
+        if (!$this->agentScope->allows($user, $permit->getPlanPrevention()?->getPlanificationId())) {
+            return false;
+        }
+
         if ($permit->getCreatedBy()?->getUserIdentifier() === $user->getUserIdentifier()) {
             return true;
         }

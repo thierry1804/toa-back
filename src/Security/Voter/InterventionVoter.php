@@ -6,6 +6,7 @@ namespace App\Security\Voter;
 
 use App\Domain\Intervention\Entity\Intervention;
 use App\Domain\Intervention\Enum\StatutIntervention;
+use App\Domain\Entreprise\Service\AgentProjetScope;
 use App\Domain\Menu\Service\PermissionChecker;
 use App\Domain\User\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -26,7 +27,10 @@ class InterventionVoter extends Voter
         self::VALIDER => 'intervention.valider_evaluation',
     ];
 
-    public function __construct(private readonly PermissionChecker $permissionChecker) {}
+    public function __construct(
+        private readonly PermissionChecker $permissionChecker,
+        private readonly AgentProjetScope $agentScope,
+    ) {}
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -130,6 +134,10 @@ class InterventionVoter extends Voter
      */
     private function hasOwnership(Intervention $intervention, User $user): bool
     {
+        if (!$this->agentScope->allows($user, $intervention->getPermitTravail()?->getPlanPrevention()?->getPlanificationId())) {
+            return false;
+        }
+
         $uid             = $user->getUserIdentifier();
         $isCreator       = $intervention->getCreatedBy()?->getUserIdentifier() === $uid;
         $isPermitCreator = $intervention->getPermitTravail()?->getCreatedBy()?->getUserIdentifier() === $uid;
