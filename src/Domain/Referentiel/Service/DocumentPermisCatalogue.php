@@ -10,6 +10,18 @@ namespace App\Domain\Referentiel\Service;
  */
 final class DocumentPermisCatalogue
 {
+    /**
+     * Pièces obligatoires que le terrain a déjà dû, en pratique, marquer N/A
+     * (constaté sur les permis réels) : la case N/A reste donc proposée pour
+     * elles même si elles restent par ailleurs obligatoires.
+     */
+    private const AUTORISE_NA_CODES = [
+        'TROUSSE_SECOURS', 'PHOTO_EPI_BASE', 'PV_SENSIBILISATION_HSE', 'PIECE_IDENTITE_HABILITE',
+        'PV_ENVIRONNEMENT', 'PV_KICKOFF_AUTORITES', 'MESURE_VITESSE_VENT', 'PHOTO_EQUIPEMENTS_ISOLANTS',
+        'HARNAIS_SECURITE', 'KIT_SAUVETAGE_HAUTEUR', 'PHOTO_APRES_TRAVAUX', 'PHOTO_AVANT_TRAVAUX',
+        'PV_FIN_TRAVAUX', 'PHOTO_EPI_SPECIFIQUE', 'PHOTO_PROPRETE_SITE', 'PLAN_SAUVETAGE_HAUTEUR',
+    ];
+
     public const MOMENT_SOUMISSION = 'SOUMISSION';
     public const MOMENT_CLOTURE = 'CLOTURE';
     public const MOMENT_DANGERS = 'DANGERS';
@@ -59,7 +71,7 @@ final class DocumentPermisCatalogue
     ];
 
     /**
-     * @return list<array{code: string, libelle: string, moment: string, processus: string, typePermis: string, demande: string, apnApiUniquement: bool, obligatoire: bool, ordre: int}>
+     * @return list<array{code: string, libelle: string, moment: string, processus: string, typePermis: string, demande: string, apnApiUniquement: bool, obligatoire: bool, autoriseNA: bool, ordre: int}>
      */
     public static function definitions(): array
     {
@@ -75,6 +87,7 @@ final class DocumentPermisCatalogue
                     'demande' => $demande,
                     'apnApiUniquement' => $apn,
                     'obligatoire' => true,
+                    'autoriseNA' => in_array($code, self::AUTORISE_NA_CODES, true),
                     'ordre' => $ordre,
                 ];
             }
@@ -114,6 +127,7 @@ final class DocumentPermisCatalogue
             'demande' => self::TOUTES,
             'apnApiUniquement' => false,
             'obligatoire' => false,
+            'autoriseNA' => true,
             'ordre' => 0,
         ];
 

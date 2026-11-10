@@ -81,6 +81,15 @@ class DocumentPermisRegle
     #[Groups(['document_permis:read', 'document_permis:write'])]
     private bool $obligatoire = true;
 
+    /**
+     * Autorise la case N/A même quand `obligatoire` est vrai : cocher N/A sur ce
+     * document permet alors de contourner son caractère obligatoire (contrairement
+     * à un document obligatoire classique, où N/A ne le fait jamais passer pour présent).
+     */
+    #[ORM\Column(name: 'autorise_na', options: ['default' => false])]
+    #[Groups(['document_permis:read', 'document_permis:write'])]
+    private bool $autoriseNA = false;
+
     #[ORM\Column(options: ['default' => 0])]
     #[Groups(['document_permis:read', 'document_permis:write'])]
     private int $ordre = 0;
@@ -190,6 +199,18 @@ class DocumentPermisRegle
         return $this;
     }
 
+    public function isAutoriseNA(): bool
+    {
+        return $this->autoriseNA;
+    }
+
+    public function setAutoriseNA(bool $autoriseNA): static
+    {
+        $this->autoriseNA = $autoriseNA;
+
+        return $this;
+    }
+
     public function getOrdre(): int
     {
         return $this->ordre;
@@ -214,13 +235,14 @@ class DocumentPermisRegle
         return $this;
     }
 
-    /** @return array{code: string, libelle: string, obligatoire: bool, ordre: int} */
+    /** @return array{code: string, libelle: string, obligatoire: bool, autoriseNA: bool, ordre: int} */
     public function toLigne(): array
     {
         return [
             'code' => (string) $this->code,
             'libelle' => (string) $this->libelle,
             'obligatoire' => $this->obligatoire,
+            'autoriseNA' => $this->autoriseNA,
             'ordre' => $this->ordre,
         ];
     }

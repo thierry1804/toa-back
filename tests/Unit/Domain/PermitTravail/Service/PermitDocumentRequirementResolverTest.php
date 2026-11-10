@@ -103,6 +103,22 @@ class PermitDocumentRequirementResolverTest extends TestCase
         $this->assertContains(TypeDocumentPermitTravail::ENV_MATERIELS_DEVERSEMENT->value, $missing);
     }
 
+    public function testNonApplicableMarkerSatisfiesAnObligatoryDocumentWhenAutoriseNA(): void
+    {
+        // TROUSSE_SECOURS est obligatoire mais autoriseNA (cf. DocumentPermisCatalogue) :
+        // le terrain doit pouvoir le marquer N/A malgré son caractère obligatoire.
+        $permit = $this->permit(TypePermitTravail::GENERAL, ProcessusPermitTravail::NOUVEAU_SITE, 'Nouveau site');
+        $permit->addDocument($this->document(TypeDocumentPermitTravail::TROUSSE_SECOURS, nonApplicable: true));
+        $permit->addDocument($this->document(TypeDocumentPermitTravail::PV_SENSIBILISATION_HSE));
+        $permit->addDocument($this->document(TypeDocumentPermitTravail::PHOTO_EPI_BASE));
+        $permit->addDocument($this->document(TypeDocumentPermitTravail::PV_KICKOFF_AUTORITES));
+        $permit->addDocument($this->document(TypeDocumentPermitTravail::PV_ENVIRONNEMENT));
+
+        $missing = $this->resolver(null)->findMissingDocumentTypes($permit);
+
+        $this->assertNotContains(TypeDocumentPermitTravail::TROUSSE_SECOURS->value, $missing);
+    }
+
     public function testDangerPhotosAreOptionalAndAbsentFromSubmission(): void
     {
         $permit = $this->permit(TypePermitTravail::GENERAL, ProcessusPermitTravail::NOUVEAU_SITE, 'Nouveau site');

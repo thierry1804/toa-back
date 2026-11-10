@@ -23,19 +23,19 @@ final class PermitDocumentRequirementResolver
     ) {
     }
 
-    /** @return list<array{code: string, libelle: string, obligatoire: bool, ordre: int}> */
+    /** @return list<array{code: string, libelle: string, obligatoire: bool, autoriseNA: bool, ordre: int}> */
     public function soumission(PermitTravail $permit): array
     {
         return $this->lignes($permit, DocumentPermisCatalogue::MOMENT_SOUMISSION);
     }
 
-    /** @return list<array{code: string, libelle: string, obligatoire: bool, ordre: int}> */
+    /** @return list<array{code: string, libelle: string, obligatoire: bool, autoriseNA: bool, ordre: int}> */
     public function cloture(PermitTravail $permit): array
     {
         return $this->lignes($permit, DocumentPermisCatalogue::MOMENT_CLOTURE);
     }
 
-    /** @return array{code: string, libelle: string, obligatoire: bool, ordre: int}|null */
+    /** @return array{code: string, libelle: string, obligatoire: bool, autoriseNA: bool, ordre: int}|null */
     public function dangers(PermitTravail $permit): ?array
     {
         return $this->lignes($permit, DocumentPermisCatalogue::MOMENT_DANGERS)[0] ?? null;
@@ -56,13 +56,13 @@ final class PermitDocumentRequirementResolver
     /** @return string[] */
     public function findMissingDocumentTypes(PermitTravail $permit): array
     {
-        return $this->findMissing($permit, $this->getRequiredDocumentTypes($permit));
+        return $this->findMissing($permit, $this->soumission($permit));
     }
 
     /** @return string[] */
     public function findMissingClotureDocumentTypes(PermitTravail $permit): array
     {
-        return $this->findMissing($permit, $this->getRequiredClotureDocumentTypes($permit));
+        return $this->findMissing($permit, $this->cloture($permit));
     }
 
     public function findRegle(PermitTravail $permit, string $code): ?DocumentPermisRegle
@@ -168,6 +168,7 @@ final class PermitDocumentRequirementResolver
                 ->setDemande($row['demande'])
                 ->setApnApiUniquement($row['apnApiUniquement'])
                 ->setObligatoire($row['obligatoire'])
+                ->setAutoriseNA($row['autoriseNA'] ?? false)
                 ->setOrdre($row['ordre'])
                 ->setActif(true);
         }
@@ -192,24 +193,43 @@ final class PermitDocumentRequirementResolver
     }
 
     /**
-     * Une case N/A ne remplace pas un document obligatoire.
+     * Une case N/A ne remplace pas un document obligatoire, sauf si sa règle
+     * autorise explicitement le contournement (autoriseNA).
      *
-     * @param string[] $required
+     * @param list<array{code: string, obligatoire: bool, autoriseNA: bool}> $lignes
      * @return string[]
      */
-    private function findMissing(PermitTravail $permit, array $required): array
+    private function findMissing(PermitTravail $permit, array $lignes): array
     {
-        $present = [];
+        $withFile = [];
+        $markedNA = [];
         foreach ($permit->getDocuments() as $document) {
-            if ($document->isNonApplicable() || $document->getFilePath() === null || $document->getFilePath() === '') {
+            $type = $document->getType();
+            if ($type === null) {
                 continue;
             }
-            $present[] = $document->getType();
+            if ($document->isNonApplicable()) {
+                $markedNA[$type] = true;
+            } elseif ($document->getFilePath() !== null && $document->getFilePath() !== '') {
+                $withFile[$type] = true;
+            }
         }
 
-        return array_values(array_filter(
-            $required,
-            static fn (string $code): bool => !in_array($code, $present, true),
-        ));
+        $missing = [];
+        foreach ($lignes as $ligne) {
+            if (!$ligne['obligatoire']) {
+                continue;
+            }
+            $code = $ligne['code'];
+            if (isset($withFile[$code])) {
+                continue;
+            }
+            if ($ligne['autoriseNA'] && isset($markedNA[$code])) {
+                continue;
+            }
+            $missing[] = $code;
+        }
+
+        return $missing;
     }
 }
