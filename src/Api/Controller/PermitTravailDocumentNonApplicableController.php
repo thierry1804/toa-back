@@ -51,7 +51,7 @@ class PermitTravailDocumentNonApplicableController extends AbstractController
 
         $type = (string) $body['type'];
         $regle = $this->requirements->findRegle($permit, $type);
-        if ($regle === null || $regle->isObligatoire()) {
+        if ($regle === null || ($regle->isObligatoire() && !$regle->isAutoriseNA())) {
             throw new UnprocessableEntityHttpException('document_obligatoire');
         }
 
