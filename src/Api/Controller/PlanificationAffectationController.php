@@ -6,6 +6,7 @@ namespace App\Api\Controller;
 
 use App\Domain\ActivityPlanning\Entity\ActivityPlanning;
 use App\Domain\Entreprise\Entity\SousTraitant;
+use App\Domain\PlanPrevention\Entity\PlanPrevention;
 use App\Domain\User\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -88,9 +89,17 @@ final class PlanificationAffectationController extends AbstractController
         return $user;
     }
 
-    /** @return array{id: int, siteCode: ?string, siteName: ?string, process: ?string, typeIntervention: ?string, sousTraitantIds: list<string>} */
+    /** @return array{id: int, siteCode: ?string, siteName: ?string, process: ?string, typeIntervention: ?string, sousTraitantIds: list<string>, planPreventionReference: ?string, activitePlanifiee: ?string} */
     private function serialize(ActivityPlanning $plan): array
     {
+        /** @var PlanPrevention[] $planPreventions */
+        $planPreventions = $this->entityManager->getRepository(PlanPrevention::class)->findBy(
+            ['planificationId' => $plan->getId()],
+            ['createdAt' => 'DESC'],
+            1,
+        );
+        $planPrevention = $planPreventions[0] ?? null;
+
         return [
             'id' => (int) $plan->getId(),
             'siteCode' => $plan->getSiteCode(),
@@ -101,6 +110,8 @@ final class PlanificationAffectationController extends AbstractController
                 static fn (SousTraitant $sousTraitant): string => (string) $sousTraitant->getId(),
                 $plan->getSousTraitants()->toArray(),
             )),
+            'planPreventionReference' => $planPrevention?->getReference(),
+            'activitePlanifiee' => $planPrevention?->getActivitePlanifiee(),
         ];
     }
 }
